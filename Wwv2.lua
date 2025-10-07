@@ -41,14 +41,14 @@ _G.SafeTrigger = 50
 MainTab:CreateButton({
    Name = "Camlock (V3)",
    Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/DYHUB-Universal-Game/refs/heads/main/Camlock.lua"))()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/Camlock.lua"))()
    end
 })
 
 MainTab:CreateButton({
    Name = "No ProximityPrompt",
    Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/DYHUB-Universal-Game/refs/heads/main/nodelay.lua"))()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/nodelay.lua"))()
    end
 })
 
