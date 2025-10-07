@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.1.2"
+local version = "3.1.3"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -112,6 +112,20 @@ Window:EditOpenButton({
     Color=ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)),
     Draggable=true,
 })
+
+-- ====================== TABS ====================== 
+
+local InfoTab = Window:Tab({Title="Information", Icon="info"}) 
+local MainDivider = Window:Divider() 
+local Main = Window:Tab({Title="Main", Icon="rocket"}) 
+local Auto = Window:Tab({Title="Shop", Icon="shopping-cart"}) 
+local Egg = Window:Tab({Title="Egg", Icon="egg"}) 
+local Main1Divider = Window:Divider() 
+local Event = Window:Tab({Title="Event", Icon="party-popper"}) 
+local Buff = Window:Tab({Title="Buff", Icon="biceps-flexed"}) 
+local Codes = Window:Tab({Title="Codes", Icon="gift"}) 
+
+Window:SelectTab(1)
 
 -- ====================== CONFIG AUTO SAVE ======================
 local ConfigFolder = "DYHUB_BAZ"
