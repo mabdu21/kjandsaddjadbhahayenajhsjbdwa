@@ -909,7 +909,7 @@ local Version = "5.9.6"
 
 task.spawn(function()
     local success, LatestVer = pcall(function()
-        local version = game:HttpGet("https://raw.githubusercontent.com/dyumra/DYHUB-Universal-Game/refs/heads/main/Fisch/Version.lua")
+        local version = game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/FischV2/Version.lua")
         return HttpService:JSONDecode(version)
     end)
     
@@ -920,5 +920,6 @@ task.spawn(function()
         end
     end
 end)
+
 
 
