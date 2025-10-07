@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.0.9"
+local version = "3.1.2"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -113,20 +113,7 @@ Window:EditOpenButton({
     Draggable=true,
 })
 
--- ====================== TABS ======================
-local InfoTab = Window:Tab({Title="Information", Icon="info"})
-local MainDivider = Window:Divider()
-local Main = Window:Tab({Title="Main", Icon="rocket"})
-local Auto = Window:Tab({Title="Shop", Icon="shopping-cart"})
-local Egg = Window:Tab({Title="Egg", Icon="egg"})
-local Main1Divider = Window:Divider()
-local Event = Window:Tab({Title="Event", Icon="party-popper"})
-local Buff = Window:Tab({Title="Buff", Icon="biceps-flexed"})
-local Codes = Window:Tab({Title="Codes", Icon="gift"})
-
-Window:SelectTab(1)
-
--- ====================== AUTO SAVE CONFIG ======================
+-- ====================== CONFIG AUTO SAVE ======================
 local ConfigFolder = "DYHUB_BAZ"
 local ConfigFileName = "config.json"
 local configData = {}
@@ -178,7 +165,8 @@ LoadConfig()
 task.spawn(function()
     while true do
         task.wait(5)
-        -- เก็บค่าตัวแปร
+
+        -- เก็บค่าตัวแปรลง configData
         configData.AutoBuyConveyor = AutoBuyConveyor
         configData.BuyIndex = BuyIndex
         configData.AutoEquip = AutoEquip
@@ -191,7 +179,7 @@ task.spawn(function()
         configData.SelectedFood = SelectedFood
         configData.AutoCollectEnabled = AutoCollectEnabled
         configData.AutoBuyEggEnabled = AutoBuyEggEnabled
-        configData.buyEggList = buyEggList
+        configData.buyEggList = buyEggList or {}
         configData.autoHatch = autoHatch
         configData.AutoFishEnabled = AutoFishEnabled
         configData.AutoSpinEnabled = AutoSpinEnabled
@@ -208,7 +196,6 @@ end)
 task.spawn(function()
     task.wait(1)
     if configData.AutoBuyConveyor ~= nil then
-        -- โหลดค่ากลับเข้าสู่ตัวแปร
         AutoBuyConveyor = configData.AutoBuyConveyor
         BuyIndex = configData.BuyIndex or 1
         AutoEquip = configData.AutoEquip
@@ -221,7 +208,7 @@ task.spawn(function()
         SelectedFood = configData.SelectedFood
         AutoCollectEnabled = configData.AutoCollectEnabled
         AutoBuyEggEnabled = configData.AutoBuyEggEnabled
-        buyEggList = configData.buyEggList or buyEggList
+        buyEggList = configData.buyEggList or {}
         autoHatch = configData.autoHatch
         AutoFishEnabled = configData.AutoFishEnabled
         AutoSpinEnabled = configData.AutoSpinEnabled
