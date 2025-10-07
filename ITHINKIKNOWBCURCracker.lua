@@ -1,5 +1,5 @@
 -- ======================
-local version = "4.9.5"
+local version = "4.9.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -85,7 +85,7 @@ local Window = WindUI:CreateWindow({
     Icon = "rbxassetid://104487529937663",
     Author = "Violence District | " .. userversion,
     Folder = "DYHUB_VD",
-    Size = UDim2.fromOffset(500, 350),
+    Size = UDim2.fromOffset(500, 400),
     Transparent = true,
     Theme = "Dark",
     BackgroundImageTransparency = 0.8,
@@ -464,7 +464,7 @@ EspTab:Toggle({Title="Enable ESP", Value=false, Callback=function(v)
     end
 end})
 
-EspTab:Section({ Title = "Esp Role", Icon = "settings" })
+EspTab:Section({ Title = "Esp Role", Icon = "user" })
 EspTab:Toggle({Title="ESP Survivor", Value=false, Callback=function(v) espSurvivor=v end})
 EspTab:Toggle({Title="ESP Killer", Value=false, Callback=function(v) espMurder=v end})
 
