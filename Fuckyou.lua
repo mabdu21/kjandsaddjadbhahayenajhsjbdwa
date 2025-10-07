@@ -862,7 +862,7 @@ Misc:Button({
             Icon = "user-check",
         })
 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/DYHUB-Universal-Game/refs/heads/main/Nigga.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/Nigga.lua"))()
         
         WindUI:Notify({
             Title = "DYHUB Boost",
