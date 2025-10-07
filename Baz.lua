@@ -1,9 +1,10 @@
 -- =========================
-local version = "3.0.6"
+local version = "3.0.9"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
 
+-- FPS Unlock
 if setfpscap then
     setfpscap(1000000)
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -23,15 +24,17 @@ else
     warn("Your exploit does not support setfpscap.")
 end
 
+-- ====================== WINDUI ======================
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- ====================== SERVICE =====================
+-- ====================== SERVICES ======================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
--- ===================== SETTINGS =====================
+-- ====================== SETTINGS ======================
 local SelectedCode = nil
 local SelectedBait = nil
 local SelectedFood = nil
@@ -49,16 +52,13 @@ local AutoFoodEnabled = false
 local AutoFishEnabled = false
 local AutoSpinEnabled = false
 local AutoBuyEggEnabled = false
-local AutoCollectEnabled = false
 
 local SelectedPotions = {}
 local QuestList = {"All"}
-for i = 1, 20 do
-    table.insert(QuestList, "Task_"..i)
-end
+for i = 1, 20 do table.insert(QuestList, "Task_"..i) end
 local BuyIndex = 1
 local EquipIndex = 1
-local SpinCounts = {1, 3, 10}
+local SpinCounts = {1,3,10}
 local SelectedCount = 1
 
 local FoodList = {
@@ -78,101 +78,86 @@ local eggTypes = {
 local PotionList = {"Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
 local BaitList = { "FishingBait1", "FishingBait2", "FishingBait3" }
 local CodeList = {
-    "CFJXEH4M8K5",
-    "DelayGift",
-    "60KCCU919",
-    "50KCCU0912",
-    "SeasonOne",
-    "ZooFish829",
-    "FIXERROR819",
-    "MagicFruit",
-    "WeekendEvent89",
-    "BugFixes",
-    "U2CA518SC5",
-    "X2CA821BA3",
-    "55PA21N8y2"
+    "CFJXEH4M8K5","DelayGift","60KCCU919","50KCCU0912","SeasonOne",
+    "ZooFish829","FIXERROR819","MagicFruit","WeekendEvent89","BugFixes",
+    "U2CA518SC5","X2CA821BA3","55PA21N8y2"
 }
 
--- ====================== WINDOW ======================
+-- ====================== WINDUI WINDOW ======================
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
     Author = "Build a Zoo | Premium Version",
     Folder = "DYHUB_BAZ",
-    Size = UDim2.fromOffset(550, 380),
+    Size = UDim2.fromOffset(550,380),
     Transparent = true,
     Theme = "Dark",
     BackgroundImageTransparency = 0.8,
     HasOutline = false,
     HideSearchBar = true,
     ScrollBarEnabled = true,
-    User = { Enabled = true, Anonymous = false },
+    User = {Enabled=true, Anonymous=false},
 })
 
 pcall(function()
-    Window:Tag({
-        Title = version,
-        Color = Color3.fromHex("#30ff6a")
-    })
+    Window:Tag({Title=version, Color=Color3.fromHex("#30ff6a")})
 end)
 
 Window:EditOpenButton({
-    Title = "DYHUB - Open",
-    Icon = "monitor",
-    CornerRadius = UDim.new(0, 6),
-    StrokeThickness = 2,
-    Color = ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)),
-    Draggable = true,
+    Title="DYHUB - Open",
+    Icon="monitor",
+    CornerRadius=UDim.new(0,6),
+    StrokeThickness=2,
+    Color=ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)),
+    Draggable=true,
 })
 
 -- ====================== TABS ======================
-local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
+local InfoTab = Window:Tab({Title="Information", Icon="info"})
 local MainDivider = Window:Divider()
-local Main = Window:Tab({ Title = "Main", Icon = "rocket" })
-local Auto = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
-local Egg = Window:Tab({ Title = "Egg", Icon = "egg" })
+local Main = Window:Tab({Title="Main", Icon="rocket"})
+local Auto = Window:Tab({Title="Shop", Icon="shopping-cart"})
+local Egg = Window:Tab({Title="Egg", Icon="egg"})
 local Main1Divider = Window:Divider()
-local Event = Window:Tab({ Title = "Event", Icon = "party-popper" })
-local Buff = Window:Tab({ Title = "Buff", Icon = "biceps-flexed" })
-local Codes = Window:Tab({ Title = "Codes", Icon = "gift" })
+local Event = Window:Tab({Title="Event", Icon="party-popper"})
+local Buff = Window:Tab({Title="Buff", Icon="biceps-flexed"})
+local Codes = Window:Tab({Title="Codes", Icon="gift"})
 
 Window:SelectTab(1)
 
--- ====================== AUTO SAVE ======================
-local HttpService = game:GetService("HttpService")
+-- ====================== AUTO SAVE CONFIG ======================
 local ConfigFolder = "DYHUB_BAZ"
 local ConfigFileName = "config.json"
 local configData = {}
+local lastSavedData = ""
 
--- ฟังก์ชัน Notify ของ WindUI
+-- ฟังก์ชัน Notify
 local function Notify(msg)
     pcall(function()
-        WindUI:Notify({
-            Title = "DYHUB",
-            Text = msg,
-            Duration = 3
-        })
+        WindUI:Notify({Title="DYHUB", Text=msg, Duration=3})
     end)
 end
 
--- ฟังก์ชันบันทึก config
+-- บันทึก config
 local function SaveConfig()
     local success, err = pcall(function()
-        if not isfolder(ConfigFolder) then
-            makefolder(ConfigFolder)
+        if not isfolder(ConfigFolder) then makefolder(ConfigFolder) end
+        local jsonData = HttpService:JSONEncode(configData)
+        writefile(ConfigFolder.."/"..ConfigFileName, jsonData)
+
+        if jsonData ~= lastSavedData then
+            lastSavedData = jsonData
+            Notify("Auto Saved Config!")
+            print("[DYHUB] Config auto-saved.")
         end
-        writefile(ConfigFolder.."/"..ConfigFileName, HttpService:JSONEncode(configData))
     end)
-    if success then
-        print("[DYHUB] Config auto-saved.")
-        Notify("Auto Saved Config!")
-    else
+    if not success then
         warn("[DYHUB] Failed to save config: "..tostring(err))
     end
 end
 
--- ฟังก์ชันโหลด config
+-- โหลด config
 local function LoadConfig()
     if isfile(ConfigFolder.."/"..ConfigFileName) then
         local ok, data = pcall(function()
@@ -180,21 +165,20 @@ local function LoadConfig()
         end)
         if ok and data then
             configData = data
+            lastSavedData = HttpService:JSONEncode(configData)
             print("[DYHUB] Config loaded.")
             Notify("Loaded previous settings!")
         end
     end
 end
 
--- โหลด config ตอนเริ่ม
 LoadConfig()
 
 -- ====================== AUTO SAVE LOOP ======================
 task.spawn(function()
     while true do
-        task.wait(5) -- บันทึกทุก 5 วินาที
-
-        -- เก็บค่าการตั้งค่าต่าง ๆ ของผู้เล่น
+        task.wait(5)
+        -- เก็บค่าตัวแปร
         configData.AutoBuyConveyor = AutoBuyConveyor
         configData.BuyIndex = BuyIndex
         configData.AutoEquip = AutoEquip
@@ -216,15 +200,13 @@ task.spawn(function()
         configData.SelectedQuest = SelectedQuest
         configData.autoCollectDino = autoCollectDino
 
-        -- บันทึกไฟล์
         SaveConfig()
     end
 end)
 
--- ====================== LOAD SETTINGS INTO UI ======================
+-- ====================== LOAD CONFIG TO UI ======================
 task.spawn(function()
-    task.wait(1) -- รอ WindUI โหลดเสร็จ
-
+    task.wait(1)
     if configData.AutoBuyConveyor ~= nil then
         -- โหลดค่ากลับเข้าสู่ตัวแปร
         AutoBuyConveyor = configData.AutoBuyConveyor
