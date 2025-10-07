@@ -1,40 +1,37 @@
 -- =========================
-local version = "3.1.4"
+local version = "3.1.2"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
 
--- FPS Unlock
 if setfpscap then
-    setfpscap(1000000)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "FPS Unlocked!",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("FPS Unlocked!")
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
 else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "Your exploit does not support setfpscap.",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("Your exploit does not support setfpscap.")
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
 end
 
--- ====================== WINDUI ======================
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- ====================== SERVICES ======================
+-- ====================== SERVICE =====================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
 
--- ====================== SETTINGS ======================
+-- ===================== SETTINGS =====================
 local SelectedCode = nil
 local SelectedBait = nil
 local SelectedFood = nil
@@ -52,295 +49,583 @@ local AutoFoodEnabled = false
 local AutoFishEnabled = false
 local AutoSpinEnabled = false
 local AutoBuyEggEnabled = false
-
+local AutoCollectEnabled_Coin = false -- เปลี่ยนชื่อตัวแปรให้ชัดเจนขึ้น
 local SelectedPotions = {}
 local QuestList = {"All"}
-for i = 1, 20 do table.insert(QuestList, "Task_"..i) end
+for i = 1, 20 do
+    table.insert(QuestList, "Task_"..i)
+end
 local BuyIndex = 1
 local EquipIndex = 1
-local SpinCounts = {1,3,10}
+local SpinCounts = {1, 3, 10}
 local SelectedCount = 1
 
 local FoodList = {
-    "Strawberry","Blueberry","Watermelon","Apple","Orange",
-    "Corn","Banana","Grape","Pear","PineApple","Dargon Fruit",
-    "Gold Mango","Bloodstone Cycad","Colossal Pinecone","Volt Ginkgo",
-    "Deepsea Pearl Fruit","Durian"
+    "Strawberry","Blueberry","Watermelon","Apple","Orange",
+    "Corn","Banana","Grape","Pear","PineApple","Dargon Fruit",
+    "Gold Mango","Bloodstone Cycad","Colossal Pinecone","Volt Ginkgo",
+    "Deepsea Pearl Fruit","Durian"
 }
-local eggTypes = {
-    "BasicEgg","RareEgg","SuperRareEgg","EpicEgg","LegendEgg","HyperEgg",
-    "BowserEgg","VoidEgg","CornEgg","BoneDragonEgg","DemonEgg","PrismaticEgg",
-    "DarkGoatyEgg","LionfishEgg","OctopusEgg","UltraEgg","UnicornEgg","UnicornProEgg",
-    "AnglerfishEgg","RhinoRockEgg","SaberCubEgg","SeaweedEgg","SharkEgg","SnowbunnyEgg",
-    "GeneralKongEgg","SailfishEgg","SeaDragonEgg","PegasusEgg","ClownfishEgg","AncientEgg",
-    "DinoEgg","FlyEgg","OceanEgg"
+local eggTypes = { "BasicEgg","RareEgg","SuperRareEgg","EpicEgg","LegendEgg","HyperEgg","BowserEgg",
+    "VoidEgg","CornEgg","BoneDragonEgg","DemonEgg","PrismaticEgg","DarkGoatyEgg","LionfishEgg","OctopusEgg",
+    "UltraEgg","UnicornEgg","UnicornProEgg","AnglerfishEgg","RhinoRockEgg","SaberCubEgg","SeaweedEgg","SharkEgg",
+    "SnowbunnyEgg","GeneralKongEgg","SailfishEgg","SeaDragonEgg","PegasusEgg","ClownfishEgg","AncientEgg","DinoEgg",
+    "FlyEgg","OceanEgg"
 }
 local PotionList = {"Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
 local BaitList = { "FishingBait1", "FishingBait2", "FishingBait3" }
 local CodeList = {
-    "CFJXEH4M8K5","DelayGift","60KCCU919","50KCCU0912","SeasonOne",
-    "ZooFish829","FIXERROR819","MagicFruit","WeekendEvent89","BugFixes",
-    "U2CA518SC5","X2CA821BA3","55PA21N8y2"
+    "CFJXEH4M8K5",
+    "DelayGift",
+    "60KCCU919",
+    "50KCCU0912",
+    "SeasonOne",
+    "ZooFish829",
+    "FIXERROR819",
+    "MagicFruit",
+    "WeekendEvent89",
+    "BugFixes",
+    "U2CA518SC5",
+    "X2CA821BA3",
+    "55PA21N8y2"
 }
+local buyEggList = {}
+for _, egg in ipairs(eggTypes) do
+    buyEggList[egg] = false
+end
 
--- ====================== WINDUI WINDOW ======================
+-- ====================== WINDOW ======================
 local Window = WindUI:CreateWindow({
-    Title = "DYHUB",
-    IconThemed = true,
-    Icon = "rbxassetid://104487529937663",
-    Author = "Build a Zoo | Premium Version",
-    Folder = "DYHUB_BAZ",
-    Size = UDim2.fromOffset(550,380),
-    Transparent = true,
-    Theme = "Dark",
-    BackgroundImageTransparency = 0.8,
-    HasOutline = false,
-    HideSearchBar = true,
-    ScrollBarEnabled = true,
-    User = {Enabled=true, Anonymous=false},
+    Title = "DYHUB",
+    IconThemed = true,
+    Icon = "rbxassetid://104487529937663",
+    Author = "Build a Zoo | Premium Version",
+    Folder = "DYHUB_BAZ_ESP", -- โฟลเดอร์สำหรับเก็บ config
+    Size = UDim2.fromOffset(550, 380),
+    Transparent = true,
+    Theme = "Dark",
+    BackgroundImageTransparency = 0.8,
+    HasOutline = false,
+    HideSearchBar = true,
+    ScrollBarEnabled = true,
+    User = { Enabled = true, Anonymous = false },
 })
 
 pcall(function()
-    Window:Tag({Title=version, Color=Color3.fromHex("#30ff6a")})
+    Window:Tag({
+        Title = version,
+        Color = Color3.fromHex("#30ff6a")
+    })
 end)
 
 Window:EditOpenButton({
-    Title="DYHUB - Open",
-    Icon="monitor",
-    CornerRadius=UDim.new(0,6),
-    StrokeThickness=2,
-    Color=ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)),
-    Draggable=true,
+    Title = "DYHUB - Open",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 6),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)),
+    Draggable = true,
 })
 
--- ====================== TABS ====================== 
-
-local InfoTab = Window:Tab({Title="Information", Icon="info"}) 
-
-local MainDivider = Window:Divider() 
-
-local Main = Window:Tab({Title="Main", Icon="rocket"}) 
-local Auto = Window:Tab({Title="Shop", Icon="shopping-cart"}) 
-local Egg = Window:Tab({Title="Egg", Icon="egg"}) 
-
-local Main1Divider = Window:Divider() 
-
-local Event = Window:Tab({Title="Event", Icon="party-popper"}) 
-local Buff = Window:Tab({Title="Buff", Icon="biceps-flexed"}) 
-local Codes = Window:Tab({Title="Codes", Icon="gift"}) 
+-- ====================== TABS ======================
+local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
+local MainDivider = Window:Divider()
+local Main = Window:Tab({ Title = "Main", Icon = "rocket" })
+local Auto = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
+local Egg = Window:Tab({ Title = "Egg", Icon = "egg" })
+local Event = Window:Tab({ Title = "Event", Icon = "party-popper" })
+local Buff = Window:Tab({ Title = "Buff", Icon = "biceps-flexed" })
+local Codes = Window:Tab({ Title = "Codes", Icon = "gift" })
 
 Window:SelectTab(1)
 
--- ====================== CONFIG MANAGER ======================
+-- ====================== CONFIG MANAGER SETUP ======================
 local ConfigManager = Window.ConfigManager
-ConfigManager:Init(Window)  -- ต้อง init ก่อนใช้งาน
-local myConfig = ConfigManager:CreateConfig("DYHUB_BAZ_Config")
+ConfigManager:Init(Window)
+local myConfig = ConfigManager:CreateConfig("dyhub_settings")
 
--- ====================== AUTO FARM / AUTO BUY ======================
+-- ====================== AUTO FARM ======================
 Auto:Section({ Title = "Buy Conveyor", Icon = "package" })
 
 local BuyConveyorDropdown = Auto:Dropdown({
-    Title = "Select Conveyor to Buy (Common-Celestial)",
-    Values = {"1","2","3","4","5","6","7","8","9"},
-    Multi = false,
-    Callback = function(value)
-        BuyIndex = tonumber(value)
-        myConfig:Set("BuyIndex", BuyIndex)
-        myConfig:Save()
-    end
+    Title = "Select Conveyor to Buy (1-9)",
+    Values = {"1","2","3","4","5","6","7","8","9"},
+    Multi = false,
+    Callback = function(value)
+        BuyIndex = tonumber(value)
+        myConfig:Save() -- Auto Save
+    end
 })
 myConfig:Register("BuyIndex", BuyConveyorDropdown)
 
 local BuyConveyorToggle = Auto:Toggle({
-    Title = "Buy Conveyor",
-    Value = false,
-    Callback = function(state)
-        AutoBuyConveyor = state
-        myConfig:Set("AutoBuyConveyor", state)
-        myConfig:Save()
-        if state then
-            task.spawn(function()
-                while AutoBuyConveyor do
-                    local args = {"Upgrade", BuyIndex}
-                    ReplicatedStorage.Remote.ConveyorRE:FireServer(unpack(args))
-                    task.wait(2)
-                end
-            end)
-        end
-    end
+    Title = "Buy Conveyor",
+    Value = false,
+    Callback = function(state)
+        AutoBuyConveyor = state
+        if state then
+            task.spawn(function()
+                while AutoBuyConveyor do
+                    local args = {"Upgrade", BuyIndex}
+                    ReplicatedStorage.Remote.ConveyorRE:FireServer(unpack(args))
+                    task.wait(2)
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
 })
 myConfig:Register("AutoBuyConveyor", BuyConveyorToggle)
 
--- Equip Conveyor
 Auto:Section({ Title = "Equip Conveyor", Icon = "layout-grid" })
-
 local EquipConveyorDropdown = Auto:Dropdown({
-    Title = "Select Conveyor to Equip (Common-Celestial)",
-    Values = {"1","2","3","4","5","6","7","8","9"},
-    Multi = false,
-    Callback = function(value)
-        EquipIndex = tonumber(value)
-        myConfig:Set("EquipIndex", EquipIndex)
-        myConfig:Save()
-    end
+    Title = "Select Conveyor to Equip (1-9)",
+    Values = {"1","2","3","4","5","6","7","8","9"},
+    Multi = false,
+    Callback = function(value)
+        EquipIndex = tonumber(value)
+        myConfig:Save() -- Auto Save
+    end
 })
 myConfig:Register("EquipIndex", EquipConveyorDropdown)
 
 local EquipConveyorToggle = Auto:Toggle({
-    Title = "Equip Conveyor",
-    Value = false,
-    Callback = function(state)
-        AutoEquip = state
-        myConfig:Set("AutoEquip", state)
-        myConfig:Save()
-        if state then
-            task.spawn(function()
-                while AutoEquip do
-                    local args = {"Switch", EquipIndex}
-                    ReplicatedStorage.Remote.ConveyorRE:FireServer(unpack(args))
-                    task.wait(1.5)
-                end
-            end)
-        end
-    end
+    Title = "Equip Conveyor",
+    Value = false,
+    Callback = function(state)
+        AutoEquip = state
+        if state then
+            task.spawn(function()
+                while AutoEquip do
+                    local args = {"Switch", EquipIndex}
+                    ReplicatedStorage.Remote.ConveyorRE:FireServer(unpack(args))
+                    task.wait(1.5)
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
 })
 myConfig:Register("AutoEquip", EquipConveyorToggle)
 
--- Auto Potions
+-- ====================== POTIONS ======================
 Buff:Section({ Title = "Potion", Icon = "flask-conical" })
 
 local PotionDropdown = Buff:Dropdown({
-    Title = "Select Potion(s)",
-    Values = PotionList,
-    Multi = true,
-    Callback = function(values)
-        SelectedPotions = values
-        myConfig:Set("SelectedPotions", SelectedPotions)
-        myConfig:Save()
-    end
+    Title = "Select Potion(s)",
+    Values = PotionList,
+    Multi = true,
+    Callback = function(values)
+        SelectedPotions = values
+        myConfig:Save() -- Auto Save
+    end
 })
 myConfig:Register("SelectedPotions", PotionDropdown)
 
-local AutoPotionToggle = Buff:Toggle({
-    Title = "Auto Use Selected Potions",
-    Value = false,
-    Callback = function(state)
-        AutoPotion = state
-        myConfig:Set("AutoPotion", state)
-        myConfig:Save()
-        if state then
-            task.spawn(function()
-                while AutoPotion do
-                    for _,potion in pairs(SelectedPotions) do
-                        local args = {"UsePotion", potion}
-                        ReplicatedStorage.Remote.ShopRE:FireServer(unpack(args))
-                        task.wait(1)
-                    end
-                    task.wait(5)
-                end
-            end)
-        end
-    end
+local PotionToggle = Buff:Toggle({
+    Title = "Auto Use Selected Potions",
+    Value = false,
+    Callback = function(state)
+        AutoPotion = state
+        if state then
+            task.spawn(function()
+                while AutoPotion do
+                    for _,potion in pairs(SelectedPotions) do
+                        local args = {"UsePotion", potion}
+                        ReplicatedStorage.Remote.ShopRE:FireServer(unpack(args))
+                        task.wait(1)
+                    end
+                    task.wait(5)
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
 })
-myConfig:Register("AutoPotion", AutoPotionToggle)
+myConfig:Register("AutoPotion", PotionToggle)
 
--- Auto Buy Eggs
-Egg:Section({ Title = "Buy Eggs", Icon = "egg" })
+-- ====================== CODES ======================
+Codes:Section({ Title = "Redeem Codes", Icon = "gift" })
 
-local buyEggList = {}
-for _, egg in ipairs(eggTypes) do buyEggList[egg] = false end
+-- Dropdown และ Button ไม่จำเป็นต้องบันทึกค่าใน config เพราะเป็น action ครั้งเดียว
 
-local EggDropdown = Egg:Dropdown({
-    Title = "Select Eggs",
-    Values = eggTypes,
-    Multi = true,
-    Callback = function(values)
-        for _, egg in ipairs(eggTypes) do buyEggList[egg] = false end
-        for _, v in ipairs(values) do buyEggList[v] = true end
-        myConfig:Set("BuyEggList", buyEggList)
-        myConfig:Save()
-    end
+-- ====================== AUTO BUY BAIT/FOOD ======================
+Auto:Section({ Title = "Buy Bait", Icon = "fish" })
+
+local BaitDropdown = Auto:Dropdown({
+    Title = "Select Bait",
+    Values = BaitList,
+    Multi = false,
+    Callback = function(value)
+        SelectedBait = value
+        myConfig:Save() -- Auto Save
+    end
 })
-myConfig:Register("BuyEggList", EggDropdown)
+myConfig:Register("SelectedBait", BaitDropdown)
 
-local AutoBuyEggToggle = Egg:Toggle({
-    Title = "Auto Buy Eggs",
-    Value = false,
-    Callback = function(state)
-        AutoBuyEggEnabled = state
-        myConfig:Set("AutoBuyEggEnabled", state)
-        myConfig:Save()
-        if state then
-            spawn(function()
-                while AutoBuyEggEnabled do
-                    task.wait(0.15 + math.random(0, 300)/1000)
-                    -- loop buy egg logic (เหมือนเดิม)
-                end
-            end)
-        end
-    end
+local BaitToggle = Auto:Toggle({
+    Title = "Buy Bait",
+    Value = false,
+    Callback = function(state)
+        AutoBaitEnabled = state
+        task.spawn(function()
+            while AutoBaitEnabled do
+                if SelectedBait then
+                    local args = {"buy", SelectedBait}
+                    ReplicatedStorage.Remote.FishingRE:FireServer(unpack(args))
+                end
+                task.wait(0.5)
+            end
+        end)
+        myConfig:Save() -- Auto Save
+    end
 })
-myConfig:Register("AutoBuyEggEnabled", AutoBuyEggToggle)
+myConfig:Register("AutoBaitEnabled", BaitToggle)
 
--- Auto Hatch
-local AutoHatchToggle = Egg:Toggle({
-    Title = "Auto Hatch Eggs",
-    Value = false,
-    Callback = function(state)
-        autoHatch = state
-        myConfig:Set("autoHatch", state)
-        myConfig:Save()
-        if state then
-            spawn(function()
-                while autoHatch do
-                    task.wait(0.5)
-                    -- loop hatch egg logic (เหมือนเดิม)
-                end
-            end)
-        end
-    end
+
+Auto:Section({ Title = "Buy Food", Icon = "shopping-bag" })
+
+local FoodDropdown = Auto:Dropdown({
+    Title = "Select Food",
+    Values = FoodList,
+    Multi = false,
+    Callback = function(value)
+        SelectedFood = value
+        myConfig:Save() -- Auto Save
+    end
 })
-myConfig:Register("autoHatch", AutoHatchToggle)
+myConfig:Register("SelectedFood", FoodDropdown)
 
--- Auto Collect Coin
+local FoodToggle = Auto:Toggle({
+    Title = "Buy Food",
+    Value = false,
+    Callback = function(state)
+        AutoFoodEnabled = state
+        task.spawn(function()
+            while AutoFoodEnabled do
+                if SelectedFood then
+                    local args = {SelectedFood}
+                    ReplicatedStorage.Remote.FoodStoreRE:FireServer(unpack(args))
+                end
+                task.wait(0.5)
+            end
+        end)
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("AutoFoodEnabled", FoodToggle)
+
+-- ====================== COLLECT ALL ======================
 Main:Section({ Title = "Collect Coin", Icon = "egg" })
 
-local AutoCollectToggle = Main:Toggle({
-    Title = "Auto Collect Coin",
-    Value = false,
-    Callback = function(state)
-        AutoCollectEnabled = state
-        myConfig:Set("AutoCollectEnabled", state)
-        myConfig:Save()
-        if state then
-            spawn(function()
-                while AutoCollectEnabled do
-                    local petsFolder = workspace:WaitForChild("Pets")
-                    local args = {"Claim"}
-                    for _, pet in pairs(petsFolder:GetChildren()) do
-                        if pet:FindFirstChild("RootPart") and pet.RootPart:FindFirstChild("RE") then
-                            pcall(function()
-                                pet.RootPart.RE:FireServer(unpack(args))
-                            end)
-                        end
-                    end
-                    task.wait(0.05)
-                end
-            end)
-        end
-    end
+local CollectCoinToggle = Main:Toggle({
+    Title = "Auto Collect Coin",
+    Value = false,
+    Callback = function(state)
+        AutoCollectEnabled_Coin = state
+        if state then
+            spawn(function()
+                while AutoCollectEnabled_Coin do
+                    local petsFolder = workspace:WaitForChild("Pets")
+                    local args = {"Claim"}
+
+                    for _, pet in pairs(petsFolder:GetChildren()) do
+                        if pet:FindFirstChild("RootPart") and pet.RootPart:FindFirstChild("RE") then
+                            pcall(function()
+                                pet.RootPart.RE:FireServer(unpack(args))
+                            end)
+                        end
+                    end
+
+                    task.wait(0.05)
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
 })
-myConfig:Register("AutoCollectEnabled", AutoCollectToggle)
+myConfig:Register("AutoCollectEnabled_Coin", CollectCoinToggle)
 
--- ====================== LOAD CONFIG ======================
-myConfig:Load()  -- โหลดค่าที่บันทึกไว้ก่อนหน้านี้
+Main:Section({ Title = "Fishing", Icon = "fish" })
 
--- ====================== ON CLOSE SAVE ======================
-Window:OnClose(function()
-    myConfig:Save()
+local FishToggle = Main:Toggle({
+    Title = "Auto Reel",
+    Value = false,
+    Callback = function(state)
+        AutoFishEnabled = state
+        task.spawn(function()
+            while AutoFishEnabled do
+                local args = {"POUT",{SUC=1}}
+                ReplicatedStorage.Remote.FishingRE:FireServer(unpack(args))
+                task.wait(0.5)
+            end
+        end)
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("AutoFishEnabled", FishToggle)
+
+Main:Section({ Title = "Lottery", Icon = "piggy-bank" })
+
+local SpinDropdown = Main:Dropdown({
+    Title = "Select Spin Count",
+    Values = SpinCounts,
+    Multi = false,
+    Callback = function(value)
+        SelectedCount = value
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("SelectedCount", SpinDropdown)
+
+local SpinToggle = Main:Toggle({
+    Title = "Auto Spin Lottery",
+    Value = false,
+    Callback = function(state)
+        AutoSpinEnabled = state
+        task.spawn(function()
+            while AutoSpinEnabled do
+                local args = {{event="lottery", count=SelectedCount}}
+                ReplicatedStorage.Remote.LotteryRE:FireServer(unpack(args))
+                task.wait(1)
+            end
+        end)
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("AutoSpinEnabled", SpinToggle)
+
+-- ====================== SELL ALL BUTTON (No config needed) ======================
+-- ... (ส่วนนี้ไม่มีการเปลี่ยนแปลง)
+
+-- ====================== AUTO BUY EGG ======================
+Egg:Section({ Title = "Buy Eggs", Icon = "egg" })
+
+local function getEggType(eggModel)
+    -- ... (ฟังก์ชันเดิม)
+    local root = eggModel:FindFirstChild("RootPart")
+    local eggType = root and (root:GetAttribute("Type") or root:GetAttribute("EggType"))
+    eggType = eggType or eggModel:GetAttribute("Type") or eggModel:GetAttribute("EggType")
+    if not eggType then
+        for _, child in ipairs(eggModel:GetChildren()) do
+            if child:IsA("StringValue") and (child.Name == "Type" or child.Name == "EggType") then
+                eggType = child.Value
+                break
+            end
+        end
+    end
+    return eggType
+end
+
+local BuyEggDropdown = Egg:Dropdown({
+    Title = "Select Eggs",
+    Values = eggTypes,
+    Multi = true,
+    Callback = function(values)
+        for _, egg in ipairs(eggTypes) do buyEggList[egg] = false end
+        for _, v in ipairs(values) do buyEggList[v] = true end
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("SelectedEggs", BuyEggDropdown)
+
+local BuyEggToggle = Egg:Toggle({
+    Title = "Auto Buy Eggs",
+    Value = false,
+    Callback = function(state)
+        AutoBuyEggEnabled = state
+        if state then
+            spawn(function()
+                while AutoBuyEggEnabled do
+                    task.wait(0.15 + math.random(0, 300) / 1000)
+
+                    local anyActive = false
+                    for _, v in pairs(buyEggList) do
+                        if v then anyActive = true break end
+                    end
+                    if not anyActive then task.wait(1) continue end
+
+                    local art = Workspace:FindFirstChild("Art")
+                    if not art then task.wait(1) continue end
+
+                    local okRemote, characterRE = pcall(function()
+                        return ReplicatedStorage:WaitForChild("Remote", 9e9):WaitForChild("CharacterRE", 9e9)
+                    end)
+                    if not okRemote or not characterRE then task.wait(1) continue end
+
+                    for _, island in ipairs(art:GetChildren()) do
+                        if island.Name:match("^Island_%d+$") then
+                            local env = island:FindFirstChild("ENV")
+                            if not env then continue end
+                            local conveyor = env:FindFirstChild("Conveyor")
+                            if not conveyor then continue end
+
+                            for _, conveyorX in ipairs(conveyor:GetChildren()) do
+                                if conveyorX.Name:match("^Conveyor%d+$") then
+                                    local belt = conveyorX:FindFirstChild("Belt")
+                                    if not belt then continue end
+
+                                    local eggCount = 0
+                                    local maxEggsPerCycle = 50
+                                    for _, eggModel in ipairs(belt:GetChildren()) do
+                                        if eggCount >= maxEggsPerCycle then break end
+
+                                        local eggType = getEggType(eggModel)
+                                        if eggType and buyEggList[eggType] then
+                                            local root = eggModel:FindFirstChild("RootPart")
+                                            local uidVal = (root and root:GetAttribute("UID")) or eggModel:GetAttribute("UID") or tostring(eggModel.Name)
+                                            pcall(function()
+                                                characterRE:FireServer("BuyEgg", uidVal)
+                                            end)
+                                        end
+                                        eggCount = eggCount + 1
+                                    end
+                                end
+                                task.wait()
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("AutoBuyEggEnabled", BuyEggToggle)
+
+Egg:Section({ Title = "Hatch Eggs", Icon = "clock" })
+
+local HatchToggle = Egg:Toggle({
+    Title = "Auto Hatch Eggs",
+    Value = false,
+    Callback = function(state)
+        autoHatch = state
+        if state then
+            spawn(function()
+                while autoHatch do
+                    task.wait(0.5)
+
+                    local art = workspace:FindFirstChild("Art")
+                    if not art then task.wait(1) continue end
+
+                    for _, island in ipairs(art:GetChildren()) do
+                        if island.Name:match("^Island_%d+$") then
+                            local env = island:FindFirstChild("ENV")
+                            if not env then continue end
+                            local conveyor = env:FindFirstChild("Conveyor")
+                            if not conveyor then continue end
+
+                            for _, conveyorX in ipairs(conveyor:GetChildren()) do
+                                if conveyorX.Name:match("^Conveyor%d+$") then
+                                    local belt = conveyorX:FindFirstChild("Belt")
+                                    if not belt then continue end
+
+                                    for _, eggModel in ipairs(belt:GetChildren()) do
+                                        local root = eggModel:FindFirstChild("RootPart")
+                                        if not root then continue end
+
+                                        local rf = root:FindFirstChild("RF")
+                                        if rf and rf:IsA("RemoteFunction") then
+                                            pcall(function()
+                                                rf:InvokeServer("Hatch")
+                                            end)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("autoHatch", HatchToggle)
+
+-- ====================== EVENT ======================
+Event:Section({ Title = "Event: Snow", Icon = "trophy" })
+
+local QuestDropdown = Event:Dropdown({
+    Title = "Select Dino Quest",
+    Values = QuestList,
+    Multi = false,
+    Callback = function(value)
+        SelectedQuest = value
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("SelectedQuest", QuestDropdown)
+
+local QuestToggle = Event:Toggle({
+    Title = "Auto Claim Dino Quest",
+    Value = false,
+    Callback = function(state)
+        AutoDinoEnabled = state
+        task.spawn(function()
+            while AutoDinoEnabled do
+                if SelectedQuest then
+                    if SelectedQuest == "All" then
+                        for i = 1, 20 do
+                            local args = {{event="claimreward", id="Task_"..i}}
+                            ReplicatedStorage.Remote.DinoEventRE:FireServer(unpack(args))
+                        end
+                    else
+                        local args = {{event="claimreward", id=SelectedQuest}}
+                        ReplicatedStorage.Remote.DinoEventRE:FireServer(unpack(args))
+                    end
+                end
+                task.wait(3)
+            end
+        end)
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("AutoDinoEnabled", QuestToggle)
+
+local CollectDinoToggle = Event:Toggle({
+    Title = "Auto Collect Dino",
+    Value = false,
+    Callback = function(state)
+        autoCollectDino = state
+        if state then
+            spawn(function()
+                while autoCollectDino do
+                    task.wait(1)
+
+                    local ok, remote = pcall(function()
+                        return ReplicatedStorage:WaitForChild("Remote", 9e9):WaitForChild("DinoEventRE", 9e9)
+                    end)
+                    if ok and remote then
+                        local args = { { event = "onlinepack" } }
+                        pcall(function()
+                            remote:FireServer(unpack(args))
+                        end)
+                    end
+                end
+            end)
+        end
+        myConfig:Save() -- Auto Save
+    end
+})
+myConfig:Register("autoCollectDino", CollectDinoToggle)
+
+-- ====================== CONFIG LOADING & FINAL SAVE ======================
+
+pcall(function()
+    myConfig:Load()
 end)
 
--- ======================= INFORMATION ========================
+local loadedEggs = myConfig:Get("SelectedEggs")
+if loadedEggs and type(loadedEggs) == "table" then
+    for _, egg in ipairs(eggTypes) do buyEggList[egg] = false end
+    for _, v in ipairs(loadedEggs) do buyEggList[v] = true end
+end
+
+Window:OnClose(function()
+    myConfig:Save()
+end)
+
 Info = InfoTab
 
 if not ui then ui = {} end
