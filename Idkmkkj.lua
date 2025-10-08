@@ -5,7 +5,7 @@ local userInputService = game:GetService("UserInputService")
 
 -- ===================================================
 
-local Untarget = _G.Untarget or {"Namw", "Name", "Name"} -- Name of a brainrot that does not need to be killed (Ex: Liril)
+local Untarget = _G.Untarget or {"Name", "Name", "Name"} -- Name of a brainrot that does not need to be killed (Ex: Liril)
 local WeaponName = _G.Weapon or "Pistol" -- Your weapon name (Ex: Minigun)
 
 -- ===================================================
@@ -13,7 +13,7 @@ local WeaponName = _G.Weapon or "Pistol" -- Your weapon name (Ex: Minigun)
 local Gun
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoShooterGUI"
+screenGui.Name = "DYHUB-OPENSRC"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
@@ -32,7 +32,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 35)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Auto Shooter"
+title.Text = "Shoot a Brainrot!"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 20
