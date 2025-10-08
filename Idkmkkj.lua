@@ -5,8 +5,8 @@ local userInputService = game:GetService("UserInputService")
 
 -- ===================================================
 
-local Untarget = {"Namw", "Name", "Name"} -- Name of a brainrot that does not need to be killed (Ex: Liril)
-local WeaponName = "Pistol" -- Your weapon name (Ex: Minigun)
+local Untarget = _G.Untarget or {"Namw", "Name", "Name"} -- Name of a brainrot that does not need to be killed (Ex: Liril)
+local WeaponName = _G.Weapon or "Pistol" -- Your weapon name (Ex: Minigun)
 
 -- ===================================================
 
