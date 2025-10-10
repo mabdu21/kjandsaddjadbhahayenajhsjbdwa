@@ -1,5 +1,5 @@
 -- ======================
-local version = "4.9.8"
+local version = "5.0.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -756,6 +756,31 @@ SurTab:Toggle({
 })
 
 SurTab:Section({ Title = "Feature Cheat", Icon = "bug" })
+
+local NoFallEnabled = false
+
+SurTab:Toggle({
+    Title = "No Fall (Beta)",
+    Value = false,
+    Callback = function(v)
+        NoFallEnabled = v
+
+        if NoFallEnabled then
+            task.spawn(function()
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
+
+                while NoFallEnabled do
+                    local args = { -9e9 }
+                    pcall(function()
+                        FallRemote:FireServer(unpack(args))
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
 
 SurTab:Button({ 
     Title = "Fling Killer (Spam if killer doesn't fling)",  
