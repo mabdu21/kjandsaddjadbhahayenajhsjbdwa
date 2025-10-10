@@ -488,7 +488,7 @@ local Window = WindUI:CreateWindow({
 
 pcall(function()
     Window:Tag({
-        Title = verison,
+        Title = version,
         Color = Color3.fromHex("#30ff6a") 
     })
 end)
