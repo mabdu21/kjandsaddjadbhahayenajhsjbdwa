@@ -1,133 +1,81 @@
--- DYHUB Enhanced Script for Roblox
--- Version: 3.6.0
--- Optimized for performance, stability, and clarity
--- Author: DYHUB Team
--- Size: ~65KB
+-- =========================
+local verison = "3.4.9"
+-- =========================
 
--- Services
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
+end
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local workspace = game.Workspace
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-local Camera = Workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
--- Local Player
 local LocalPlayer = Players.LocalPlayer
+local GetReadyRemote = ReplicatedStorage:WaitForChild("GetReadyRemote")
+local SkipHelicopterRemote = ReplicatedStorage:WaitForChild("SkipHelicopter")
+local LMBRemote = ReplicatedStorage:WaitForChild("LMB")
 
--- Remote Events
-local Remotes = {
-    GetReady = ReplicatedStorage:WaitForChild("GetReadyRemote", 5),
-    SkipHelicopter = ReplicatedStorage:WaitForChild("SkipHelicopter", 5),
-    LMB = ReplicatedStorage:WaitForChild("LMB", 5),
-    Vote = ReplicatedStorage:WaitForChild("Vote", 5),
-    RedeemCode = ReplicatedStorage:WaitForChild("RedeemCode", 5),
-    BuyItem = ReplicatedStorage:WaitForChild("BuyItemFromShopHourly", 5),
-    GachaCharacter = ReplicatedStorage:WaitForChild("GachaCharacter", 5),
-    GachaSkins = ReplicatedStorage:WaitForChild("GachaSkins", 5),
-}
+local normal = "Normal"
+local autoVoteValue = normal
+local autoVoteEnabled = false
 
--- Configuration
-local Config = {
-    Version = "3.6.0",
-    Esp = {
-        Mode = "Highlight",
-        ShowName = true,
-        ShowHealth = true,
-        ShowDistance = false,
-        ActiveEnemies = false,
-        ActivePlayers = false,
-    },
-    Auto = {
-        VoteEnabled = false,
-        VoteValue = "Normal",
-        FarmActive = false,
-        ReadyActive = false,
-        MasteryActive = false,
-        MasteryTestActive = false,
-        SkipHelicopterActive = false,
-        FlushAuraActive = false,
-        CollectEnabled = false,
-        ItemNotifyEnabled = false,
-        BuyEnabled = false,
-        GachaCharEnabled = false,
-        GachaSkinEnabled = false,
-        SkillEnabled = false,
-    },
-    Movement = {
-        Mode = "CFrame",
-        PositionMode = "Under",
-        Distance = 1,
-    },
-    Hitbox = {
-        Enabled = false,
-        Size = 20,
-        Show = false,
-    },
-    Player = {
-        SpeedEnabled = false,
-        SpeedValue = 20,
-        JumpEnabled = false,
-        JumpValue = 50,
-    },
-    Skill = {
-        Delay = 0.25,
-        LoopDelay = 0.5,
-        Values = {},
-    },
-    ActionMode = "Default",
-    CharacterMode = "Used",
-}
+local setPositionMode = "Under"
+getgenv().DistanceValue = 1
 
--- Global Variables
-local getgenv = getgenv or function() return _G end
-getgenv().HitboxEnabled = Config.Hitbox.Enabled
-getgenv().HitboxSize = Config.Hitbox.Size
-getgenv().HitboxShow = Config.Hitbox.Show
-getgenv().DistanceValue = Config.Movement.Distance
-getgenv().speedEnabled = Config.Player.SpeedEnabled
-getgenv().speedValue = Config.Player.SpeedValue
-getgenv().jumpEnabled = Config.Player.JumpEnabled
-getgenv().jumpValue = Config.Player.JumpValue
+local autoFarmActive = false
+local autoReadyActive = false
+local MasteryAutoFarmActive = false
+local MasteryAutoFarmActiveTest = false
+local autoSkipHelicopterActive = false
+local flushAuraActive = false
+local espActive = false
 
-local espObjects, visitedNPCs, pressCount = {}, {}, {}
-local supportPart, partConnection, noclipConnection, fullBrightConnection, noFogConnection
-local spinAngle = 0
+local MMovementMode = "CFrame"
 
--- Utility Functions
-local function safePcall(func, ...)
-    local success, result = pcall(func, ...)
-    if not success then warn("[DYHUB] Error: " .. tostring(result)) end
-    return success, result
-end
+local espActiveEnemies = false
+local espActivePlayers = false
+local espShowName = true
+local espShowHealth = true
+local espShowDistance = false
+local espMode = "Highlight"
 
-local function notify(title, text, duration, icon)
-    safePcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title, Text = text, Duration = duration or 2, Icon = icon or "", Button1 = "Okay"
-        })
-    end)
-end
+getgenv().HitboxEnabled = false
+getgenv().HitboxSize = 20
+getgenv().HitboxShow = false
 
--- FPS Unlock
-if setfpscap then
-    safePcall(function() setfpscap(1000000) end)
-    notify("DYHUB", "FPS Unlocked!")
-else
-    notify("DYHUB", "Your exploit does not support setfpscap.")
-end
+local movementMode = "CFrame"
+local CharacterMode = "Used"
+local ActionMode = "Default"
 
--- Load WindUI
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local visitedNPCs = {}
+local pressCount = {}
+local espObjects = {}
 
--- ESP Functions
 local function clearESP()
     for _, obj in pairs(espObjects) do
-        if obj and obj.Parent then safePcall(function() obj:Destroy() end) end
+        if obj and obj.Parent then
+            obj:Destroy()
+        end
     end
     espObjects = {}
 end
@@ -142,7 +90,7 @@ local function createBillboard(model, humanoid)
     billboard.Size = UDim2.new(0, 150, 0, 50)
     billboard.AlwaysOnTop = true
     billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.Parent = Workspace
+    billboard.Parent = workspace
 
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -156,40 +104,48 @@ local function createBillboard(model, humanoid)
 
     local function updateText()
         local parts = {}
-        if Config.Esp.ShowName then table.insert(parts, model.Name or "NPC") end
-        if humanoid and Config.Esp.ShowHealth then
-            table.insert(parts, math.floor(humanoid.Health) .. " / " .. math.floor(humanoid.MaxHealth))
+        if espShowName then table.insert(parts, model.Name or "NPC") end
+        if humanoid and humanoid.Health and humanoid.MaxHealth and espShowHealth then
+            table.insert(parts, math.floor(humanoid.Health).." / "..math.floor(humanoid.MaxHealth))
         end
-        if Config.Esp.ShowDistance then
+        if espShowDistance then
             local dist = (hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-            table.insert(parts, "Dist: " .. math.floor(dist))
+            table.insert(parts, "Dist: "..math.floor(dist))
         end
         textLabel.Text = table.concat(parts, "\n")
     end
 
     updateText()
-    local conn = RunService.RenderStepped:Connect(function()
-        if not humanoid or humanoid.Health <= 0 or not billboard.Parent then
-            safePcall(function() billboard:Destroy() end)
-            conn:Disconnect()
+
+    local conn
+    conn = game:GetService("RunService").RenderStepped:Connect(function()
+        if humanoid and humanoid.Health <= 0 then
+            billboard:Destroy()
+            if conn then
+                conn:Disconnect()
+                conn = nil
+            end
         else
             updateText()
         end
     end)
+
     table.insert(espObjects, billboard)
 end
 
 local function applyESPToModel(model)
-    if Config.Esp.Mode == "Highlight" then
+    if espMode == "Highlight" then
         local highlight = Instance.new("Highlight")
         highlight.Adornee = model
         highlight.FillColor = Color3.fromRGB(255, 0, 0)
         highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.Parent = Workspace
+        highlight.Parent = workspace
         table.insert(espObjects, highlight)
         local humanoid = model:FindFirstChildOfClass("Humanoid")
-        if humanoid then createBillboard(model, humanoid) end
-    elseif Config.Esp.Mode == "BoxHandle" then
+        if humanoid then
+            createBillboard(model, humanoid)
+        end
+    elseif espMode == "BoxHandle" then
         local hrp = model:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local box = Instance.new("BoxHandleAdornment")
@@ -199,65 +155,105 @@ local function applyESPToModel(model)
         box.Size = Vector3.new(4, 6, 2)
         box.Color3 = Color3.fromRGB(255, 0, 0)
         box.Transparency = 0.5
-        box.Parent = Workspace.Terrain
+        box.Parent = workspace.Terrain
         table.insert(espObjects, box)
         local humanoid = model:FindFirstChildOfClass("Humanoid")
-        if humanoid then createBillboard(model, humanoid) end
+        if humanoid then
+            createBillboard(model, humanoid)
+        end
     end
 end
 
-local function updateESP()
+local function updateESPmodel()
     clearESP()
-    if not (Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers) then return end
+    if not espActive then return end
+
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        if Config.Esp.ActivePlayers then
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    safePcall(function() applyESPToModel(player.Character) end)
-                end
-            end
-        end
-        if Config.Esp.ActiveEnemies and Workspace:FindFirstChild("Living") then
-            for _, npc in pairs(Workspace.Living:GetChildren()) do
-                if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(npc) then
-                    local humanoid = npc:FindFirstChildOfClass("Humanoid")
-                    if humanoid and humanoid.Health > 0 then
-                        safePcall(function() applyESPToModel(npc) end)
-                    end
+        applyESPToModel(char)
+    end
+
+    if workspace:FindFirstChild("Living") then
+        for _, npc in pairs(workspace.Living:GetChildren()) do
+            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+                local humanoid = npc:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    applyESPToModel(npc)
                 end
             end
         end
     end
 end
 
+-- แยกฟังก์ชัน update ESP
+function updateESPPlayers()
+    clearESP()
+    if not espActivePlayers then return end
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            createBillboard(char, humanoid)
+        end
+    end
+end
+
+function updateESPEnemies()
+    clearESP()
+    if not espActiveEnemies then return end
+    if workspace:FindFirstChild("Living") then
+        for _, npc in pairs(workspace.Living:GetChildren()) do
+            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+                local humanoid = npc:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    createBillboard(npc, humanoid)
+                end
+            end
+        end
+    end
+end
+
+-- Loop อัปเดต ESP
 task.spawn(function()
     while true do
-        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then
-            safePcall(updateESP)
+        if espActiveEnemies or espActivePlayers then
+            pcall(updateESPmodel)
+            pcall(updateESPPlayers)
+            pcall(updateESPEnemies)
+        else
+            clearESP()
         end
         task.wait(1)
     end
 end)
 
--- NPC Management
-local function isVisited(npc) return table.find(visitedNPCs, npc) ~= nil end
-local function addVisited(npc) table.insert(visitedNPCs, npc) end
+local function isVisited(npc)
+    for _, v in ipairs(visitedNPCs) do
+        if v == npc then return true end
+    end
+    return false
+end
+
+local function addVisited(npc)
+    table.insert(visitedNPCs, npc)
+end
+
 local function removeVisited(npc)
     for i, v in ipairs(visitedNPCs) do
         if v == npc then
             table.remove(visitedNPCs, i)
-            pressCount[npc] = nil
             break
         end
     end
+    pressCount[npc] = nil
 end
 
-local function modifyProximityPrompts()
-    task.spawn(function()
+-- ฟังก์ชันปรับ ProximityPrompt
+local function keepModifyProximityPrompts()
+    spawn(function()
         while true do
-            safePcall(function()
-                for _, obj in pairs(Workspace:GetDescendants()) do
+            pcall(function()
+                for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("ProximityPrompt") and obj.HoldDuration ~= 0 then
                         obj.HoldDuration = 0
                     end
@@ -267,17 +263,24 @@ local function modifyProximityPrompts()
         end
     end)
 end
-modifyProximityPrompts()
+keepModifyProximityPrompts()
 
+-- ฟังก์ชันหาตัว NPC
 local function findNextNPCWithFlushProximity(maxDistance, referencePart)
-    local lastDist, closestNPC, closestPrompt = maxDistance, nil, nil
-    for _, npc in pairs(Workspace:GetDescendants()) do
-        if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
-            for _, prompt in pairs(npc:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") and prompt.ActionText == "Flush" and (pressCount[npc] or 0) < 3 then
-                    local dist = (prompt.Parent.Position - referencePart.Position).Magnitude
-                    if dist < lastDist then
-                        closestNPC, closestPrompt, lastDist = npc, prompt, dist
+    local lastDist = maxDistance
+    local closestNPC, closestPrompt = nil, nil
+    for _, npc in pairs(workspace:GetDescendants()) do
+        if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+            if not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
+                for _, prompt in pairs(npc:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") and prompt.ActionText == "Flush" then
+                        if (pressCount[npc] or 0) < 3 then
+                            local dist = (prompt.Parent.Position - referencePart.Position).Magnitude
+                            if dist < lastDist then
+                                closestNPC, closestPrompt = npc, prompt
+                                lastDist = dist
+                            end
+                        end
                     end
                 end
             end
@@ -286,26 +289,28 @@ local function findNextNPCWithFlushProximity(maxDistance, referencePart)
     return closestNPC, closestPrompt
 end
 
-local function findNextNPCWithHumanoid(maxDistance, referencePart, noProximity)
-    local lastDist, closestNPC = maxDistance, nil
-    if Workspace:FindFirstChild("Living") then
-        for _, npc in pairs(Workspace.Living:GetChildren()) do
-            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
-                local humanoid = npc:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health > 0 then
-                    local hasProximity = false
-                    if noProximity then
+local function findNextNPCWithHumanoidNoProximity(maxDistance, referencePart)
+    local lastDist = maxDistance
+    local closestNPC = nil
+    if workspace:FindFirstChild("Living") then
+        for _, npc in pairs(workspace.Living:GetDescendants()) do
+            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+                if not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
+                    local humanoid = npc:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local hasProximity = false
                         for _, child in pairs(npc:GetDescendants()) do
                             if child:IsA("ProximityPrompt") then
                                 hasProximity = true
                                 break
                             end
                         end
-                    end
-                    if not (noProximity and hasProximity) then
-                        local dist = (npc.HumanoidRootPart.Position - referencePart.Position).Magnitude
-                        if dist < lastDist then
-                            closestNPC, lastDist = npc, dist
+                        if not hasProximity then
+                            local dist = (npc.HumanoidRootPart.Position - referencePart.Position).Magnitude
+                            if dist < lastDist then
+                                closestNPC = npc
+                                lastDist = dist
+                            end
                         end
                     end
                 end
@@ -315,118 +320,177 @@ local function findNextNPCWithHumanoid(maxDistance, referencePart, noProximity)
     return closestNPC
 end
 
--- Movement Functions
+local function findNextNPCWithHumanoid(maxDistance, referencePart)
+    local lastDist = maxDistance
+    local closestNPC = nil
+    if workspace:FindFirstChild("Living") then
+        for _, npc in pairs(workspace.Living:GetDescendants()) do
+            if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+                if not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
+                    local humanoid = npc:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local dist = (npc.HumanoidRootPart.Position - referencePart.Position).Magnitude
+                        if dist < lastDist then
+                            closestNPC = npc
+                            lastDist = dist
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closestNPC
+end
+
+-- ฟังก์ชันสร้าง Support Part
 local function smoothTeleportTo(targetPos, duration)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    local tweenInfo = TweenInfo.new(duration or 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-    safePcall(function() tween:Play() tween.Completed:Wait() end)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local goal = {CFrame = CFrame.new(targetPos)}
+    local tween = TweenService:Create(hrp, tweenInfo, goal)
+    tween:Play()
+    tween.Completed:Wait()
 end
 
 local function instantTeleportTo(targetPos)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    safePcall(function() hrp.CFrame = CFrame.new(targetPos) end)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    hrp.CFrame = CFrame.new(targetPos)
 end
 
 local function teleportToTarget(targetPos, duration)
-    if Config.Movement.Mode == "CFrame" then
-        smoothTeleportTo(targetPos, duration)
+    if movementMode == "CFrame" then
+        smoothTeleportTo(targetPos, duration or 0.5)
     else
         instantTeleportTo(targetPos)
     end
 end
 
+-- ฟังก์ชันสร้าง Support Part
+local supportPart
+local partConnection
+
 local function createSupportPart(character)
-    if supportPart then safePcall(function() supportPart:Destroy() end) end
-    if partConnection then safePcall(function() partConnection:Disconnect() end) end
+    if supportPart then supportPart:Destroy() supportPart=nil end
+    if partConnection then partConnection:Disconnect() partConnection=nil end
     supportPart = Instance.new("Part")
-    supportPart.Size = Vector3.new(5, 1, 5)
+    supportPart.Size = Vector3.new(5,1,5)
     supportPart.Anchored = true
     supportPart.CanCollide = true
     supportPart.Transparency = 0.9
     supportPart.Name = "AutoFarmSupport"
-    supportPart.Parent = Workspace
+    supportPart.Parent = workspace
     partConnection = RunService.Heartbeat:Connect(function()
         if character and character:FindFirstChild("HumanoidRootPart") then
-            supportPart.Position = character.HumanoidRootPart.Position - Vector3.new(0, character.HumanoidRootPart.Size.Y / 1 + supportPart.Size.Y / 1, 0)
+            local hrp = character.HumanoidRootPart
+            supportPart.Position = hrp.Position - Vector3.new(0,(hrp.Size.Y/1 + supportPart.Size.Y/1),0)
         end
     end)
 end
 
-local function removeSupportPart()
-    if partConnection then safePcall(function() partConnection:Disconnect() end) end
-    if supportPart then safePcall(function() supportPart:Destroy() end) end
-    partConnection, supportPart = nil, nil
-end
+local spinAngle = 0
+local spinSpeed = math.rad(5) -- หมุนทีละ 5 องศาต่อเฟรม
 
 local function calculatePosition(npc)
-    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return Vector3.new(), CFrame.new(), false end
-    local hrp, dist = npc.HumanoidRootPart, getgenv().DistanceValue or 2
-    local pos, targetPos, lookCFrame, anchored = hrp.Position, nil, nil, false
+	if not npc or not npc:FindFirstChild("HumanoidRootPart") then 
+		return Vector3.new(), CFrame.new(), false
+	end
 
-    if Config.Movement.PositionMode == "Above" then
-        targetPos = pos + Vector3.new(0, dist, 0)
-        lookCFrame = CFrame.new(targetPos) * CFrame.Angles(-math.pi / 2, 0, 0)
-        anchored = true
-    elseif Config.Movement.PositionMode == "Under" then
-        targetPos = pos - Vector3.new(0, dist, 0)
-        lookCFrame = CFrame.new(targetPos) * CFrame.Angles(math.pi / 2, 0, 0)
-        anchored = true
-    elseif Config.Movement.PositionMode == "Front" then
-        targetPos = pos + (hrp.CFrame.LookVector * dist)
-        lookCFrame = CFrame.new(targetPos, pos)
-    elseif Config.Movement.PositionMode == "Back" then
-        targetPos = pos - (hrp.CFrame.LookVector * dist)
-        lookCFrame = CFrame.new(targetPos, pos)
-    elseif Config.Movement.PositionMode == "Spin" then
-        spinAngle = spinAngle + math.rad(5)
-        targetPos = pos + Vector3.new(math.cos(spinAngle) * dist, 0, math.sin(spinAngle) * dist)
-        lookCFrame = CFrame.new(targetPos, pos)
-    else
-        targetPos = pos + (hrp.CFrame.LookVector * dist)
-        lookCFrame = CFrame.new(targetPos, pos)
-    end
-    return targetPos, lookCFrame, anchored
+	local hrp = npc.HumanoidRootPart
+	local pos = hrp.Position
+	local dist = getgenv().DistanceValue or 2
+
+	local targetPos
+	local lookCFrame
+	local anchored = false
+
+	if setPositionMode == "Above" then
+		targetPos = pos + Vector3.new(0, dist, 0)
+		lookCFrame = CFrame.new(targetPos, pos)
+		anchored = true
+
+	elseif setPositionMode == "Under" then
+		targetPos = pos - Vector3.new(0, dist, 0)
+		lookCFrame = CFrame.new(targetPos, pos)
+		anchored = true
+
+	elseif setPositionMode == "Front" then
+		-- "Front" อยู่ข้างหน้า NPC (เรามองเห็นหน้า NPC)
+		targetPos = pos - (hrp.CFrame.LookVector * dist)
+		lookCFrame = CFrame.new(targetPos, pos)
+
+	elseif setPositionMode == "Back" then
+		-- "Back" อยู่ข้างหลัง NPC (ด้านหลังของ NPC)
+		targetPos = pos + (hrp.CFrame.LookVector * dist)
+		lookCFrame = CFrame.new(targetPos, pos)
+
+	elseif setPositionMode == "Spin" then
+		-- หมุนรอบ NPC
+		spinAngle = (spinAngle + spinSpeed) % (2 * math.pi)
+		targetPos = pos + Vector3.new(
+			math.cos(spinAngle) * dist,
+			0,
+			math.sin(spinAngle) * dist
+		)
+		lookCFrame = CFrame.new(targetPos, pos)
+
+	else
+		targetPos = pos + (hrp.CFrame.LookVector * dist)
+		lookCFrame = CFrame.new(targetPos, pos)
+	end
+
+	return targetPos, lookCFrame, anchored
 end
 
--- Auto Farm Functions
-local function attackHumanoid(npc, isMastery)
+-- ฟังก์ชันต่อย NPC
+local function attackHumanoidNoProximity(npc)
     local humanoid = npc:FindFirstChildOfClass("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return end
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    createSupportPart(char)
-    local activeFlag = isMastery and Config.Auto.MasteryActive or Config.Auto.FarmActive
-    while activeFlag and humanoid.Health > 0 do
-        teleportToTarget(calculatePosition(npc))
-        safePcall(function() Remotes.LMB:FireServer() end)
+    if not humanoid or humanoid.Health<=0 then return end
+    local character = LocalPlayer.Character
+    createSupportPart(character)
+    while humanoid.Health>0 and autoFarmActive do
+        teleportToTarget(calculatePosition(npc),0.5)
+        LMBRemote:FireServer()
         task.wait(0.1)
     end
     removeSupportPart()
     removeVisited(npc)
 end
 
+local function attackHumanoid(npc)
+    local humanoid = npc:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health<=0 then return end
+    local character = LocalPlayer.Character
+    createSupportPart(character)
+    while humanoid.Health>0 and MasteryAutoFarmActive do
+        teleportToTarget(calculatePosition(npc),0.5)
+        LMBRemote:FireServer()
+        task.wait(0.1)
+    end
+    removeSupportPart()
+    removeVisited(npc)
+end
+
+-- AutoFarm
 local function startAutoFarm()
     task.spawn(function()
-        while Config.Auto.FarmActive do
-            safePcall(function()
+        while autoFarmActive do
+            pcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    local npc, prompt = findNextNPCWithFlushProximity(1000, hrp)
+                    local npc,prompt = findNextNPCWithFlushProximity(1000,hrp)
                     if npc and prompt and prompt.Parent then
                         local humanoid = npc:FindFirstChildOfClass("Humanoid")
-                        if humanoid and humanoid.Health > 0 then
+                        if humanoid and humanoid.Health>0 then
                             local targetPos = calculatePosition(npc)
-                            teleportToTarget(targetPos)
-                            while (pressCount[npc] or 0) < 3 and Config.Auto.FarmActive do
-                                safePcall(function()
-                                    prompt:InputHoldBegin()
-                                    task.wait(0.05)
-                                    prompt:InputHoldEnd()
-                                    pressCount[npc] = (pressCount[npc] or 0) + 1
-                                end)
+                            teleportToTarget(targetPos,0.5)
+                            while (pressCount[npc] or 0)<3 do
+                                prompt:InputHoldBegin()
+                                task.wait(0.05)
+                                prompt:InputHoldEnd()
+                                pressCount[npc]=(pressCount[npc] or 0)+1
                                 task.wait(0.15)
                             end
                             addVisited(npc)
@@ -434,12 +498,13 @@ local function startAutoFarm()
                             removeVisited(npc)
                         end
                     else
-                        local npc2 = findNextNPCWithHumanoid(1000, hrp, true)
+                        local npc2=findNextNPCWithHumanoidNoProximity(1000,hrp)
                         if npc2 then
                             if not isVisited(npc2) then addVisited(npc2) end
-                            attackHumanoid(npc2, false)
+                            attackHumanoidNoProximity(npc2)
                         else
-                            visitedNPCs, pressCount = {}, {}
+                            visitedNPCs={}
+                            pressCount={}
                             task.wait(1)
                         end
                     end
@@ -450,32 +515,34 @@ local function startAutoFarm()
     end)
 end
 
-local function startMasteryAutoFarm(isTest)
+local function MasteryAutoFarmTest()
     task.spawn(function()
-        local activeFlag = isTest and Config.Auto.MasteryTestActive or Config.Auto.MasteryActive
-        while activeFlag do
-            safePcall(function()
+        while MasteryAutoFarmActiveTest do
+            pcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    if isTest then
-                        local nearbyParts = Workspace:GetPartBoundsInRadius(hrp.Position, 100)
-                        for _, part in pairs(nearbyParts) do
-                            local prompt = part:FindFirstChildOfClass("ProximityPrompt")
-                            if prompt and prompt.ActionText == "Flush" then
-                                safePcall(function()
-                                    prompt:InputHoldBegin()
-                                    task.wait(0.05)
-                                    prompt:InputHoldEnd()
-                                end)
-                                task.wait(0.2)
-                            end
+                    -- Flush รอบตัว
+                    local nearbyParts = workspace:GetPartBoundsInRadius(hrp.Position, 100, nil)
+                    for _, part in pairs(nearbyParts) do
+                        local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+                        if prompt and prompt.ActionText == "Flush" then
+                            pcall(function()
+                                prompt:InputHoldBegin()
+                                task.wait(0.05)
+                                prompt:InputHoldEnd()
+                            end)
+                            task.wait(0.2)
                         end
                     end
-                    local npc = findNextNPCWithHumanoid(1000, hrp, isTest)
+
+                    -- หา NPC ใกล้ที่สุด
+                    local npc = findNextNPCWithHumanoid(1000, hrp)
                     if npc then
-                        if not isVisited(npc) then addVisited(npc) end
-                        attackHumanoid(npc, true)
+                        if not isVisited(npc) then
+                            addVisited(npc)
+                        end
+                        attackHumanoid(npc)
                     else
                         visitedNPCs = {}
                         task.wait(0.5)
@@ -487,85 +554,164 @@ local function startMasteryAutoFarm(isTest)
     end)
 end
 
-local function flushAura()
+local function toggleMasteryAutoFarmTest(state)
+    MasteryAutoFarmActiveTest = state
+    if not state then removeSupportPart() else MasteryAutoFarmTest() end
+end
+
+-- Mastery AutoFarm
+local function MasteryAutoFarm()
     task.spawn(function()
-        while Config.Auto.FlushAuraActive do
-            safePcall(function()
+        while MasteryAutoFarmActive do
+            pcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if hrp then
-                    for _, obj in pairs(Workspace:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") and obj.ActionText == "Flush" then
-                            safePcall(function()
-                                obj.HoldDuration = 0
-                                fireproximityprompt(obj)
-                            end)
-                        end
+                    local npc=findNextNPCWithHumanoid(1000,hrp)
+                    if npc then
+                        if not isVisited(npc) then addVisited(npc) end
+                        attackHumanoid(npc)
+                    else
+                        visitedNPCs={}
+                        task.wait(0.5)
                     end
                 end
             end)
-            task.wait(0.3)
+            task.wait(0.05)
         end
     end)
 end
 
+local function toggleMasteryAutoFarm(state)
+    MasteryAutoFarmActive = state
+    if not state then removeSupportPart() else MasteryAutoFarm() end
+end
+
+-- Flush Aura
+local function flushAura()
+    task.spawn(function()
+        while flushAuraActive do
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local nearbyParts = workspace:GetPartBoundsInRadius(hrp.Position,100,nil)
+                for _,part in pairs(nearbyParts) do
+                    local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt and prompt.ActionText=="Flush" then
+                        pcall(function()
+                            prompt:InputHoldBegin()
+                            task.wait(0.05)
+                            prompt:InputHoldEnd()
+                        end)
+                        task.wait(0.2)
+                    end
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end
+
+
+local function sendReady(value)
+    GetReadyRemote:FireServer("1", value)
+end
+
 local function startAutoReady()
     task.spawn(function()
-        safePcall(function() Remotes.GetReady:FireServer("1", true) end)
-        while Config.Auto.ReadyActive do
+        sendReady(true)
+        while autoReadyActive do
             local char = LocalPlayer.Character
             local humanoid = char and char:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health <= 0 then
-                safePcall(function() Remotes.GetReady:FireServer("1", true) end)
+                sendReady(true)
             end
             task.wait(1)
         end
-        safePcall(function() Remotes.GetReady:FireServer("1", false) end)
+        sendReady(false)
     end)
 end
 
 local function startAutoSkipHelicopter()
     task.spawn(function()
-        while Config.Auto.SkipHelicopterActive do
-            safePcall(function() Remotes.SkipHelicopter:FireServer() end)
+        while autoSkipHelicopterActive do
+            pcall(function()
+                SkipHelicopterRemote:FireServer()
+            end)
             task.wait(1)
         end
     end)
 end
 
+-- Reconnect on CharacterAdded
 LocalPlayer.CharacterAdded:Connect(function()
-    if Config.Auto.FarmActive then startAutoFarm() end
-    if Config.Auto.MasteryActive then startMasteryAutoFarm(false) end
-    if Config.Auto.MasteryTestActive then startMasteryAutoFarm(true) end
-    if Config.Auto.FlushAuraActive then flushAura() end
-    if Config.Auto.ReadyActive then startAutoReady() end
-    if Config.Auto.SkipHelicopterActive then startAutoSkipHelicopter() end
+    if autoFarmActive then startAutoFarm() end
+    if MasteryAutoFarmActive then MasteryAutoFarm() end
+    if MasteryAutoFarmActiveTest then MasteryAutoFarmTest() end
+    if flushAuraActive then flushAura() end
+    if autoReadyActive then startAutoReady() end
+    if autoSkipHelicopterActive then startAutoSkipHelicopter() end
 end)
 
--- UI Setup
-local userversion = safePcall(function()
-    local response = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/dyumra/Whitelist/refs/heads/main/DYHUB-PREMIUM.lua"))
-    return response[LocalPlayer.Name] and "Premium Version" or "Free Version"
-end) and "Free Version" or "Free Version"
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/dyumra/Whitelist/refs/heads/main/DYHUB-PREMIUM.lua"
+
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success then
+        return FreeVersion
+    end
+
+    local premiumData
+    local func, err = loadstring(response)
+    if func then
+        premiumData = func()
+    else
+        return FreeVersion
+    end
+
+    if premiumData[playerName] then
+        return PremiumVersion
+    else
+        return FreeVersion
+    end
+end
+
+local player = Players.LocalPlayer
+local userversion = checkVersion(player.Name)
 
 local Window = WindUI:CreateWindow({
-    Title = "DYHUB Enhanced",
+    Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "ST: Blockade Battlefront | " .. userversion,
+    Author = "ST : Blockade Battlefront | " .. userversion,
     Folder = "DYHUB_Stbb_config",
-    Size = UDim2.fromOffset(500, 350),
+    Size = UDim2.fromOffset(500, 400),
     Transparent = true,
     Theme = "Dark",
     BackgroundImageTransparency = 0.8,
     HasOutline = false,
     HideSearchBar = true,
     ScrollBarEnabled = false,
-    User = {Enabled = true, Anonymous = false},
+    User = {
+        Enabled = true,
+        Anonymous = false
+    },
 })
 
-safePcall(function()
-    Window:Tag({Title = Config.Version, Color = Color3.fromHex("#30ff6a")})
+pcall(function()
+    Window:Tag({
+        Title = verison,
+        Color = Color3.fromHex("#30ff6a") 
+    })
 end)
 
 Window:EditOpenButton({
@@ -577,147 +723,218 @@ Window:EditOpenButton({
     Draggable = true,
 })
 
-local Tabs = {
-    Info = Window:Tab({Title = "Information", Icon = "info"}),
-    Main = Window:Tab({Title = "Main", Icon = "rocket"}),
-    Player = Window:Tab({Title = "Player", Icon = "user"}),
-    Skill = Window:Tab({Title = "Skill", Icon = "flame"}),
-    Esp = Window:Tab({Title = "Esp", Icon = "eye"}),
-    Collect = Window:Tab({Title = "Collect", Icon = "hand"}),
-    Hitbox = Window:Tab({Title = "Hitbox", Icon = "package"}),
-    Quest = Window:Tab({Title = "Quest", Icon = "sword"}),
-    Mastery = Window:Tab({Title = "Mastery", Icon = "award"}),
-    Codes = Window:Tab({Title = "Codes", Icon = "bird"}),
-    Shop = Window:Tab({Title = "Shop", Icon = "shopping-cart"}),
-    Gamepass = Window:Tab({Title = "Gamepass", Icon = "cookie"}),
-    Misc = Window:Tab({Title = "Misc", Icon = "file-cog"}),
-}
+local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
+local MainDivider = Window:Divider()
+local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local SkillTab = Window:Tab({ Title = "Skill", Icon = "flame" })
+local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
+local PlayerDivider = Window:Divider()
+local CollectTab = Window:Tab({ Title="Collect", Icon="hand" })
+local HitboxTab = Window:Tab({ Title = "Hitbox", Icon = "package" })
+local QuestTab = Window:Tab({ Title = "Quest", Icon = "sword" })
+local MasteryTab = Window:Tab({ Title = "Mastery", Icon = "award" })
+local FixDivider = Window:Divider()
+local CodesTab = Window:Tab({ Title = "Codes", Icon = "bird" })
+local ShopTab = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
+local GameTab = Window:Tab({ Title = "Gamepass", Icon = "cookie" })
+local SettingsDivider = Window:Divider()
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "file-cog" })
 
 Window:SelectTab(1)
 
--- UI Components
-Tabs.Codes:Section({Title = "Feature Code", Icon = "terminal"})
-Tabs.Esp:Section({Title = "Feature Esp", Icon = "radar"})
-Tabs.Hitbox:Section({Title = "Beta Version: Bugs/Under Fixing", Icon = "bug"})
-Tabs.Hitbox:Section({Title = "Feature Hitbox", Icon = "crosshair"})
-Tabs.Quest:Section({Title = "Feature Quest", Icon = "album"})
-Tabs.Mastery:Section({Title = "Feature Mastery", Icon = "book-open"})
-Tabs.Gamepass:Section({Title = "Feature Gamepass", Icon = "key-round"})
-Tabs.Gamepass:Section({Title = "Unlock gamepass for real!", Icon = "badge-dollar-sign"})
-Tabs.Player:Section({Title = "Feature Player", Icon = "user"})
-Tabs.Misc:Section({Title = "Feature Visual", Icon = "eye"})
-Tabs.Collect:Section({Title = "Feature Collect", Icon = "package"})
-Tabs.Main:Section({Title = "Feature Play", Icon = "gamepad-2"})
+CodesTab:Section({ Title = "Feature Code", Icon = "terminal" })
 
-Tabs.Main:Toggle({
+EspTab:Section({ Title = "Feature Esp", Icon = "radar" })
+
+HitboxTab:Section({ Title = "Beta Version: Bugs/Under Fixing", Icon = "bug" })
+HitboxTab:Section({ Title = "Feature Hitbox", Icon = "crosshair" })
+
+QuestTab:Section({ Title = "Feature Quest", Icon = "album" })
+
+MasteryTab:Section({ Title = "Feature Mastery", Icon = "book-open" })
+
+GameTab:Section({ Title = "Feature Gamepass", Icon = "key-round" })
+GameTab:Section({ Title = "Unlock gamepass for real!", Icon = "badge-dollar-sign" })
+
+PlayerTab:Section({ Title = "Feature Player", Icon = "user" })
+
+MiscTab:Section({ Title = "Feature Visual", Icon = "eye" })
+
+CollectTab:Section({ Title = "Feature Collect", Icon = "package" }) 
+
+MainTab:Section({ Title = "Feature Play", Icon = "gamepad-2" })
+
+MainTab:Toggle({
     Title = "Auto Ready",
     Default = false,
     Callback = function(value)
-        Config.Auto.ReadyActive = value
-        if value then startAutoReady() end
+        autoReadyActive = value
+        if autoReadyActive then
+            startAutoReady()
+        end
     end,
 })
 
-Tabs.Main:Toggle({
+MainTab:Toggle({
     Title = "Auto Skip Helicopter",
     Default = false,
     Callback = function(value)
-        Config.Auto.SkipHelicopterActive = value
-        if value then startAutoSkipHelicopter() end
+        autoSkipHelicopterActive = value
+        if autoSkipHelicopterActive then
+            startAutoSkipHelicopter()
+        end
     end,
 })
 
-local redeemCodes = {"Verified", "BackOnBusiness", "UTSM", "18k loss", "50KGroup", "WaveStuckIssue", "flying toilet", "AstroInvasionBegin", "DarkDriveIssue", "Digi"}
+local redeemCodes = {
+    "Verified",
+    "BackOnBusiness",
+    "UTSM", 
+    "18k loss",
+    "50KGroup",
+    "WaveStuckIssue",
+    "flying toilet",
+    "AstroInvasionBegin",
+    "WaveStuckIssue",
+    "50KGroup",
+    "DarkDriveIssue",
+    "Digi",
+}
+
 local selectedCodes = {}
 
-Tabs.Codes:Dropdown({
+CodesTab:Dropdown({
     Title = "Select Redeem Codes",
     Multi = true,
     Values = redeemCodes,
-    Callback = function(value) selectedCodes = value or {} end,
+    Callback = function(value)
+        selectedCodes = value or {}
+    end,
 })
 
-Tabs.Codes:Button({
+CodesTab:Button({
     Title = "Redeem Selected Codes",
     Callback = function()
-        for _, code in ipairs(selectedCodes) do
-            safePcall(function() Remotes.RedeemCode:FireServer(code) end)
-            task.wait(0.2)
+        for _, codeKey in ipairs(selectedCodes) do
+            local code = codeKey
+            pcall(function()
+                ReplicatedStorage:WaitForChild("RedeemCode"):FireServer(code)
+                task.wait(0.2)
+            end)
         end
     end,
 })
 
-Tabs.Codes:Button({
+CodesTab:Button({
     Title = "Redeem Code All",
     Callback = function()
-        for _, code in ipairs(redeemCodes) do
-            safePcall(function() Remotes.RedeemCode:FireServer(code) end)
-            task.wait(0.2)
+        for _, codeKey in ipairs(redeemCodes) do
+            local code = codeKey
+            pcall(function()
+                ReplicatedStorage:WaitForChild("RedeemCode"):FireServer(code)
+                task.wait(0.2)
+            end)
         end
     end,
 })
 
-Tabs.Esp:Dropdown({
+EspTab:Dropdown({
     Title = "ESP Mode",
     Values = {"Highlight", "BoxHandle"},
-    Default = Config.Esp.Mode,
+    Default = espMode,
     Multi = false,
     Callback = function(value)
-        Config.Esp.Mode = value
-        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
+        espMode = value
+        if espActiveEnemies or espActivePlayers then
+            updateESPmodel()
+            updateESPPlayers()
+            updateESPEnemies()
+        end
     end,
 })
 
-Tabs.Esp:Toggle({
+-- Toggle ESP Enemies
+EspTab:Toggle({
     Title = "ESP (Enemies)",
     Default = false,
     Callback = function(value)
-        Config.Esp.ActiveEnemies = value
-        updateESP()
+        espActiveEnemies = value
+        if espActiveEnemies then
+            updateESPmodel()
+            updateESPEnemies()
+        else
+            clearESP()
+        end
     end,
 })
 
-Tabs.Esp:Toggle({
+-- Toggle ESP Players
+EspTab:Toggle({
     Title = "ESP (Players)",
     Default = false,
     Callback = function(value)
-        Config.Esp.ActivePlayers = value
-        updateESP()
+        espActivePlayers = value
+        if espActivePlayers then
+            updateESPmodel()
+            updateESPPlayers()
+        else
+            clearESP()
+        end
     end,
 })
 
-Tabs.Esp:Section({Title = "Esp Setting", Icon = "settings-2"})
+EspTab:Section({ Title = "Esp Setting", Icon = "settings-2" })
 
-Tabs.Esp:Toggle({
+-- Toggle ESP Name
+EspTab:Toggle({
     Title = "ESP Name",
     Default = true,
     Callback = function(value)
-        Config.Esp.ShowName = value
-        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
+        espShowName = value
+        if espActiveEnemies or espActivePlayers then
+            updateESPPlayers()
+            updateESPEnemies()
+        end
     end,
 })
 
-Tabs.Esp:Toggle({
+-- Toggle ESP Health
+EspTab:Toggle({
     Title = "ESP Health",
     Default = true,
     Callback = function(value)
-        Config.Esp.ShowHealth = value
-        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
+        espShowHealth = value
+        if espActiveEnemies or espActivePlayers then
+            updateESPPlayers()
+            updateESPEnemies()
+        end
     end,
 })
 
-Tabs.Esp:Toggle({
+-- Toggle ESP Distance
+EspTab:Toggle({
     Title = "ESP Distance",
     Default = false,
     Callback = function(value)
-        Config.Esp.ShowDistance = value
-        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
+        espShowDistance = value
+        if espActiveEnemies or espActivePlayers then
+            updateESPPlayers()
+            updateESPEnemies()
+        end
     end,
 })
 
+-- 🌌 DYHUB - Hitbox System
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- 🧩 ฟังก์ชันปรับ Hitbox
 local function applyHitboxToNPC(npc)
     if not npc:IsA("Model") then return end
-    local humanoid, hrp = npc:FindFirstChildOfClass("Humanoid"), npc:FindFirstChild("HumanoidRootPart")
+    local humanoid = npc:FindFirstChildOfClass("Humanoid")
+    local hrp = npc:FindFirstChild("HumanoidRootPart")
+
     if humanoid and hrp then
         local existing = hrp:FindFirstChild("DYHUB_Hitbox")
         if getgenv().HitboxEnabled then
@@ -736,319 +953,474 @@ local function applyHitboxToNPC(npc)
                 existing.Transparency = getgenv().HitboxShow and 0.5 or 1
             end
         else
-            if existing then safePcall(function() existing:Destroy() end) end
+            if existing then existing:Destroy() end
         end
     end
 end
 
+-- 🔍 Scan NPC
 local function scanNPCs()
-    print("[DYHUB] Scanning NPCs...")
-    if Workspace:FindFirstChild("Living") then
-        for _, npc in pairs(Workspace.Living:GetChildren()) do
-            if npc:IsA("Model") and npc:FindFirstChildOfClass("Humanoid") and npc:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(npc) then
-                safePcall(function() applyHitboxToNPC(npc) end)
+    print("[DYHUB] Scan Loading...")
+    task.wait(0.5)
+    for i = 1, 3 do
+        print("[DYHUB] Scan Loading... ["..i.."]")
+        task.wait(0.3)
+    end
+    if workspace:FindFirstChild("Living") then
+        for _, npc in pairs(workspace.Living:GetChildren()) do
+            if npc:IsA("Model") and npc:FindFirstChildOfClass("Humanoid") and npc:FindFirstChild("HumanoidRootPart") then
+                if not Players:GetPlayerFromCharacter(npc) then
+                    applyHitboxToNPC(npc)
+                end
             end
         end
     end
 end
 
+-- 🔄 Loop update
 task.spawn(function()
-    while true do
+    while task.wait(1) do
         if getgenv().HitboxEnabled then
-            safePcall(scanNPCs)
+            if workspace:FindFirstChild("Living") then
+                for _, npc in pairs(workspace.Living:GetChildren()) do
+                    if npc:IsA("Model") and npc:FindFirstChildOfClass("Humanoid") and npc:FindFirstChild("HumanoidRootPart") then
+                        if not Players:GetPlayerFromCharacter(npc) then
+                            applyHitboxToNPC(npc)
+                        end
+                    end
+                end
+            end
         end
-        task.wait(1)
     end
 end)
 
-Tabs.Hitbox:Button({
-    Title = "Scan Humanoid",
-    Callback = function() scanNPCs() end,
+
+HitboxTab:Button({ 
+    Title = "Scan Humanoid",  
+    Callback = function()
+        scanNPCs()
+    end,
 })
 
-Tabs.Hitbox:Slider({
-    Title = "Set Size Hitbox",
-    Value = {Min = 16, Max = 100, Default = 20},
+HitboxTab:Slider({
+    Title = "Set Size Hitbox", 
+    Value = {Min = 16, Max = 100, Default = 20}, 
     Step = 1,
     Callback = function(val)
         getgenv().HitboxSize = val
-        Config.Hitbox.Size = val
     end,
 })
 
-Tabs.Hitbox:Toggle({
-    Title = "Enable Hitbox",
+HitboxTab:Toggle({
+    Title = "Enable Hitbox", 
     Default = false,
     Callback = function(value)
         getgenv().HitboxEnabled = value
-        Config.Hitbox.Enabled = value
     end,
 })
 
-Tabs.Hitbox:Toggle({
-    Title = "Show Hitbox (Transparency)",
+HitboxTab:Toggle({
+    Title = "Show Hitbox (Transparency)", 
     Default = false,
     Callback = function(value)
         getgenv().HitboxShow = value
-        Config.Hitbox.Show = value
     end,
 })
 
-Tabs.Quest:Button({
+
+
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Lighting = game:GetService("Lighting")
+
+QuestTab:Button({
     Title = "Open Menu (Quest Clock-Man)",
     Callback = function()
-        local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestClockManUI")
-        if gui then gui.Enabled = not gui.Enabled end
-    end,
-})
-
-Tabs.Quest:Button({
-    Title = "Open Menu (Quest)",
-    Callback = function()
-        local gui = LocalPlayer.PlayerGui:FindFirstChild("QuestUI")
-        if gui then gui.Enabled = not gui.Enabled end
-    end,
-})
-
-Tabs.Quest:Section({Title = "Setting Auto Quest", Icon = "star-half"})
-
-Tabs.Quest:Dropdown({
-    Title = "Set Position",
-    Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = Config.Movement.PositionMode,
-    Multi = false,
-    Callback = function(value) Config.Movement.PositionMode = value end,
-})
-
-Tabs.Quest:Dropdown({
-    Title = "Movement",
-    Values = {"Teleport", "CFrame"},
-    Default = Config.Movement.Mode,
-    Multi = false,
-    Callback = function(value) Config.Movement.Mode = value end,
-})
-
-Tabs.Quest:Toggle({
-    Title = "Auto Farm (Upgrade)",
-    Default = false,
-    Callback = function(value)
-        Config.Auto.FarmActive = value
-        if value then startAutoFarm() end
-    end,
-})
-
-Tabs.Mastery:Dropdown({
-    Title = "Movement",
-    Values = {"Teleport", "CFrame"},
-    Default = Config.Movement.Mode,
-    Multi = false,
-    Callback = function(value) Config.Movement.Mode = value end,
-})
-
-Tabs.Mastery:Dropdown({
-    Title = "Action Speed",
-    Values = {"Default", "Slow", "Faster", "Flash (Lag)"},
-    Default = Config.ActionMode,
-    Multi = false,
-    Callback = function(value) Config.ActionMode = value end,
-})
-
-Tabs.Mastery:Dropdown({
-    Title = "Character List",
-    Values = {"Small", "Large", "Support (Not Good)", "Titan"},
-    Default = Config.CharacterMode,
-    Multi = false,
-    Callback = function(value) Config.CharacterMode = value end,
-})
-
-Tabs.Mastery:Dropdown({
-    Title = "Set Position",
-    Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = Config.Movement.PositionMode,
-    Multi = false,
-    Callback = function(value) Config.Movement.PositionMode = value end,
-})
-
-Tabs.Mastery:Slider({
-    Title = "Set Distance to NPC",
-    Value = {Min = 0, Max = 50, Default = Config.Movement.Distance},
-    Step = 1,
-    Callback = function(val)
-        getgenv().DistanceValue = val
-        Config.Movement.Distance = val
-    end,
-})
-
-Tabs.Mastery:Toggle({
-    Title = "Auto Mastery (No Flush)",
-    Default = false,
-    Callback = function(value)
-        Config.Auto.MasteryActive = value
-        if value then startMasteryAutoFarm(false) else removeSupportPart() end
-    end,
-})
-
-Tabs.Mastery:Toggle({
-    Title = "Auto Mastery (Flush)",
-    Default = false,
-    Callback = function(value)
-        Config.Auto.MasteryTestActive = value
-        if value then startMasteryAutoFarm(true) else removeSupportPart() end
-    end,
-})
-
-local Gamepasst = {"LuckyBoost", "RareLuckyBoost", "LegendaryLuckyBoost", "All"}
-local Gamepassts = {}
-
-Tabs.Gamepass:Dropdown({
-    Title = "Select Gamepass",
-    Multi = true,
-    Values = Gamepasst,
-    Callback = function(value) Gamepassts = value or {} end,
-})
-
-Tabs.Gamepass:Button({
-    Title = "Unlock Selected Gamepass",
-    Callback = function()
-        local gachaData = LocalPlayer:FindFirstChild("GachaData") or Instance.new("Folder")
-        gachaData.Name = "GachaData"
-        gachaData.Parent = LocalPlayer
-        local toUnlock = table.find(Gamepassts, "All") and {"LuckyBoost", "RareLuckyBoost", "LegendaryLuckyBoost"} or Gamepassts
-        for _, gamepassName in ipairs(toUnlock) do
-            safePcall(function()
-                local boolValue = gachaData:FindFirstChild(gamepassName) or Instance.new("BoolValue")
-                boolValue.Name = gamepassName
-                boolValue.Parent = gachaData
-                boolValue.Value = true
-            end)
-            task.wait(0.2)
+        local gui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("QuestClockManUI")
+        if gui then
+            gui.Enabled = not gui.Enabled
         end
     end,
 })
 
-Tabs.Player:Button({
-    Title = "Open Menu (Helicopter)",
+QuestTab:Button({
+    Title = "Open Menu (Quest)",
     Callback = function()
-        local gui = LocalPlayer.PlayerGui:FindFirstChild("003-A")
-        if gui then gui.Enabled = not gui.Enabled end
+        local gui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("QuestUI")
+        if gui then
+            gui.Enabled = not gui.Enabled
+        end
     end,
 })
 
-Tabs.Player:Slider({
+QuestTab:Section({ Title = "Setting Auto Quest", Icon = "star-half" })
+
+QuestTab:Dropdown({
+    Title="Set Position",
+    Values={"Spin","Above","Back","Under","Front"},
+    Default=setPositionMode,
+    Multi=false,
+    Callback=function(value) setPositionMode=value end
+})
+
+QuestTab:Dropdown({
+    Title = "Movement",
+    Values = {"Teleport", "CFrame"},
+    Default = movementMode,
+    Multi = false,
+    Callback = function(value)
+        movementMode = value
+    end,
+})
+
+QuestTab:Toggle({
+    Title = "Auto Farm (Upgrade)",
+    Default = false,
+    Callback = function(value)
+        autoFarmActive = value
+        if autoFarmActive then
+            startAutoFarm()
+        end
+    end,
+})
+
+
+QuestTab:Toggle({
+    Title = "Auto Quest Collect (Beta)",
+    Default = false,
+    Callback = function(value)
+        autoFarm1Active = value
+        print("[DYHUB] Collect Quest: " .. tostring(value))
+    end,
+})
+
+QuestTab:Toggle({
+    Title = "Auto Quest Skip (Need Robux)",
+    Default = false,
+    Callback = function(value)
+        autoFarm2Active = value
+        print("[DYHUB] Skip Quest: " .. tostring(value))
+    end,
+})
+
+MasteryTab:Dropdown({
+    Title = "Movement",
+    Values = {"Teleport", "CFrame"},
+    Default = movementMode,
+    Multi = false,
+    Callback = function(value)
+        movementMode = value
+    end,
+})
+
+MasteryTab:Dropdown({
+    Title = "Action Speed",
+    Values = {"Default", "Slow", "Faster", "Flash (Lag)"},
+    Default = ActionMode,
+    Multi = false,
+    Callback = function(value)
+        ActionMode = value
+    end,
+})
+
+MasteryTab:Dropdown({
+    Title = "Character List",
+    Values = {"Small", "Large", "Support (Not Good)", "Titan"},
+    Default = CharacterMode,
+    Multi = false,
+    Callback = function(value)
+        CharacterMode = value
+    end,
+})
+
+MasteryTab:Dropdown({
+    Title="Set Position",
+    Values={"Spin","Above","Back","Under","Front"},
+    Default=setPositionMode,
+    Multi=false,
+    Callback=function(value) setPositionMode=value end
+})
+
+MasteryTab:Slider({
+    Title="Set Distance to NPC",
+    Value={Min=0, Max=50, Default=getgenv().DistanceValue},
+    Step=1,
+    Callback=function(val) getgenv().DistanceValue=val end
+})
+
+MasteryTab:Toggle({
+    Title="Auto Mastery (No Flush)",
+    Default=false,
+    Callback=function(value)
+        MasteryAutoFarmActive=value
+        if value then MasteryAutoFarm() end
+    end
+})
+
+MasteryTab:Toggle({
+    Title="Auto Mastery (Flush)",
+    Default=false,
+    Callback=function(value)
+        MasteryAutoFarmActiveTest=value
+        if value then MasteryAutoFarmTest() end
+    end
+})
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local Gamepasst = {
+    "LuckyBoost",
+    "RareLuckyBoost",
+    "LegendaryLuckyBoost",
+    "All"
+}
+
+local Gamepassts = {}
+
+GameTab:Dropdown({
+    Title = "Select Gamepass",
+    Multi = true,
+    Values = Gamepasst,
+    Callback = function(value)
+        Gamepassts = value or {}
+    end,
+})
+
+GameTab:Button({
+    Title = "Unlock Selected Gamepass",
+    Callback = function()
+        local gachaData = player:FindFirstChild("GachaData")
+        if not gachaData then
+            gachaData = Instance.new("Folder")
+            gachaData.Name = "GachaData"
+            gachaData.Parent = player
+        end
+
+        local toUnlock = {}
+
+        for _, v in ipairs(Gamepassts) do
+            if v == "All" then
+                toUnlock = {"LuckyBoost", "RareLuckyBoost", "LegendaryLuckyBoost"}
+                break
+            else
+                table.insert(toUnlock, v)
+            end
+        end
+
+        for _, gamepassName in ipairs(toUnlock) do
+            pcall(function()
+                local boolValue = gachaData:FindFirstChild(gamepassName)
+                if not boolValue then
+                    boolValue = Instance.new("BoolValue")
+                    boolValue.Name = gamepassName
+                    boolValue.Parent = gachaData
+                end
+                boolValue.Value = true
+                task.wait(0.2)
+            end)
+        end
+    end,
+})
+
+
+PlayerTab:Button({
+    Title = "Open Menu (Helicopter)",
+    Callback = function()
+        local gui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("003-A")
+        if gui then
+            gui.Enabled = not gui.Enabled
+        end
+    end,
+})
+
+-- Player Tab Vars
+getgenv().speedEnabled = false
+getgenv().speedValue = 20
+
+PlayerTab:Slider({
     Title = "Set Speed Value",
     Value = {Min = 16, Max = 600, Default = 20},
     Step = 1,
     Callback = function(val)
         getgenv().speedValue = val
-        Config.Player.SpeedValue = val
-        if Config.Player.SpeedEnabled then
+        if getgenv().speedEnabled then
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
             if hum then hum.WalkSpeed = val end
         end
-    end,
+    end
 })
 
-Tabs.Player:Toggle({
+PlayerTab:Toggle({
     Title = "Enable Speed",
     Default = false,
     Callback = function(v)
         getgenv().speedEnabled = v
-        Config.Player.SpeedEnabled = v
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hum = char:FindFirstChild("Humanoid")
-        if hum then hum.WalkSpeed = v and Config.Player.SpeedValue or 16 end
-    end,
+        if hum then hum.WalkSpeed = v and getgenv().speedValue or 16 end
+    end
 })
 
-Tabs.Player:Slider({
+getgenv().jumpEnabled = false
+getgenv().jumpValue = 50
+
+PlayerTab:Slider({
     Title = "Set Jump Value",
     Value = {Min = 10, Max = 600, Default = 50},
     Step = 1,
     Callback = function(val)
         getgenv().jumpValue = val
-        Config.Player.JumpValue = val
-        if Config.Player.JumpEnabled then
+        if getgenv().jumpEnabled then
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
             if hum then hum.JumpPower = val end
         end
-    end,
+    end
 })
 
-Tabs.Player:Toggle({
+PlayerTab:Toggle({
     Title = "Enable JumpPower",
     Default = false,
     Callback = function(v)
         getgenv().jumpEnabled = v
-        Config.Player.JumpEnabled = v
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hum = char:FindFirstChild("Humanoid")
-        if hum then hum.JumpPower = v and Config.Player.JumpValue or 50 end
-    end,
+        if hum then hum.JumpPower = v and getgenv().jumpValue or 50 end
+    end
 })
 
-Tabs.Player:Section({Title = "Player Misc", Icon = "sliders-horizontal"})
+PlayerTab:Section({ Title = "Player Misc", Icon = "sliders-horizontal" })
 
-Tabs.Player:Toggle({
+local noclipConnection
+
+PlayerTab:Toggle({
     Title = "No Clip",
     Default = false,
     Callback = function(state)
         if state then
             noclipConnection = RunService.Stepped:Connect(function()
-                local char = LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
+                local Character = LocalPlayer.Character
+                if Character then
+                    for _, part in pairs(Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
                     end
                 end
             end)
         else
-            if noclipConnection then safePcall(function() noclipConnection:Disconnect() end) noclipConnection = nil end
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+            local Character = LocalPlayer.Character
+            if Character then
+                for _, part in pairs(Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
                 end
             end
         end
-    end,
+    end
 })
 
-Tabs.Player:Toggle({
+PlayerTab:Toggle({
     Title = "Infinity Jump",
     Default = false,
     Callback = function(state)
+        local uis = game:GetService("UserInputService")
+        local player = game.Players.LocalPlayer
+        local infJumpConnection
+
         if state then
-            getgenv().infJumpConnection = UserInputService.JumpRequest:Connect(function()
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            infJumpConnection = uis.JumpRequest:Connect(function()
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                    player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                 end
             end)
+            getgenv().infJumpConnection = infJumpConnection
         else
             if getgenv().infJumpConnection then
-                safePcall(function() getgenv().infJumpConnection:Disconnect() end)
+                getgenv().infJumpConnection:Disconnect()
                 getgenv().infJumpConnection = nil
             end
         end
-    end,
+    end
 })
 
-Tabs.Player:Button({
+PlayerTab:Button({
     Title = "Fly (Beta)",
     Callback = function()
-        safePcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))()
-        end)
-    end,
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))()
+    end
 })
 
-local oldLighting = {
-    Ambient = Lighting.Ambient,
-    Brightness = Lighting.Brightness,
-    ClockTime = Lighting.ClockTime,
-    FogStart = Lighting.FogStart,
-    FogEnd = Lighting.FogEnd,
-    FogColor = Lighting.FogColor,
-}
+
+-- Misc Tab Vars for Lighting Effects
+local oldAmbient = Lighting.Ambient
+local oldBrightness = Lighting.Brightness
+local oldClockTime = Lighting.ClockTime
+local oldFogStart = Lighting.FogStart
+local oldFogEnd = Lighting.FogEnd
+local oldFogColor = Lighting.FogColor
+
+local fullBrightConnection
+local noFogConnection
+
+MiscTab:Toggle({
+    Title = "Full Bright",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Lighting.Ambient = Color3.new(1, 1, 1)
+            Lighting.Brightness = 5
+            Lighting.ClockTime = 14
+
+            fullBrightConnection = RunService.RenderStepped:Connect(function()
+                if Lighting.ClockTime ~= 14 then Lighting.ClockTime = 14 end
+                if Lighting.Brightness ~= 10 then Lighting.Brightness = 10 end
+                if Lighting.Ambient ~= Color3.new(1,1,1) then Lighting.Ambient = Color3.new(1,1,1) end
+            end)
+        else
+            if fullBrightConnection then
+                fullBrightConnection:Disconnect()
+                fullBrightConnection = nil
+            end
+            Lighting.Ambient = oldAmbient
+            Lighting.Brightness = oldBrightness
+            Lighting.ClockTime = oldClockTime
+        end
+    end
+})
+
+MiscTab:Toggle({
+    Title = "No Fog",
+    Default = false,
+    Callback = function(state)
+        if state then
+            Lighting.FogStart = 0
+            Lighting.FogEnd = 1e10
+            Lighting.FogColor = Color3.fromRGB(255, 255, 255)
+
+            noFogConnection = RunService.RenderStepped:Connect(function()
+                if Lighting.FogStart ~= 0 then Lighting.FogStart = 0 end
+                if Lighting.FogEnd ~= 1e10 then Lighting.FogEnd = 1e10 end
+                if Lighting.FogColor ~= Color3.fromRGB(255, 255, 255) then Lighting.FogColor = Color3.fromRGB(255, 255, 255) end
+            end)
+        else
+            if noFogConnection then
+                noFogConnection:Disconnect()
+                noFogConnection = nil
+            end
+            Lighting.FogStart = oldFogStart
+            Lighting.FogEnd = oldFogEnd
+            Lighting.FogColor = oldFogColor
+        end
+    end
+})
 
 local vibrantEffect = Lighting:FindFirstChild("VibrantEffect") or Instance.new("ColorCorrectionEffect")
 vibrantEffect.Name = "VibrantEffect"
@@ -1058,51 +1430,7 @@ vibrantEffect.Brightness = 0.05
 vibrantEffect.Enabled = false
 vibrantEffect.Parent = Lighting
 
-Tabs.Misc:Toggle({
-    Title = "Full Bright",
-    Default = false,
-    Callback = function(state)
-        if state then
-            Lighting.Ambient = Color3.new(1, 1, 1)
-            Lighting.Brightness = 5
-            Lighting.ClockTime = 14
-            fullBrightConnection = RunService.RenderStepped:Connect(function()
-                Lighting.ClockTime = 14
-                Lighting.Brightness = 10
-                Lighting.Ambient = Color3.new(1, 1, 1)
-            end)
-        else
-            if fullBrightConnection then safePcall(function() fullBrightConnection:Disconnect() end) fullBrightConnection = nil end
-            Lighting.Ambient = oldLighting.Ambient
-            Lighting.Brightness = oldLighting.Brightness
-            Lighting.ClockTime = oldLighting.ClockTime
-        end
-    end,
-})
-
-Tabs.Misc:Toggle({
-    Title = "No Fog",
-    Default = false,
-    Callback = function(state)
-        if state then
-            Lighting.FogStart = 0
-            Lighting.FogEnd = 1e10
-            Lighting.FogColor = Color3.fromRGB(255, 255, 255)
-            noFogConnection = RunService.RenderStepped:Connect(function()
-                Lighting.FogStart = 0
-                Lighting.FogEnd = 1e10
-                Lighting.FogColor = Color3.fromRGB(255, 255, 255)
-            end)
-        else
-            if noFogConnection then safePcall(function() noFogConnection:Disconnect() end) noFogConnection = nil end
-            Lighting.FogStart = oldLighting.FogStart
-            Lighting.FogEnd = oldLighting.FogEnd
-            Lighting.FogColor = oldLighting.FogColor
-        end
-    end,
-})
-
-Tabs.Misc:Toggle({
+MiscTab:Toggle({
     Title = "Vibrant Colors",
     Default = false,
     Callback = function(state)
@@ -1119,68 +1447,89 @@ Tabs.Misc:Toggle({
             Lighting.ColorShift_Bottom = Color3.new(0, 0, 0)
             vibrantEffect.Enabled = false
         end
-    end,
+    end
 })
+
 
 local showFPS, showPing = true, true
 local fpsText, msText = Drawing.new("Text"), Drawing.new("Text")
-fpsText.Size, fpsText.Position, fpsText.Color, fpsText.Outline, fpsText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 10), Color3.fromRGB(0, 255, 0), true, showFPS
-msText.Size, msText.Position, msText.Color, msText.Outline, msText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 30), Color3.fromRGB(0, 255, 0), true, showPing
+fpsText.Size, fpsText.Position, fpsText.Color, fpsText.Center, fpsText.Outline, fpsText.Visible =
+    16, Vector2.new(Camera.ViewportSize.X - 100, 10), Color3.fromRGB(0, 255, 0), false, true, showFPS
+msText.Size, msText.Position, msText.Color, msText.Center, msText.Outline, msText.Visible =
+    16, Vector2.new(Camera.ViewportSize.X - 100, 30), Color3.fromRGB(0, 255, 0), false, true, showPing
 local fpsCounter, fpsLastUpdate = 0, tick()
 
 RunService.RenderStepped:Connect(function()
-    fpsCounter = fpsCounter + 1
+    fpsCounter += 1
     if tick() - fpsLastUpdate >= 1 then
-        fpsText.Text = "FPS: " .. tostring(fpsCounter)
-        fpsText.Visible = showFPS
-        local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]
-        msText.Text = "Ping: " .. (ping and math.floor(ping:GetValue()) or 0) .. " ms"
-        msText.Color = ping and ping:GetValue() <= 60 and Color3.fromRGB(0, 255, 0) or ping:GetValue() <= 120 and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(255, 0, 0)
-        msText.Visible = showPing
-        fpsCounter, fpsLastUpdate = 0, tick()
+        if showFPS then
+            fpsText.Text = "FPS: " .. tostring(fpsCounter)
+            fpsText.Visible = true
+        else
+            fpsText.Visible = false
+        end
+        if showPing then
+            local pingStat = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]
+            local ping = pingStat and math.floor(pingStat:GetValue()) or 0
+            msText.Text = "Ping: " .. ping .. " ms"
+            if ping <= 60 then
+                msText.Color = Color3.fromRGB(0, 255, 0)
+            elseif ping <= 120 then
+                msText.Color = Color3.fromRGB(255, 165, 0)
+            else
+                msText.Color = Color3.fromRGB(255, 0, 0)
+                msText.Text = "Ew Wifi Ping: " .. ping .. " ms"
+            end
+            msText.Visible = true
+        else
+            msText.Visible = false
+        end
+        fpsCounter = 0
+        fpsLastUpdate = tick()
     end
 end)
 
-Tabs.Misc:Section({Title = "FPS Boost Settings", Icon = "zap"})
+MiscTab:Section({ Title = "FPS Boost Settings", Icon = "zap" })
 
-Tabs.Misc:Toggle({
+MiscTab:Toggle({
     Title = "Show FPS",
     Default = true,
     Callback = function(val)
         showFPS = val
         fpsText.Visible = val
-    end,
+    end
 })
 
-Tabs.Misc:Toggle({
+MiscTab:Toggle({
     Title = "Show Ping (ms)",
     Default = true,
     Callback = function(val)
         showPing = val
         msText.Visible = val
-    end,
+    end
 })
 
-Tabs.Misc:Button({
+MiscTab:Button({
     Title = "FPS Boost (Fixed)",
     Callback = function()
-        safePcall(function()
+        pcall(function()
             settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-            Lighting.Brightness = 2
-            Lighting.FogEnd = 100
-            Lighting.GlobalShadows = false
-            Lighting.EnvironmentDiffuseScale = 0
-            Lighting.EnvironmentSpecularScale = 0
-            Lighting.ClockTime = 14
-            Lighting.OutdoorAmbient = Color3.new(0, 0, 0)
-            local terrain = Workspace:FindFirstChildOfClass("Terrain")
+            local lighting = game:GetService("Lighting")
+            lighting.Brightness = 2
+            lighting.FogEnd = 100
+            lighting.GlobalShadows = false
+            lighting.EnvironmentDiffuseScale = 0
+            lighting.EnvironmentSpecularScale = 0
+            lighting.ClockTime = 14
+            lighting.OutdoorAmbient = Color3.new(0, 0, 0)
+            local terrain = workspace:FindFirstChildOfClass("Terrain")
             if terrain then
                 terrain.WaterWaveSize = 0
                 terrain.WaterWaveSpeed = 0
                 terrain.WaterReflectance = 0
                 terrain.WaterTransparency = 1
             end
-            for _, obj in ipairs(Lighting:GetDescendants()) do
+            for _, obj in ipairs(lighting:GetDescendants()) do
                 if obj:IsA("PostEffect") or obj:IsA("BloomEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") or obj:IsA("BlurEffect") then
                     obj.Enabled = false
                 end
@@ -1192,51 +1541,74 @@ Tabs.Misc:Button({
                     obj.Transparency = 1
                 end
             end
-            for _, part in ipairs(Workspace:GetDescendants()) do
-                if part:IsA("BasePart") then part.CastShadow = false end
+            for _, part in ipairs(workspace:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CastShadow = false
+                end
             end
         end)
         print("[Boost] FPS Boost Applied")
-    end,
+    end
 })
 
-Tabs.Main:Section({Title = "Feature Vote", Icon = "vote"})
+MainTab:Section({ Title = "Feature Vote", Icon = "vote" }) 
 
-local voteOptions = {"Normal", "Hard", "VeryHard", "Insane", "Nightmare", "BossRush", "ThunderStorm", "Zombie", "Christmas", "Hell", "DarkDimension", "Astro"}
-Tabs.Main:Dropdown({
-    Title = "Set Vote",
-    Values = voteOptions,
-    Default = Config.Auto.VoteValue,
+local List = {
+    "Normal",
+    "Hard",
+    "VeryHard",
+    "Insane",
+    "Nightmare",
+    "BossRush",
+    "ThunderStorm",
+    "Zombie",
+    "Christmas",
+    "Hell",
+    "DarkDimension", 
+    "Astro",
+}
+
+MainTab:Dropdown({ 
+    Title = "Set Vote", 
+    Values = List, 
+    Default = normal, 
     Multi = false,
-    Callback = function(value)
-        Config.Auto.VoteValue = value
-        safePcall(function() Remotes.Vote:FireServer(value) end)
-    end,
+    Callback = function(value) 
+        autoVoteValue = value
+        game:GetService("ReplicatedStorage"):WaitForChild("Vote"):FireServer(value)
+    end 
 })
 
-Tabs.Main:Toggle({
+MainTab:Toggle({
     Title = "Auto Vote",
     Default = false,
     Callback = function(enabled)
-        Config.Auto.VoteEnabled = enabled
+        autoVoteEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.VoteEnabled do
-                    safePcall(function() Remotes.Vote:FireServer(Config.Auto.VoteValue) end)
+                while autoVoteEnabled do
+                    game:GetService("ReplicatedStorage"):WaitForChild("Vote"):FireServer(autoVoteValue)
                     task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local Items = {"Clock Spider", "Transmitter", "FlashDrive", "Astro Samples"}
 local ItemsValue = {"Clock Spider"}
+local autoCollectEnabled = false
+local itemNotifyEnabled = false
 
 local function teleportToTarget(targetPos)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    safePcall(function() hrp.CFrame = CFrame.new(targetPos) end)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    hrp.CFrame = CFrame.new(targetPos)
 end
 
 local function collectItem(obj)
@@ -1245,15 +1617,13 @@ local function collectItem(obj)
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hrp = char:FindFirstChild("HumanoidRootPart")
         local originalPos = hrp.Position
-        while prompt.Parent and Config.Auto.CollectEnabled do
-            local targetPos = (obj.PrimaryPart and obj.PrimaryPart.Position or obj.Position) + Vector3.new(0, 3, 0)
+        while prompt.Parent and autoCollectEnabled do
+            local targetPos = obj.PrimaryPart and obj.PrimaryPart.Position + Vector3.new(0,3,0) or obj.Position + Vector3.new(0,3,0)
             teleportToTarget(targetPos)
             task.wait(0.1)
-            safePcall(function()
-                prompt:InputHoldBegin()
-                task.wait(0.05)
-                prompt:InputHoldEnd()
-            end)
+            prompt:InputHoldBegin()
+            task.wait(0.05)
+            prompt:InputHoldEnd()
             task.wait(0.2)
         end
         teleportToTarget(originalPos)
@@ -1265,323 +1635,512 @@ local function itemNotify(obj)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp and obj.PrimaryPart then
         local distance = (hrp.Position - obj.PrimaryPart.Position).Magnitude * 1000
-        notify("Item Notify", string.format("Name: %s\nDistance: %04d mm", obj.Name, math.floor(distance)), 3)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Item Notify";
+            Text = string.format("Name: %s\nDistance: %04d mm", obj.Name, math.floor(distance));
+            Duration = 3;
+        })
     end
 end
 
-Tabs.Collect:Dropdown({
+CollectTab:Dropdown({
     Title = "Set Collect Items",
     Values = Items,
     Default = "Clock Spider",
     Multi = true,
-    Callback = function(value) ItemsValue = value end,
+    Callback = function(value)
+        ItemsValue = value
+    end
 })
 
-Tabs.Collect:Toggle({
+CollectTab:Toggle({
     Title = "Auto Collect",
     Default = false,
     Callback = function(enabled)
-        Config.Auto.CollectEnabled = enabled
+        autoCollectEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.CollectEnabled do
+                while autoCollectEnabled do
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if (obj:IsA("Model") or obj:IsA("Part")) and table.find(ItemsValue, obj.Name) then
-                            safePcall(function() collectItem(obj) end)
+                            task.spawn(function()
+                                pcall(function()
+                                    collectItem(obj)
+                                end)
+                            end)
                         end
                     end
                     task.wait(0.5)
                 end
             end)
         end
-    end,
+    end
 })
 
-Tabs.Collect:Toggle({
+CollectTab:Toggle({
     Title = "Item Notify",
     Default = false,
     Callback = function(enabled)
-        Config.Auto.ItemNotifyEnabled = enabled
+        itemNotifyEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.ItemNotifyEnabled do
+                while itemNotifyEnabled do
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if (obj:IsA("Model") or obj:IsA("Part")) and table.find(ItemsValue, obj.Name) then
-                            safePcall(function() itemNotify(obj) end)
+                            pcall(function()
+                                itemNotify(obj)
+                            end)
                         end
                     end
                     task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
 
-Tabs.Shop:Section({Title = "Hourly Shop (Beta)", Icon = "shopping-cart"})
+local function modifyProximityPrompts()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if (obj:IsA("Model") or obj:IsA("Part")) and table.find(ItemsValue, obj.Name) then
+            local prompt = obj:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                prompt.HoldDuration = 0
+            end
+        end
+    end
+end
 
-local shop, shopValue, shopValue1 = {}, {}, {}
-for _, gear in pairs(game:GetService("ReplicatedFirst"):WaitForChild("Gears", 5):GetChildren()) do
+modifyProximityPrompts()
+
+ShopTab:Section({ Title = "Hourly Shop (Beta)", Icon = "shopping-cart" })
+
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local GearsFolder = ReplicatedFirst:WaitForChild("Gears")
+
+-- ดึงชื่อไอเท็มจาก Gears อัตโนมัติ
+local shop = {}
+for _, gear in pairs(GearsFolder:GetChildren()) do
     table.insert(shop, gear.Name)
 end
 
-Tabs.Shop:Dropdown({
-    Title = "Set Auto Buy Items",
-    Values = shop,
-    Default = {},
-    Multi = true,
-    Callback = function(value) shopValue = value end,
+local shopValue = {}
+local shop1 = {"1", "2", "3", "4", "5"}
+local shopValue1 = {}
+local autobuyEnabled = false
+
+-- สร้าง dropdown เลือกไอเท็มจาก shop
+ShopTab:Dropdown({ 
+    Title = "Set Auto Buy Items", 
+    Values = shop,  
+    Default = {},  
+    Multi = true, 
+    Callback = function(value) 
+        shopValue = value -- table ของ item ที่เลือก
+    end 
 })
 
-Tabs.Shop:Dropdown({
-    Title = "Set Amount Buy Items",
-    Values = {"1", "2", "3", "4", "5"},
-    Default = {},
-    Multi = true,
-    Callback = function(value) shopValue1 = value end,
+-- สร้าง dropdown เลือกจำนวนซื้อ
+ShopTab:Dropdown({ 
+    Title = "Set Amount Buy Items", 
+    Values = shop1,  
+    Default = {},  
+    Multi = true, 
+    Callback = function(value) 
+        shopValue1 = value -- table ของจำนวนที่เลือก
+    end 
 })
 
-Tabs.Shop:Toggle({
-    Title = "Auto Buy",
+-- Toggle เปิด/ปิด Auto Buy
+ShopTab:Toggle({
+    Title = "Auto Buy", 
     Default = false,
     Callback = function(enabled)
-        Config.Auto.BuyEnabled = enabled
+        autobuyEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.BuyEnabled do
+                while autobuyEnabled do
                     for _, item in ipairs(shopValue) do
                         for _, amount in ipairs(shopValue1) do
-                            safePcall(function() Remotes.BuyItem:FireServer(item, amount) end)
-                            task.wait(1)
+                            local args = {item, amount}
+                            game:GetService("ReplicatedStorage"):WaitForChild("BuyItemFromShopHourly"):FireServer(unpack(args))
+                            task.wait(1) -- กันสแปมเกินไป
                         end
                     end
-                    task.wait(2)
+                    task.wait(2) -- หน่วงรอบ
                 end
             end)
         end
-    end,
+    end
 })
 
-Tabs.Shop:Section({Title = "Feature Gacha", Icon = "gem"})
+ShopTab:Section({ Title = "Featrue Gacha", Icon = "gem" })
 
-local gachaCharOptions, gachaSkinOptions = {"1SpinLucky", "10Spins", "1Spin"}, {"1SpinLucky", "1Spin", "10Spins"}
-local selectedChar, selectedSkin = {}, {}
+local autobuyCharEnabled = false
+local autobuySkinEnabled = false
 
-Tabs.Shop:Dropdown({
+local gachaCharOptions = {"1SpinLucky", "10Spins", "1Spin"}
+local gachaSkinOptions = {"1SpinLucky", "1Spin", "10Spins"}
+
+local selectedChar = {}
+local selectedSkin = {}
+
+-- Dropdown สำหรับ Gacha Character
+ShopTab:Dropdown({
     Title = "Select Gacha Character Spins",
     Values = gachaCharOptions,
     Default = {},
     Multi = true,
-    Callback = function(value) selectedChar = value end,
+    Callback = function(value)
+        selectedChar = value
+    end
 })
 
-Tabs.Shop:Toggle({
+-- Toggle สำหรับ Auto Gacha Character
+ShopTab:Toggle({
     Title = "Auto Gacha Character",
     Default = false,
     Callback = function(enabled)
-        Config.Auto.GachaCharEnabled = enabled
+        autobuyCharEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.GachaCharEnabled do
+                while autobuyCharEnabled do
                     for _, spin in ipairs(selectedChar) do
-                        safePcall(function() Remotes.GachaCharacter:FireServer(spin) end)
+                        local args = {spin}
+                        game:GetService("ReplicatedStorage"):WaitForChild("GachaCharacter"):FireServer(unpack(args))
                         task.wait(1)
                     end
                 end
             end)
         end
-    end,
+    end
 })
 
-Tabs.Shop:Dropdown({
+-- Dropdown สำหรับ Gacha Skin
+ShopTab:Dropdown({
     Title = "Select Gacha Skin Spins",
     Values = gachaSkinOptions,
     Default = {},
     Multi = true,
-    Callback = function(value) selectedSkin = value end,
+    Callback = function(value)
+        selectedSkin = value
+    end
 })
 
-Tabs.Shop:Toggle({
+-- Toggle สำหรับ Auto Gacha Skin
+ShopTab:Toggle({
     Title = "Auto Gacha Skin",
     Default = false,
     Callback = function(enabled)
-        Config.Auto.GachaSkinEnabled = enabled
+        autobuySkinEnabled = enabled
         if enabled then
             task.spawn(function()
-                while Config.Auto.GachaSkinEnabled do
+                while autobuySkinEnabled do
                     for _, spin in ipairs(selectedSkin) do
-                        safePcall(function() Remotes.GachaSkins:FireServer(spin) end)
+                        local args = {spin}
+                        game:GetService("ReplicatedStorage"):WaitForChild("GachaSkins"):FireServer(unpack(args))
                         task.wait(1)
                     end
                 end
             end)
         end
-    end,
+    end
 })
 
-Tabs.Skill:Section({Title = "Feature Skill", Icon = "sparkles"})
+Info = InfoTab
 
-local skillList = {"Q", "E", "R", "T", "Y", "F", "G", "H", "Z", "X", "C", "V", "B"}
-local dropdownValues = {"All"}
-for _, v in ipairs(skillList) do table.insert(dropdownValues, v) end
+if not ui then ui = {} end
+if not ui.Creator then ui.Creator = {} end
 
-Tabs.Skill:Dropdown({
-    Title = "Set Auto Skill",
-    Values = dropdownValues,
-    Multi = true,
-    Callback = function(values)
-        Config.Skill.Values = table.find(values, "All") and skillList or values
-    end,
-})
-
-Tabs.Skill:Toggle({
-    Title = "Auto Skill",
-    Default = false,
-    Callback = function(enabled)
-        Config.Auto.SkillEnabled = enabled
-        if enabled then
-            task.spawn(function()
-                while Config.Auto.SkillEnabled do
-                    for _, key in ipairs(Config.Skill.Values) do
-                        safePcall(function()
-                            VirtualInputManager:SendKeyEvent(true, key, false, game)
-                            task.wait(0.05)
-                            VirtualInputManager:SendKeyEvent(false, key, false, game)
-                        end)
-                        task.wait(Config.Skill.Delay)
-                    end
-                    task.wait(Config.Skill.LoopDelay)
-                end
-            end)
+-- Define the Request function that mimics ui.Creator.Request
+ui.Creator.Request = function(requestData)
+    local HttpService = game:GetService("HttpService")
+    
+    -- Try different HTTP methods
+    local success, result = pcall(function()
+        if HttpService.RequestAsync then
+            -- Method 1: Use RequestAsync if available
+            local response = HttpService:RequestAsync({
+                Url = requestData.Url,
+                Method = requestData.Method or "GET",
+                Headers = requestData.Headers or {}
+            })
+            return {
+                Body = response.Body,
+                StatusCode = response.StatusCode,
+                Success = response.Success
+            }
+        else
+            -- Method 2: Fallback to GetAsync
+            local body = HttpService:GetAsync(requestData.Url)
+            return {
+                Body = body,
+                StatusCode = 200,
+                Success = true
+            }
         end
-    end,
-})
+    end)
+    
+    if success then
+        return result
+    else
+        error("HTTP Request failed: " .. tostring(result))
+    end
+end
 
-local DiscordAPI = "https://discord.com/api/v10/invites/jWNDPNMmyB?with_counts=true&with_expiration=true"
+-- Remove this line completely: Info = InfoTab
+-- The Info variable is already correctly set above
+
+local InviteCode = "jWNDPNMmyB"
+local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
 
 local function LoadDiscordInfo()
-    local success, result = safePcall(function()
-        return HttpService:JSONDecode(ui.Creator.Request({
+    local success, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
             Url = DiscordAPI,
             Method = "GET",
-            Headers = {["User-Agent"] = "RobloxBot/1.0", ["Accept"] = "application/json"}
+            Headers = {
+                ["User-Agent"] = "RobloxBot/1.0",
+                ["Accept"] = "application/json"
+            }
         }).Body)
     end)
+
     if success and result and result.guild then
-        local DiscordInfo = Tabs.Info:Paragraph({
+        local DiscordInfo = Info:Paragraph({
             Title = result.guild.name,
             Desc = ' <font color="#52525b">●</font> Member Count : ' .. tostring(result.approximate_member_count) ..
-                   '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(result.approximate_presence_count),
+                '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(result.approximate_presence_count),
             Image = "https://cdn.discordapp.com/icons/" .. result.guild.id .. "/" .. result.guild.icon .. ".png?size=1024",
             ImageSize = 42,
         })
-        Tabs.Info:Button({
+
+        Info:Button({
             Title = "Update Info",
             Callback = function()
-                local updated, updatedResult = safePcall(function()
-                    return HttpService:JSONDecode(ui.Creator.Request({Url = DiscordAPI, Method = "GET"}).Body)
+                local updated, updatedResult = pcall(function()
+                    return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+                        Url = DiscordAPI,
+                        Method = "GET",
+                    }).Body)
                 end)
+
                 if updated and updatedResult and updatedResult.guild then
                     DiscordInfo:SetDesc(
                         ' <font color="#52525b">●</font> Member Count : ' .. tostring(updatedResult.approximate_member_count) ..
                         '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(updatedResult.approximate_presence_count)
                     )
-                    WindUI:Notify({Title = "Discord Info Updated", Content = "Successfully refreshed Discord statistics", Duration = 2, Icon = "refresh-cw"})
+                    
+                    WindUI:Notify({
+                        Title = "Discord Info Updated",
+                        Content = "Successfully refreshed Discord statistics",
+                        Duration = 2,
+                        Icon = "refresh-cw",
+                    })
                 else
-                    WindUI:Notify({Title = "Update Failed", Content = "Could not refresh Discord info", Duration = 3, Icon = "alert-triangle"})
+                    WindUI:Notify({
+                        Title = "Update Failed",
+                        Content = "Could not refresh Discord info",
+                        Duration = 3,
+                        Icon = "alert-triangle",
+                    })
                 end
-            end,
+            end
         })
-        Tabs.Info:Button({
+
+        Info:Button({
             Title = "Copy Discord Invite",
             Callback = function()
-                setclipboard("https://discord.gg/jWNDPNMmyB")
-                WindUI:Notify({Title = "Copied!", Content = "Discord invite copied to clipboard", Duration = 2, Icon = "clipboard-check"})
-            end,
+                setclipboard("https://discord.gg/" .. InviteCode)
+                WindUI:Notify({
+                    Title = "Copied!",
+                    Content = "Discord invite copied to clipboard",
+                    Duration = 2,
+                    Icon = "clipboard-check",
+                })
+            end
         })
     else
-        Tabs.Info:Paragraph({
+        Info:Paragraph({
             Title = "Error fetching Discord Info",
             Desc = "Unable to load Discord information. Check your internet connection.",
             Image = "triangle-alert",
             ImageSize = 26,
             Color = "Red",
         })
+        print("Discord API Error:", result) -- Debug print
     end
 end
 
-safePcall(LoadDiscordInfo)
+LoadDiscordInfo()
 
-Tabs.Info:Divider()
-Tabs.Info:Section({Title = "DYHUB Information", TextXAlignment = "Center", TextSize = 17})
-Tabs.Info:Divider()
+Info:Divider()
+Info:Section({ 
+    Title = "DYHUB Information",
+    TextXAlignment = "Center",
+    TextSize = 17,
+})
+Info:Divider()
 
-Tabs.Info:Paragraph({
+local Owner = Info:Paragraph({
     Title = "Main Owner",
     Desc = "@dyumraisgoodguy#8888",
     Image = "rbxassetid://119789418015420",
     ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
 })
 
-Tabs.Info:Paragraph({
+local Social = Info:Paragraph({
     Title = "Social",
     Desc = "Copy link social media for follow!",
     Image = "rbxassetid://104487529937663",
     ImageSize = 30,
-    Buttons = {{Icon = "copy", Title = "Copy Link", Callback = function() setclipboard("https://guns.lol/DYHUB") print("Copied social media link!") end}},
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://guns.lol/DYHUB")
+                print("Copied social media link to clipboard!")
+            end,
+        }
+    }
 })
 
-Tabs.Info:Paragraph({
+local Discord = Info:Paragraph({
     Title = "Discord",
     Desc = "Join our discord for more scripts!",
     Image = "rbxassetid://104487529937663",
     ImageSize = 30,
-    Buttons = {{Icon = "copy", Title = "Copy Link", Callback = function() setclipboard("https://discord.gg/jWNDPNMmyB") print("Copied discord link!") end}},
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://discord.gg/jWNDPNMmyB")
+                print("Copied discord link to clipboard!")
+            end,
+        }
+    }
 })
 
-Tabs.Main:Section({Title = "Feature Farm", Icon = "tractor"})
+MainTab:Section({ Title = "Feature Farm", Icon = "tractor" }) 
 
-Tabs.Main:Dropdown({
+MainTab:Dropdown({
     Title = "Movement",
     Values = {"Teleport", "CFrame"},
-    Default = Config.Movement.Mode,
+    Default = movementMode,
     Multi = false,
-    Callback = function(value) Config.Movement.Mode = value end,
-})
-
-Tabs.Main:Dropdown({
-    Title = "Set Position",
-    Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = Config.Movement.PositionMode,
-    Multi = false,
-    Callback = function(value) Config.Movement.PositionMode = value end,
-})
-
-Tabs.Main:Slider({
-    Title = "Set Distance to NPC",
-    Value = {Min = 0, Max = 50, Default = Config.Movement.Distance},
-    Step = 1,
-    Callback = function(val)
-        getgenv().DistanceValue = val
-        Config.Movement.Distance = val
-    end,
-})
-
-Tabs.Main:Toggle({
-    Title = "Auto Farm (Upgrade)",
-    Default = false,
     Callback = function(value)
-        Config.Auto.FarmActive = value
-        if value then startAutoFarm() end
+        movementMode = value
     end,
 })
 
-Tabs.Main:Toggle({
+MainTab:Dropdown({
+    Title="Set Position",
+    Values={"Spin","Above","Back","Under","Front"},
+    Default=setPositionMode,
+    Multi=false,
+    Callback=function(value) setPositionMode=value end
+})
+
+MainTab:Slider({
+    Title="Set Distance to NPC",
+    Value={Min=0, Max=50, Default=getgenv().DistanceValue},
+    Step=1,
+    Callback=function(val) getgenv().DistanceValue=val end
+})
+
+MainTab:Toggle({
+    Title="Auto Farm (Upgrade)",
+    Default=false,
+    Callback=function(value) autoFarmActive=value if value then startAutoFarm() end end
+})
+
+MainTab:Toggle({
     Title = "Flush Aura (Upgrade)",
     Default = false,
     Callback = function(value)
-        Config.Auto.FlushAuraActive = value
-        if value then flushAura() end
+        flushAuraActive = value
+        if flushAuraActive then
+            task.spawn(function()
+                while flushAuraActive do
+                    pcall(function()
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("ProximityPrompt") then
+                                obj.HoldDuration = 0 -- ✅ ทำให้กดไว
+                                fireproximityprompt(obj) -- ✅ กดให้เอง
+                            end
+                        end
+                    end)
+                    task.wait(0.3) -- ✅ ความถี่ Aura (ยิ่งน้อยยิ่งเร็ว)
+                end
+            end)
+        end
     end,
 })
 
-print("[DYHUB] Enhanced Script Loaded!")
+SkillTab:Section({ Title = "Feature Skill", Icon = "sparkles" })
+
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local autoSkillEnabled = false
+local autoSkillValues = {}
+local skillDelay = 0.25
+local loopDelay = 0.5
+
+local skillList = {"Q","E","R","T","Y","F","G","H","Z","X","C","V","B"}
+
+-- เพิ่มตัวเลือก "All" สำหรับ Dropdown
+local dropdownValues = {"All"}
+for _, v in ipairs(skillList) do
+    table.insert(dropdownValues, v)
+end
+
+-- Dropdown สำหรับเลือกสกิลที่จะ Auto
+SkillTab:Dropdown({
+    Title = "Set Auto Skill",
+    Values = dropdownValues,
+    Multi = true,
+    Callback = function(values)
+        -- ถ้าเลือก All ให้ใช้ทุกสกิล
+        if table.find(values, "All") then
+            autoSkillValues = skillList
+        else
+            autoSkillValues = values
+        end
+    end
+})
+
+-- Toggle สำหรับเปิด/ปิด Auto Skill
+SkillTab:Toggle({
+    Title = "Auto Skill",
+    Default = false,
+    Callback = function(enabled)
+        autoSkillEnabled = enabled
+        if enabled then
+            task.spawn(function()
+                while autoSkillEnabled do
+                    pcall(function()
+                        for _, key in ipairs(autoSkillValues) do
+                            VirtualInputManager:SendKeyEvent(true, key, false, game)
+                            task.wait(0.05)
+                            VirtualInputManager:SendKeyEvent(false, key, false, game)
+                            task.wait(skillDelay)
+                        end
+                    end)
+                    task.wait(loopDelay)
+                end
+            end)
+        end
+    end
+})
+
+print("[DYHUB] DYHUB - Loaded! (Console Show)")
