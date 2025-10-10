@@ -1,6 +1,6 @@
--- DYHUB Optimized Script for Roblox
--- Version: 3.5.0
--- Optimized for stability, performance, and reduced lag
+-- DYHUB Enhanced Script for Roblox
+-- Version: 3.6.0
+-- Optimized for performance, stability, and clarity
 -- Author: DYHUB Team
 -- Size: ~65KB
 
@@ -18,56 +18,116 @@ local Camera = Workspace.CurrentCamera
 
 -- Local Player
 local LocalPlayer = Players.LocalPlayer
-local GetReadyRemote = ReplicatedStorage:WaitForChild("GetReadyRemote", 5)
-local SkipHelicopterRemote = ReplicatedStorage:WaitForChild("SkipHelicopter", 5)
-local LMBRemote = ReplicatedStorage:WaitForChild("LMB", 5)
-local VoteRemote = ReplicatedStorage:WaitForChild("Vote", 5)
-local RedeemCodeRemote = ReplicatedStorage:WaitForChild("RedeemCode", 5)
-local BuyItemRemote = ReplicatedStorage:WaitForChild("BuyItemFromShopHourly", 5)
-local GachaCharacterRemote = ReplicatedStorage:WaitForChild("GachaCharacter", 5)
-local GachaSkinsRemote = ReplicatedStorage:WaitForChild("GachaSkins", 5)
 
--- Variables
-local version = "3.5.0"
-local autoVoteEnabled, autoFarmActive, autoReadyActive = false, false, false
-local MasteryAutoFarmActive, MasteryAutoFarmActiveTest, autoSkipHelicopterActive = false, false, false
-local flushAuraActive, espActiveEnemies, espActivePlayers = false, false, false
-local espShowName, espShowHealth, espShowDistance = true, true, false
-local espMode, movementMode, setPositionMode = "Highlight", "CFrame", "Under"
-local ActionMode, CharacterMode = "Default", "Used"
-local espObjects, visitedNPCs, pressCount = {}, {}, {}
+-- Remote Events
+local Remotes = {
+    GetReady = ReplicatedStorage:WaitForChild("GetReadyRemote", 5),
+    SkipHelicopter = ReplicatedStorage:WaitForChild("SkipHelicopter", 5),
+    LMB = ReplicatedStorage:WaitForChild("LMB", 5),
+    Vote = ReplicatedStorage:WaitForChild("Vote", 5),
+    RedeemCode = ReplicatedStorage:WaitForChild("RedeemCode", 5),
+    BuyItem = ReplicatedStorage:WaitForChild("BuyItemFromShopHourly", 5),
+    GachaCharacter = ReplicatedStorage:WaitForChild("GachaCharacter", 5),
+    GachaSkins = ReplicatedStorage:WaitForChild("GachaSkins", 5),
+}
+
+-- Configuration
+local Config = {
+    Version = "3.6.0",
+    Esp = {
+        Mode = "Highlight",
+        ShowName = true,
+        ShowHealth = true,
+        ShowDistance = false,
+        ActiveEnemies = false,
+        ActivePlayers = false,
+    },
+    Auto = {
+        VoteEnabled = false,
+        VoteValue = "Normal",
+        FarmActive = false,
+        ReadyActive = false,
+        MasteryActive = false,
+        MasteryTestActive = false,
+        SkipHelicopterActive = false,
+        FlushAuraActive = false,
+        CollectEnabled = false,
+        ItemNotifyEnabled = false,
+        BuyEnabled = false,
+        GachaCharEnabled = false,
+        GachaSkinEnabled = false,
+        SkillEnabled = false,
+    },
+    Movement = {
+        Mode = "CFrame",
+        PositionMode = "Under",
+        Distance = 1,
+    },
+    Hitbox = {
+        Enabled = false,
+        Size = 20,
+        Show = false,
+    },
+    Player = {
+        SpeedEnabled = false,
+        SpeedValue = 20,
+        JumpEnabled = false,
+        JumpValue = 50,
+    },
+    Skill = {
+        Delay = 0.25,
+        LoopDelay = 0.5,
+        Values = {},
+    },
+    ActionMode = "Default",
+    CharacterMode = "Used",
+}
+
+-- Global Variables
 local getgenv = getgenv or function() return _G end
-getgenv().HitboxEnabled, getgenv().HitboxSize, getgenv().HitboxShow = false, 20, false
-getgenv().DistanceValue, getgenv().speedEnabled, getgenv().speedValue = 1, false, 20
-getgenv().jumpEnabled, getgenv().jumpValue = false, 50
-local spinAngle = 0
+getgenv().HitboxEnabled = Config.Hitbox.Enabled
+getgenv().HitboxSize = Config.Hitbox.Size
+getgenv().HitboxShow = Config.Hitbox.Show
+getgenv().DistanceValue = Config.Movement.Distance
+getgenv().speedEnabled = Config.Player.SpeedEnabled
+getgenv().speedValue = Config.Player.SpeedValue
+getgenv().jumpEnabled = Config.Player.JumpEnabled
+getgenv().jumpValue = Config.Player.JumpValue
+
+local espObjects, visitedNPCs, pressCount = {}, {}, {}
 local supportPart, partConnection, noclipConnection, fullBrightConnection, noFogConnection
+local spinAngle = 0
+
+-- Utility Functions
+local function safePcall(func, ...)
+    local success, result = pcall(func, ...)
+    if not success then warn("[DYHUB] Error: " .. tostring(result)) end
+    return success, result
+end
+
+local function notify(title, text, duration, icon)
+    safePcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title, Text = text, Duration = duration or 2, Icon = icon or "", Button1 = "Okay"
+        })
+    end)
+end
 
 -- FPS Unlock
 if setfpscap then
-    setfpscap(1000000)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "DYHUB", Text = "FPS Unlocked!", Duration = 2, Button1 = "Okay"
-    })
+    safePcall(function() setfpscap(1000000) end)
+    notify("DYHUB", "FPS Unlocked!")
 else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "DYHUB", Text = "Your exploit does not support setfpscap.", Duration = 2, Button1 = "Okay"
-    })
+    notify("DYHUB", "Your exploit does not support setfpscap.")
 end
 
 -- Load WindUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- Utility Functions
-local function safePcall(func)
-    local success, result = pcall(func)
-    if not success then warn("[DYHUB] Error: " .. tostring(result)) end
-    return success, result
-end
-
+-- ESP Functions
 local function clearESP()
     for _, obj in pairs(espObjects) do
-        if obj and obj.Parent then obj:Destroy() end
+        if obj and obj.Parent then safePcall(function() obj:Destroy() end) end
     end
     espObjects = {}
 end
@@ -96,11 +156,11 @@ local function createBillboard(model, humanoid)
 
     local function updateText()
         local parts = {}
-        if espShowName then table.insert(parts, model.Name or "NPC") end
-        if humanoid and espShowHealth then
+        if Config.Esp.ShowName then table.insert(parts, model.Name or "NPC") end
+        if humanoid and Config.Esp.ShowHealth then
             table.insert(parts, math.floor(humanoid.Health) .. " / " .. math.floor(humanoid.MaxHealth))
         end
-        if espShowDistance then
+        if Config.Esp.ShowDistance then
             local dist = (hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
             table.insert(parts, "Dist: " .. math.floor(dist))
         end
@@ -110,7 +170,7 @@ local function createBillboard(model, humanoid)
     updateText()
     local conn = RunService.RenderStepped:Connect(function()
         if not humanoid or humanoid.Health <= 0 or not billboard.Parent then
-            billboard:Destroy()
+            safePcall(function() billboard:Destroy() end)
             conn:Disconnect()
         else
             updateText()
@@ -120,7 +180,7 @@ local function createBillboard(model, humanoid)
 end
 
 local function applyESPToModel(model)
-    if espMode == "Highlight" then
+    if Config.Esp.Mode == "Highlight" then
         local highlight = Instance.new("Highlight")
         highlight.Adornee = model
         highlight.FillColor = Color3.fromRGB(255, 0, 0)
@@ -129,7 +189,7 @@ local function applyESPToModel(model)
         table.insert(espObjects, highlight)
         local humanoid = model:FindFirstChildOfClass("Humanoid")
         if humanoid then createBillboard(model, humanoid) end
-    elseif espMode == "BoxHandle" then
+    elseif Config.Esp.Mode == "BoxHandle" then
         local hrp = model:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local box = Instance.new("BoxHandleAdornment")
@@ -148,21 +208,23 @@ end
 
 local function updateESP()
     clearESP()
-    if not (espActiveEnemies or espActivePlayers) then return end
+    if not (Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers) then return end
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        if espActivePlayers then
+        if Config.Esp.ActivePlayers then
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    applyESPToModel(player.Character)
+                    safePcall(function() applyESPToModel(player.Character) end)
                 end
             end
         end
-        if espActiveEnemies and Workspace:FindFirstChild("Living") then
+        if Config.Esp.ActiveEnemies and Workspace:FindFirstChild("Living") then
             for _, npc in pairs(Workspace.Living:GetChildren()) do
                 if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(npc) then
                     local humanoid = npc:FindFirstChildOfClass("Humanoid")
-                    if humanoid and humanoid.Health > 0 then applyESPToModel(npc) end
+                    if humanoid and humanoid.Health > 0 then
+                        safePcall(function() applyESPToModel(npc) end)
+                    end
                 end
             end
         end
@@ -171,13 +233,14 @@ end
 
 task.spawn(function()
     while true do
-        if espActiveEnemies or espActivePlayers then
+        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then
             safePcall(updateESP)
         end
         task.wait(1)
     end
 end)
 
+-- NPC Management
 local function isVisited(npc) return table.find(visitedNPCs, npc) ~= nil end
 local function addVisited(npc) table.insert(visitedNPCs, npc) end
 local function removeVisited(npc)
@@ -252,23 +315,23 @@ local function findNextNPCWithHumanoid(maxDistance, referencePart, noProximity)
     return closestNPC
 end
 
+-- Movement Functions
 local function smoothTeleportTo(targetPos, duration)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
     local tweenInfo = TweenInfo.new(duration or 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-    tween:Play()
-    tween.Completed:Wait()
+    safePcall(function() tween:Play() tween.Completed:Wait() end)
 end
 
 local function instantTeleportTo(targetPos)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    hrp.CFrame = CFrame.new(targetPos)
+    safePcall(function() hrp.CFrame = CFrame.new(targetPos) end)
 end
 
 local function teleportToTarget(targetPos, duration)
-    if movementMode == "CFrame" then
+    if Config.Movement.Mode == "CFrame" then
         smoothTeleportTo(targetPos, duration)
     else
         instantTeleportTo(targetPos)
@@ -276,8 +339,8 @@ local function teleportToTarget(targetPos, duration)
 end
 
 local function createSupportPart(character)
-    if supportPart then supportPart:Destroy() end
-    if partConnection then partConnection:Disconnect() end
+    if supportPart then safePcall(function() supportPart:Destroy() end) end
+    if partConnection then safePcall(function() partConnection:Disconnect() end) end
     supportPart = Instance.new("Part")
     supportPart.Size = Vector3.new(5, 1, 5)
     supportPart.Anchored = true
@@ -293,8 +356,8 @@ local function createSupportPart(character)
 end
 
 local function removeSupportPart()
-    if partConnection then partConnection:Disconnect() end
-    if supportPart then supportPart:Destroy() end
+    if partConnection then safePcall(function() partConnection:Disconnect() end) end
+    if supportPart then safePcall(function() supportPart:Destroy() end) end
     partConnection, supportPart = nil, nil
 end
 
@@ -303,21 +366,21 @@ local function calculatePosition(npc)
     local hrp, dist = npc.HumanoidRootPart, getgenv().DistanceValue or 2
     local pos, targetPos, lookCFrame, anchored = hrp.Position, nil, nil, false
 
-    if setPositionMode == "Above" then
+    if Config.Movement.PositionMode == "Above" then
         targetPos = pos + Vector3.new(0, dist, 0)
         lookCFrame = CFrame.new(targetPos) * CFrame.Angles(-math.pi / 2, 0, 0)
         anchored = true
-    elseif setPositionMode == "Under" then
+    elseif Config.Movement.PositionMode == "Under" then
         targetPos = pos - Vector3.new(0, dist, 0)
         lookCFrame = CFrame.new(targetPos) * CFrame.Angles(math.pi / 2, 0, 0)
         anchored = true
-    elseif setPositionMode == "Front" then
+    elseif Config.Movement.PositionMode == "Front" then
         targetPos = pos + (hrp.CFrame.LookVector * dist)
         lookCFrame = CFrame.new(targetPos, pos)
-    elseif setPositionMode == "Back" then
+    elseif Config.Movement.PositionMode == "Back" then
         targetPos = pos - (hrp.CFrame.LookVector * dist)
         lookCFrame = CFrame.new(targetPos, pos)
-    elseif setPositionMode == "Spin" then
+    elseif Config.Movement.PositionMode == "Spin" then
         spinAngle = spinAngle + math.rad(5)
         targetPos = pos + Vector3.new(math.cos(spinAngle) * dist, 0, math.sin(spinAngle) * dist)
         lookCFrame = CFrame.new(targetPos, pos)
@@ -328,14 +391,16 @@ local function calculatePosition(npc)
     return targetPos, lookCFrame, anchored
 end
 
+-- Auto Farm Functions
 local function attackHumanoid(npc, isMastery)
     local humanoid = npc:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return end
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     createSupportPart(char)
-    while (isMastery and MasteryAutoFarmActive or autoFarmActive) and humanoid.Health > 0 do
+    local activeFlag = isMastery and Config.Auto.MasteryActive or Config.Auto.FarmActive
+    while activeFlag and humanoid.Health > 0 do
         teleportToTarget(calculatePosition(npc))
-        safePcall(function() LMBRemote:FireServer() end)
+        safePcall(function() Remotes.LMB:FireServer() end)
         task.wait(0.1)
     end
     removeSupportPart()
@@ -344,7 +409,7 @@ end
 
 local function startAutoFarm()
     task.spawn(function()
-        while autoFarmActive do
+        while Config.Auto.FarmActive do
             safePcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -355,7 +420,7 @@ local function startAutoFarm()
                         if humanoid and humanoid.Health > 0 then
                             local targetPos = calculatePosition(npc)
                             teleportToTarget(targetPos)
-                            while (pressCount[npc] or 0) < 3 and autoFarmActive do
+                            while (pressCount[npc] or 0) < 3 and Config.Auto.FarmActive do
                                 safePcall(function()
                                     prompt:InputHoldBegin()
                                     task.wait(0.05)
@@ -387,7 +452,7 @@ end
 
 local function startMasteryAutoFarm(isTest)
     task.spawn(function()
-        local activeFlag = isTest and MasteryAutoFarmActiveTest or MasteryAutoFarmActive
+        local activeFlag = isTest and Config.Auto.MasteryTestActive or Config.Auto.MasteryActive
         while activeFlag do
             safePcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -424,7 +489,7 @@ end
 
 local function flushAura()
     task.spawn(function()
-        while flushAuraActive do
+        while Config.Auto.FlushAuraActive do
             safePcall(function()
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -446,35 +511,35 @@ end
 
 local function startAutoReady()
     task.spawn(function()
-        safePcall(function() GetReadyRemote:FireServer("1", true) end)
-        while autoReadyActive do
+        safePcall(function() Remotes.GetReady:FireServer("1", true) end)
+        while Config.Auto.ReadyActive do
             local char = LocalPlayer.Character
             local humanoid = char and char:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health <= 0 then
-                safePcall(function() GetReadyRemote:FireServer("1", true) end)
+                safePcall(function() Remotes.GetReady:FireServer("1", true) end)
             end
             task.wait(1)
         end
-        safePcall(function() GetReadyRemote:FireServer("1", false) end)
+        safePcall(function() Remotes.GetReady:FireServer("1", false) end)
     end)
 end
 
 local function startAutoSkipHelicopter()
     task.spawn(function()
-        while autoSkipHelicopterActive do
-            safePcall(function() SkipHelicopterRemote:FireServer() end)
+        while Config.Auto.SkipHelicopterActive do
+            safePcall(function() Remotes.SkipHelicopter:FireServer() end)
             task.wait(1)
         end
     end)
 end
 
 LocalPlayer.CharacterAdded:Connect(function()
-    if autoFarmActive then startAutoFarm() end
-    if MasteryAutoFarmActive then startMasteryAutoFarm(false) end
-    if MasteryAutoFarmActiveTest then startMasteryAutoFarm(true) end
-    if flushAuraActive then flushAura() end
-    if autoReadyActive then startAutoReady() end
-    if autoSkipHelicopterActive then startAutoSkipHelicopter() end
+    if Config.Auto.FarmActive then startAutoFarm() end
+    if Config.Auto.MasteryActive then startMasteryAutoFarm(false) end
+    if Config.Auto.MasteryTestActive then startMasteryAutoFarm(true) end
+    if Config.Auto.FlushAuraActive then flushAura() end
+    if Config.Auto.ReadyActive then startAutoReady() end
+    if Config.Auto.SkipHelicopterActive then startAutoSkipHelicopter() end
 end)
 
 -- UI Setup
@@ -484,7 +549,7 @@ local userversion = safePcall(function()
 end) and "Free Version" or "Free Version"
 
 local Window = WindUI:CreateWindow({
-    Title = "DYHUB Optimized",
+    Title = "DYHUB Enhanced",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
     Author = "ST: Blockade Battlefront | " .. userversion,
@@ -500,7 +565,7 @@ local Window = WindUI:CreateWindow({
 })
 
 safePcall(function()
-    Window:Tag({Title = version, Color = Color3.fromHex("#30ff6a")})
+    Window:Tag({Title = Config.Version, Color = Color3.fromHex("#30ff6a")})
 end)
 
 Window:EditOpenButton({
@@ -548,7 +613,7 @@ Tabs.Main:Toggle({
     Title = "Auto Ready",
     Default = false,
     Callback = function(value)
-        autoReadyActive = value
+        Config.Auto.ReadyActive = value
         if value then startAutoReady() end
     end,
 })
@@ -557,7 +622,7 @@ Tabs.Main:Toggle({
     Title = "Auto Skip Helicopter",
     Default = false,
     Callback = function(value)
-        autoSkipHelicopterActive = value
+        Config.Auto.SkipHelicopterActive = value
         if value then startAutoSkipHelicopter() end
     end,
 })
@@ -576,7 +641,7 @@ Tabs.Codes:Button({
     Title = "Redeem Selected Codes",
     Callback = function()
         for _, code in ipairs(selectedCodes) do
-            safePcall(function() RedeemCodeRemote:FireServer(code) end)
+            safePcall(function() Remotes.RedeemCode:FireServer(code) end)
             task.wait(0.2)
         end
     end,
@@ -586,7 +651,7 @@ Tabs.Codes:Button({
     Title = "Redeem Code All",
     Callback = function()
         for _, code in ipairs(redeemCodes) do
-            safePcall(function() RedeemCodeRemote:FireServer(code) end)
+            safePcall(function() Remotes.RedeemCode:FireServer(code) end)
             task.wait(0.2)
         end
     end,
@@ -595,11 +660,11 @@ Tabs.Codes:Button({
 Tabs.Esp:Dropdown({
     Title = "ESP Mode",
     Values = {"Highlight", "BoxHandle"},
-    Default = espMode,
+    Default = Config.Esp.Mode,
     Multi = false,
     Callback = function(value)
-        espMode = value
-        if espActiveEnemies or espActivePlayers then updateESP() end
+        Config.Esp.Mode = value
+        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
     end,
 })
 
@@ -607,7 +672,7 @@ Tabs.Esp:Toggle({
     Title = "ESP (Enemies)",
     Default = false,
     Callback = function(value)
-        espActiveEnemies = value
+        Config.Esp.ActiveEnemies = value
         updateESP()
     end,
 })
@@ -616,7 +681,7 @@ Tabs.Esp:Toggle({
     Title = "ESP (Players)",
     Default = false,
     Callback = function(value)
-        espActivePlayers = value
+        Config.Esp.ActivePlayers = value
         updateESP()
     end,
 })
@@ -627,8 +692,8 @@ Tabs.Esp:Toggle({
     Title = "ESP Name",
     Default = true,
     Callback = function(value)
-        espShowName = value
-        if espActiveEnemies or espActivePlayers then updateESP() end
+        Config.Esp.ShowName = value
+        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
     end,
 })
 
@@ -636,8 +701,8 @@ Tabs.Esp:Toggle({
     Title = "ESP Health",
     Default = true,
     Callback = function(value)
-        espShowHealth = value
-        if espActiveEnemies or espActivePlayers then updateESP() end
+        Config.Esp.ShowHealth = value
+        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
     end,
 })
 
@@ -645,8 +710,8 @@ Tabs.Esp:Toggle({
     Title = "ESP Distance",
     Default = false,
     Callback = function(value)
-        espShowDistance = value
-        if espActiveEnemies or espActivePlayers then updateESP() end
+        Config.Esp.ShowDistance = value
+        if Config.Esp.ActiveEnemies or Config.Esp.ActivePlayers then updateESP() end
     end,
 })
 
@@ -671,7 +736,7 @@ local function applyHitboxToNPC(npc)
                 existing.Transparency = getgenv().HitboxShow and 0.5 or 1
             end
         else
-            if existing then existing:Destroy() end
+            if existing then safePcall(function() existing:Destroy() end) end
         end
     end
 end
@@ -705,19 +770,28 @@ Tabs.Hitbox:Slider({
     Title = "Set Size Hitbox",
     Value = {Min = 16, Max = 100, Default = 20},
     Step = 1,
-    Callback = function(val) getgenv().HitboxSize = val end,
+    Callback = function(val)
+        getgenv().HitboxSize = val
+        Config.Hitbox.Size = val
+    end,
 })
 
 Tabs.Hitbox:Toggle({
     Title = "Enable Hitbox",
     Default = false,
-    Callback = function(value) getgenv().HitboxEnabled = value end,
+    Callback = function(value)
+        getgenv().HitboxEnabled = value
+        Config.Hitbox.Enabled = value
+    end,
 })
 
 Tabs.Hitbox:Toggle({
     Title = "Show Hitbox (Transparency)",
     Default = false,
-    Callback = function(value) getgenv().HitboxShow = value end,
+    Callback = function(value)
+        getgenv().HitboxShow = value
+        Config.Hitbox.Show = value
+    end,
 })
 
 Tabs.Quest:Button({
@@ -741,24 +815,24 @@ Tabs.Quest:Section({Title = "Setting Auto Quest", Icon = "star-half"})
 Tabs.Quest:Dropdown({
     Title = "Set Position",
     Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = setPositionMode,
+    Default = Config.Movement.PositionMode,
     Multi = false,
-    Callback = function(value) setPositionMode = value end,
+    Callback = function(value) Config.Movement.PositionMode = value end,
 })
 
 Tabs.Quest:Dropdown({
     Title = "Movement",
     Values = {"Teleport", "CFrame"},
-    Default = movementMode,
+    Default = Config.Movement.Mode,
     Multi = false,
-    Callback = function(value) movementMode = value end,
+    Callback = function(value) Config.Movement.Mode = value end,
 })
 
 Tabs.Quest:Toggle({
     Title = "Auto Farm (Upgrade)",
     Default = false,
     Callback = function(value)
-        autoFarmActive = value
+        Config.Auto.FarmActive = value
         if value then startAutoFarm() end
     end,
 })
@@ -766,47 +840,50 @@ Tabs.Quest:Toggle({
 Tabs.Mastery:Dropdown({
     Title = "Movement",
     Values = {"Teleport", "CFrame"},
-    Default = movementMode,
+    Default = Config.Movement.Mode,
     Multi = false,
-    Callback = function(value) movementMode = value end,
+    Callback = function(value) Config.Movement.Mode = value end,
 })
 
 Tabs.Mastery:Dropdown({
     Title = "Action Speed",
     Values = {"Default", "Slow", "Faster", "Flash (Lag)"},
-    Default = ActionMode,
+    Default = Config.ActionMode,
     Multi = false,
-    Callback = function(value) ActionMode = value end,
+    Callback = function(value) Config.ActionMode = value end,
 })
 
 Tabs.Mastery:Dropdown({
     Title = "Character List",
     Values = {"Small", "Large", "Support (Not Good)", "Titan"},
-    Default = CharacterMode,
+    Default = Config.CharacterMode,
     Multi = false,
-    Callback = function(value) CharacterMode = value end,
+    Callback = function(value) Config.CharacterMode = value end,
 })
 
 Tabs.Mastery:Dropdown({
     Title = "Set Position",
     Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = setPositionMode,
+    Default = Config.Movement.PositionMode,
     Multi = false,
-    Callback = function(value) setPositionMode = value end,
+    Callback = function(value) Config.Movement.PositionMode = value end,
 })
 
 Tabs.Mastery:Slider({
     Title = "Set Distance to NPC",
-    Value = {Min = 0, Max = 50, Default = getgenv().DistanceValue},
+    Value = {Min = 0, Max = 50, Default = Config.Movement.Distance},
     Step = 1,
-    Callback = function(val) getgenv().DistanceValue = val end,
+    Callback = function(val)
+        getgenv().DistanceValue = val
+        Config.Movement.Distance = val
+    end,
 })
 
 Tabs.Mastery:Toggle({
     Title = "Auto Mastery (No Flush)",
     Default = false,
     Callback = function(value)
-        MasteryAutoFarmActive = value
+        Config.Auto.MasteryActive = value
         if value then startMasteryAutoFarm(false) else removeSupportPart() end
     end,
 })
@@ -815,7 +892,7 @@ Tabs.Mastery:Toggle({
     Title = "Auto Mastery (Flush)",
     Default = false,
     Callback = function(value)
-        MasteryAutoFarmActiveTest = value
+        Config.Auto.MasteryTestActive = value
         if value then startMasteryAutoFarm(true) else removeSupportPart() end
     end,
 })
@@ -863,7 +940,8 @@ Tabs.Player:Slider({
     Step = 1,
     Callback = function(val)
         getgenv().speedValue = val
-        if getgenv().speedEnabled then
+        Config.Player.SpeedValue = val
+        if Config.Player.SpeedEnabled then
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
             if hum then hum.WalkSpeed = val end
         end
@@ -875,9 +953,10 @@ Tabs.Player:Toggle({
     Default = false,
     Callback = function(v)
         getgenv().speedEnabled = v
+        Config.Player.SpeedEnabled = v
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hum = char:FindFirstChild("Humanoid")
-        if hum then hum.WalkSpeed = v and getgenv().speedValue or 16 end
+        if hum then hum.WalkSpeed = v and Config.Player.SpeedValue or 16 end
     end,
 })
 
@@ -887,7 +966,8 @@ Tabs.Player:Slider({
     Step = 1,
     Callback = function(val)
         getgenv().jumpValue = val
-        if getgenv().jumpEnabled then
+        Config.Player.JumpValue = val
+        if Config.Player.JumpEnabled then
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
             if hum then hum.JumpPower = val end
         end
@@ -899,9 +979,10 @@ Tabs.Player:Toggle({
     Default = false,
     Callback = function(v)
         getgenv().jumpEnabled = v
+        Config.Player.JumpEnabled = v
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hum = char:FindFirstChild("Humanoid")
-        if hum then hum.JumpPower = v and getgenv().jumpValue or 50 end
+        if hum then hum.JumpPower = v and Config.Player.JumpValue or 50 end
     end,
 })
 
@@ -921,7 +1002,7 @@ Tabs.Player:Toggle({
                 end
             end)
         else
-            if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+            if noclipConnection then safePcall(function() noclipConnection:Disconnect() end) noclipConnection = nil end
             local char = LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do
@@ -944,7 +1025,7 @@ Tabs.Player:Toggle({
             end)
         else
             if getgenv().infJumpConnection then
-                getgenv().infJumpConnection:Disconnect()
+                safePcall(function() getgenv().infJumpConnection:Disconnect() end)
                 getgenv().infJumpConnection = nil
             end
         end
@@ -991,7 +1072,7 @@ Tabs.Misc:Toggle({
                 Lighting.Ambient = Color3.new(1, 1, 1)
             end)
         else
-            if fullBrightConnection then fullBrightConnection:Disconnect() fullBrightConnection = nil end
+            if fullBrightConnection then safePcall(function() fullBrightConnection:Disconnect() end) fullBrightConnection = nil end
             Lighting.Ambient = oldLighting.Ambient
             Lighting.Brightness = oldLighting.Brightness
             Lighting.ClockTime = oldLighting.ClockTime
@@ -1013,7 +1094,7 @@ Tabs.Misc:Toggle({
                 Lighting.FogColor = Color3.fromRGB(255, 255, 255)
             end)
         else
-            if noFogConnection then noFogConnection:Disconnect() noFogConnection = nil end
+            if noFogConnection then safePcall(function() noFogConnection:Disconnect() end) noFogConnection = nil end
             Lighting.FogStart = oldLighting.FogStart
             Lighting.FogEnd = oldLighting.FogEnd
             Lighting.FogColor = oldLighting.FogColor
@@ -1041,9 +1122,10 @@ Tabs.Misc:Toggle({
     end,
 })
 
+local showFPS, showPing = true, true
 local fpsText, msText = Drawing.new("Text"), Drawing.new("Text")
-fpsText.Size, fpsText.Position, fpsText.Color, fpsText.Outline, fpsText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 10), Color3.fromRGB(0, 255, 0), true, true
-msText.Size, msText.Position, msText.Color, msText.Outline, msText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 30), Color3.fromRGB(0, 255, 0), true, true
+fpsText.Size, fpsText.Position, fpsText.Color, fpsText.Outline, fpsText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 10), Color3.fromRGB(0, 255, 0), true, showFPS
+msText.Size, msText.Position, msText.Color, msText.Outline, msText.Visible = 16, Vector2.new(Camera.ViewportSize.X - 100, 30), Color3.fromRGB(0, 255, 0), true, showPing
 local fpsCounter, fpsLastUpdate = 0, tick()
 
 RunService.RenderStepped:Connect(function()
@@ -1064,13 +1146,19 @@ Tabs.Misc:Section({Title = "FPS Boost Settings", Icon = "zap"})
 Tabs.Misc:Toggle({
     Title = "Show FPS",
     Default = true,
-    Callback = function(val) showFPS = val fpsText.Visible = val end,
+    Callback = function(val)
+        showFPS = val
+        fpsText.Visible = val
+    end,
 })
 
 Tabs.Misc:Toggle({
     Title = "Show Ping (ms)",
     Default = true,
-    Callback = function(val) showPing = val msText.Visible = val end,
+    Callback = function(val)
+        showPing = val
+        msText.Visible = val
+    end,
 })
 
 Tabs.Misc:Button({
@@ -1118,11 +1206,11 @@ local voteOptions = {"Normal", "Hard", "VeryHard", "Insane", "Nightmare", "BossR
 Tabs.Main:Dropdown({
     Title = "Set Vote",
     Values = voteOptions,
-    Default = "Normal",
+    Default = Config.Auto.VoteValue,
     Multi = false,
     Callback = function(value)
-        autoVoteValue = value
-        safePcall(function() VoteRemote:FireServer(value) end)
+        Config.Auto.VoteValue = value
+        safePcall(function() Remotes.Vote:FireServer(value) end)
     end,
 })
 
@@ -1130,11 +1218,11 @@ Tabs.Main:Toggle({
     Title = "Auto Vote",
     Default = false,
     Callback = function(enabled)
-        autoVoteEnabled = enabled
+        Config.Auto.VoteEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autoVoteEnabled do
-                    safePcall(function() VoteRemote:FireServer(autoVoteValue) end)
+                while Config.Auto.VoteEnabled do
+                    safePcall(function() Remotes.Vote:FireServer(Config.Auto.VoteValue) end)
                     task.wait(1)
                 end
             end)
@@ -1144,12 +1232,11 @@ Tabs.Main:Toggle({
 
 local Items = {"Clock Spider", "Transmitter", "FlashDrive", "Astro Samples"}
 local ItemsValue = {"Clock Spider"}
-local autoCollectEnabled, itemNotifyEnabled = false, false
 
 local function teleportToTarget(targetPos)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    hrp.CFrame = CFrame.new(targetPos)
+    safePcall(function() hrp.CFrame = CFrame.new(targetPos) end)
 end
 
 local function collectItem(obj)
@@ -1158,7 +1245,7 @@ local function collectItem(obj)
         local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hrp = char:FindFirstChild("HumanoidRootPart")
         local originalPos = hrp.Position
-        while prompt.Parent and autoCollectEnabled do
+        while prompt.Parent and Config.Auto.CollectEnabled do
             local targetPos = (obj.PrimaryPart and obj.PrimaryPart.Position or obj.Position) + Vector3.new(0, 3, 0)
             teleportToTarget(targetPos)
             task.wait(0.1)
@@ -1178,11 +1265,7 @@ local function itemNotify(obj)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp and obj.PrimaryPart then
         local distance = (hrp.Position - obj.PrimaryPart.Position).Magnitude * 1000
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Item Notify",
-            Text = string.format("Name: %s\nDistance: %04d mm", obj.Name, math.floor(distance)),
-            Duration = 3,
-        })
+        notify("Item Notify", string.format("Name: %s\nDistance: %04d mm", obj.Name, math.floor(distance)), 3)
     end
 end
 
@@ -1198,10 +1281,10 @@ Tabs.Collect:Toggle({
     Title = "Auto Collect",
     Default = false,
     Callback = function(enabled)
-        autoCollectEnabled = enabled
+        Config.Auto.CollectEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autoCollectEnabled do
+                while Config.Auto.CollectEnabled do
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if (obj:IsA("Model") or obj:IsA("Part")) and table.find(ItemsValue, obj.Name) then
                             safePcall(function() collectItem(obj) end)
@@ -1218,10 +1301,10 @@ Tabs.Collect:Toggle({
     Title = "Item Notify",
     Default = false,
     Callback = function(enabled)
-        itemNotifyEnabled = enabled
+        Config.Auto.ItemNotifyEnabled = enabled
         if enabled then
             task.spawn(function()
-                while itemNotifyEnabled do
+                while Config.Auto.ItemNotifyEnabled do
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if (obj:IsA("Model") or obj:IsA("Part")) and table.find(ItemsValue, obj.Name) then
                             safePcall(function() itemNotify(obj) end)
@@ -1236,7 +1319,7 @@ Tabs.Collect:Toggle({
 
 Tabs.Shop:Section({Title = "Hourly Shop (Beta)", Icon = "shopping-cart"})
 
-local shop, shopValue, shopValue1, autobuyEnabled = {}, {}, {}, false
+local shop, shopValue, shopValue1 = {}, {}, {}
 for _, gear in pairs(game:GetService("ReplicatedFirst"):WaitForChild("Gears", 5):GetChildren()) do
     table.insert(shop, gear.Name)
 end
@@ -1261,13 +1344,13 @@ Tabs.Shop:Toggle({
     Title = "Auto Buy",
     Default = false,
     Callback = function(enabled)
-        autobuyEnabled = enabled
+        Config.Auto.BuyEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autobuyEnabled do
+                while Config.Auto.BuyEnabled do
                     for _, item in ipairs(shopValue) do
                         for _, amount in ipairs(shopValue1) do
-                            safePcall(function() BuyItemRemote:FireServer(item, amount) end)
+                            safePcall(function() Remotes.BuyItem:FireServer(item, amount) end)
                             task.wait(1)
                         end
                     end
@@ -1280,7 +1363,6 @@ Tabs.Shop:Toggle({
 
 Tabs.Shop:Section({Title = "Feature Gacha", Icon = "gem"})
 
-local autobuyCharEnabled, autobuySkinEnabled = false, false
 local gachaCharOptions, gachaSkinOptions = {"1SpinLucky", "10Spins", "1Spin"}, {"1SpinLucky", "1Spin", "10Spins"}
 local selectedChar, selectedSkin = {}, {}
 
@@ -1296,12 +1378,12 @@ Tabs.Shop:Toggle({
     Title = "Auto Gacha Character",
     Default = false,
     Callback = function(enabled)
-        autobuyCharEnabled = enabled
+        Config.Auto.GachaCharEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autobuyCharEnabled do
+                while Config.Auto.GachaCharEnabled do
                     for _, spin in ipairs(selectedChar) do
-                        safePcall(function() GachaCharacterRemote:FireServer(spin) end)
+                        safePcall(function() Remotes.GachaCharacter:FireServer(spin) end)
                         task.wait(1)
                     end
                 end
@@ -1322,12 +1404,12 @@ Tabs.Shop:Toggle({
     Title = "Auto Gacha Skin",
     Default = false,
     Callback = function(enabled)
-        autobuySkinEnabled = enabled
+        Config.Auto.GachaSkinEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autobuySkinEnabled do
+                while Config.Auto.GachaSkinEnabled do
                     for _, spin in ipairs(selectedSkin) do
-                        safePcall(function() GachaSkinsRemote:FireServer(spin) end)
+                        safePcall(function() Remotes.GachaSkins:FireServer(spin) end)
                         task.wait(1)
                     end
                 end
@@ -1336,52 +1418,8 @@ Tabs.Shop:Toggle({
     end,
 })
 
-Tabs.Main:Section({Title = "Feature Farm", Icon = "tractor"})
-
-Tabs.Main:Dropdown({
-    Title = "Movement",
-    Values = {"Teleport", "CFrame"},
-    Default = movementMode,
-    Multi = false,
-    Callback = function(value) movementMode = value end,
-})
-
-Tabs.Main:Dropdown({
-    Title = "Set Position",
-    Values = {"Spin", "Above", "Back", "Under", "Front"},
-    Default = setPositionMode,
-    Multi = false,
-    Callback = function(value) setPositionMode = value end,
-})
-
-Tabs.Main:Slider({
-    Title = "Set Distance to NPC",
-    Value = {Min = 0, Max = 50, Default = getgenv().DistanceValue},
-    Step = 1,
-    Callback = function(val) getgenv().DistanceValue = val end,
-})
-
-Tabs.Main:Toggle({
-    Title = "Auto Farm (Upgrade)",
-    Default = false,
-    Callback = function(value)
-        autoFarmActive = value
-        if value then startAutoFarm() end
-    end,
-})
-
-Tabs.Main:Toggle({
-    Title = "Flush Aura (Upgrade)",
-    Default = false,
-    Callback = function(value)
-        flushAuraActive = value
-        if value then flushAura() end
-    end,
-})
-
 Tabs.Skill:Section({Title = "Feature Skill", Icon = "sparkles"})
 
-local autoSkillEnabled, autoSkillValues, skillDelay, loopDelay = false, {}, 0.25, 0.5
 local skillList = {"Q", "E", "R", "T", "Y", "F", "G", "H", "Z", "X", "C", "V", "B"}
 local dropdownValues = {"All"}
 for _, v in ipairs(skillList) do table.insert(dropdownValues, v) end
@@ -1391,7 +1429,7 @@ Tabs.Skill:Dropdown({
     Values = dropdownValues,
     Multi = true,
     Callback = function(values)
-        autoSkillValues = table.find(values, "All") and skillList or values
+        Config.Skill.Values = table.find(values, "All") and skillList or values
     end,
 })
 
@@ -1399,19 +1437,19 @@ Tabs.Skill:Toggle({
     Title = "Auto Skill",
     Default = false,
     Callback = function(enabled)
-        autoSkillEnabled = enabled
+        Config.Auto.SkillEnabled = enabled
         if enabled then
             task.spawn(function()
-                while autoSkillEnabled do
-                    for _, key in ipairs(autoSkillValues) do
+                while Config.Auto.SkillEnabled do
+                    for _, key in ipairs(Config.Skill.Values) do
                         safePcall(function()
                             VirtualInputManager:SendKeyEvent(true, key, false, game)
                             task.wait(0.05)
                             VirtualInputManager:SendKeyEvent(false, key, false, game)
                         end)
-                        task.wait(skillDelay)
+                        task.wait(Config.Skill.Delay)
                     end
-                    task.wait(loopDelay)
+                    task.wait(Config.Skill.LoopDelay)
                 end
             end)
         end
@@ -1500,4 +1538,50 @@ Tabs.Info:Paragraph({
     Buttons = {{Icon = "copy", Title = "Copy Link", Callback = function() setclipboard("https://discord.gg/jWNDPNMmyB") print("Copied discord link!") end}},
 })
 
-print("[DYHUB] Optimized Script Loaded!")
+Tabs.Main:Section({Title = "Feature Farm", Icon = "tractor"})
+
+Tabs.Main:Dropdown({
+    Title = "Movement",
+    Values = {"Teleport", "CFrame"},
+    Default = Config.Movement.Mode,
+    Multi = false,
+    Callback = function(value) Config.Movement.Mode = value end,
+})
+
+Tabs.Main:Dropdown({
+    Title = "Set Position",
+    Values = {"Spin", "Above", "Back", "Under", "Front"},
+    Default = Config.Movement.PositionMode,
+    Multi = false,
+    Callback = function(value) Config.Movement.PositionMode = value end,
+})
+
+Tabs.Main:Slider({
+    Title = "Set Distance to NPC",
+    Value = {Min = 0, Max = 50, Default = Config.Movement.Distance},
+    Step = 1,
+    Callback = function(val)
+        getgenv().DistanceValue = val
+        Config.Movement.Distance = val
+    end,
+})
+
+Tabs.Main:Toggle({
+    Title = "Auto Farm (Upgrade)",
+    Default = false,
+    Callback = function(value)
+        Config.Auto.FarmActive = value
+        if value then startAutoFarm() end
+    end,
+})
+
+Tabs.Main:Toggle({
+    Title = "Flush Aura (Upgrade)",
+    Default = false,
+    Callback = function(value)
+        Config.Auto.FlushAuraActive = value
+        if value then flushAura() end
+    end,
+})
+
+print("[DYHUB] Enhanced Script Loaded!")
