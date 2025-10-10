@@ -1,0 +1,3 @@
+getgenv().DYHUBTHEBEST = "Join Our dsc.gg/dyhub"
+getgenv().Credit = "@akirabr737"
+loadstring(game:HttpGet("https://pastebin.com/raw/DtqQiHSc"))()
