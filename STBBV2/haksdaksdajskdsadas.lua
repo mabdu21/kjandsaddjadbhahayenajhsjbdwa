@@ -1,5 +1,5 @@
 -- =========================
-local verison = "3.4.8"
+local verison = "3.5.1"
 -- =========================
 
 if setfpscap then
@@ -451,7 +451,7 @@ local function attackHumanoidNoProximity(npc)
         task.wait(0.1)
     end
     removeSupportPart()
-    removeVisited(npc)
+    --removeVisited(npc)
 end
 
 local function attackHumanoid(npc)
@@ -465,7 +465,7 @@ local function attackHumanoid(npc)
         task.wait(0.1)
     end
     removeSupportPart()
-    removeVisited(npc)
+    --removeVisited(npc)
 end
 
 -- AutoFarm
@@ -2525,4 +2525,4 @@ do
     print("[DYHUB] Scheduler appended: central loops registered (AutoFarm, Mastery, ESP, Hitbox, Collect, Shop, Skill, etc.).")
 end
 
--- End of appended optimization block
+-- End of appended optimization block gggg1212
