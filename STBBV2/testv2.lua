@@ -390,57 +390,24 @@ local function createSupportPart(character)
 end
 
 local spinAngle = 0
-local spinSpeed = math.rad(5) -- หมุนทีละ 5 องศาต่อเฟรม
-
 local function calculatePosition(npc)
-	if not npc or not npc:FindFirstChild("HumanoidRootPart") then 
-		return Vector3.new(), CFrame.new(), false
-	end
-
-	local hrp = npc.HumanoidRootPart
-	local pos = hrp.Position
-	local dist = getgenv().DistanceValue or 2
-
-	local targetPos
-	local lookCFrame
-	local anchored = false
-
-	if setPositionMode == "Above" then
-		targetPos = pos + Vector3.new(0, dist, 0)
-		lookCFrame = CFrame.new(targetPos, pos)
-		anchored = true
-
-	elseif setPositionMode == "Under" then
-		targetPos = pos - Vector3.new(0, dist, 0)
-		lookCFrame = CFrame.new(targetPos, pos)
-		anchored = true
-
-	elseif setPositionMode == "Front" then
-		-- "Front" อยู่ข้างหน้า NPC (เรามองเห็นหน้า NPC)
-		targetPos = pos - (hrp.CFrame.LookVector * dist)
-		lookCFrame = CFrame.new(targetPos, pos)
-
-	elseif setPositionMode == "Back" then
-		-- "Back" อยู่ข้างหลัง NPC (ด้านหลังของ NPC)
-		targetPos = pos + (hrp.CFrame.LookVector * dist)
-		lookCFrame = CFrame.new(targetPos, pos)
-
-	elseif setPositionMode == "Spin" then
-		-- หมุนรอบ NPC
-		spinAngle = (spinAngle + spinSpeed) % (2 * math.pi)
-		targetPos = pos + Vector3.new(
-			math.cos(spinAngle) * dist,
-			0,
-			math.sin(spinAngle) * dist
-		)
-		lookCFrame = CFrame.new(targetPos, pos)
-
-	else
-		targetPos = pos + (hrp.CFrame.LookVector * dist)
-		lookCFrame = CFrame.new(targetPos, pos)
-	end
-
-	return targetPos, lookCFrame, anchored
+    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return Vector3.new() end
+    local hrp = npc.HumanoidRootPart
+    local dist = getgenv().DistanceValue or 2
+    if setPositionMode == "Above" then
+        return hrp.Position + Vector3.new(0, dist, 0)
+    elseif setPositionMode == "Under" then
+        return hrp.Position - Vector3.new(0, dist, 0)
+    elseif setPositionMode == "Front" then
+        return hrp.Position + hrp.CFrame.LookVector * dist
+    elseif setPositionMode == "Back" then
+        return hrp.Position - hrp.CFrame.LookVector * dist
+    elseif setPositionMode == "Spin" then
+        spinAngle = spinAngle + math.rad(5)
+        return hrp.Position + Vector3.new(math.cos(spinAngle)*dist, 0, math.sin(spinAngle)*dist)
+    else
+        return hrp.Position + hrp.CFrame.LookVector * dist
+    end
 end
 
 -- ฟังก์ชันต่อย NPC
