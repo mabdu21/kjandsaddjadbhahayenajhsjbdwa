@@ -1,5 +1,6 @@
+-- Powered by GPT 5
 -- ======================
-local version = "5.0.2"
+local version = "5.0.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -617,6 +618,7 @@ SurTab:Toggle({
 })
 
 local autoGeneratorEnabled = false
+
 SurTab:Toggle({
     Title = "Auto Generator (No Puzzle)",
     Value = false,
@@ -628,8 +630,15 @@ SurTab:Toggle({
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
                 local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
 
                 while autoGeneratorEnabled do
+                    -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
+                    local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                    if gui and gui:FindFirstChild("Check") then
+                        gui.Check.Visible = false
+                    end
+
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
@@ -661,6 +670,7 @@ SurTab:Toggle({
                             end
                         end
                     end
+
                     task.wait(0.5)
                 end
             end)
@@ -970,7 +980,7 @@ killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
 local killallEnabled = false
 
 killerTab:Toggle({
-    Title = "Kill All (Warning: Get Ban)", 
+    Title = "Kill All (Warning: Get Ban)",
     Value = false,
     Callback = function(v)
         killallEnabled = v
@@ -981,47 +991,65 @@ killerTab:Toggle({
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Attacks"):WaitForChild("BasicAttack")
 
+                -- บันทึกตำแหน่งเริ่มต้นของเรา
+                local startCFrame = nil
                 local index = 1
 
                 while killallEnabled do
                     local char = LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
-                        -- สร้างลิสต์เป้าหมายในรอบนี้
+                        -- บันทึกตำแหน่งก่อนเริ่มครั้งแรก
+                        if not startCFrame then
+                            startCFrame = root.CFrame
+                        end
+
+                        -- รวมเป้าหมายทุกคนยกเว้นตัวเอง
                         local targets = {}
                         for _, plr in ipairs(Players:GetPlayers()) do
                             if plr ~= LocalPlayer and plr.Character then
                                 local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
                                 local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
-                                if targetRoot and targetRoot.Position.Y <= 100 and (not humanoid or humanoid.Health > 20) then
-                                    table.insert(targets, {player = plr, root = targetRoot})
+                                if targetRoot and humanoid then
+                                    table.insert(targets, {player = plr, root = targetRoot, humanoid = humanoid})
                                 end
                             end
                         end
 
+                        -- ถ้ามีเป้าหมาย
                         if #targets > 0 then
-                            if index > #targets then index = 1 end
-                            local entry = targets[index]
-                            local targetRoot = entry and entry.root
+                            -- ยิงใส่ทุกคนทีละคน
+                            for _, entry in ipairs(targets) do
+                                if not killallEnabled then break end
+                                local targetRoot = entry.root
+                                if targetRoot and targetRoot.Parent then
+                                    -- วาร์ปไปใกล้เป้าหมาย
+                                    root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
+                                    -- ยิง Remote
+                                    pcall(function()
+                                        remote:FireServer()
+                                    end)
+                                    task.wait(0.15)
+                                end
+                            end
 
-                            if targetRoot and targetRoot.Parent then
-                                -- วาร์ปไปข้างหน้าเป้าหมาย
-                                root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
+                            -- เช็คว่าผู้เล่นทุกคนเลือด <= 20 หรือไม่
+                            local allLowHealth = true
+                            for _, entry in ipairs(targets) do
+                                if entry.humanoid.Health > 20 then
+                                    allLowHealth = false
+                                    break
+                                end
+                            end
 
-                                -- ยิง Remote
-                                pcall(function()
-                                    remote:FireServer()
-                                end)
-
-                                -- ไปหาเป้าถัดไป
-                                index = index + 1
-                                task.wait(0.15)
+                            -- ถ้าทุกคนเลือด <= 20 ให้กลับไปตำแหน่งเดิม
+                            if allLowHealth and startCFrame then
+                                root.CFrame = startCFrame
+                                task.wait(1)
                             else
-                                index = index + 1
-                                task.wait(0.05)
+                                task.wait(0.2)
                             end
                         else
-                            index = 1
                             task.wait(0.5)
                         end
                     else
