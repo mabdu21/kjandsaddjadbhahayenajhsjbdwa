@@ -82,7 +82,8 @@ local shop = {
         "Mr Carrot Seed",
         "Tomatrio Seed",
         "Shroombino Seed",
-        "Mango Seed"
+        "Mango Seed",
+        "King Limone Seed"
     },
 
     gearList = {
