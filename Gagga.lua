@@ -2686,7 +2686,7 @@ Tabs.Vision:Toggle({
     end
 })
 
-Tabs.More:Section({ Title = "Auto Farm: V2", Icon = "gem" })
+Tabs.More:Section({ Title = "Auto Farm: Diamond", Icon = "gem" })
 Tabs.More:Section({ Title = "Feature: Auto Exe, Auto Server-Hop", Icon = "info" })
 
 -- ปุ่มในแท็บ More
@@ -2694,6 +2694,13 @@ Tabs.More:Button({
     Title = "Auto Farm (Pigeon Hub)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/collonroger/pigeonhub/refs/heads/main/autofarmdiamonds.lua"))()
+    end
+})
+
+Tabs.More:Button({
+    Title = "Auto Farm (Cáo Mod)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Idk.lua"))()
     end
 })
 
