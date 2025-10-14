@@ -1,0 +1,967 @@
+
+
+local function ClonedService(name)
+		local Service = (game.GetService);
+		local Reference = (cloneref) or function(reference) return reference end
+		return Reference(Service(game, name));
+	end
+
+	if syn then
+		ClonedService("StarterGui"):SetCore("SendNotification", {
+			Title = "Info",
+			Text = "Thank you for using our script! Join our discord server for more scripts and updates (discord.gg/Q5JVtgrrqX)",
+			Duration = 5
+		})
+	else
+		ClonedService("StarterGui"):SetCore("SendNotification", {
+			Title = "Info",
+			Text = "Thank you for using our script! Join our discord server for more scripts and updates (discord.gg/Q5JVtgrrqX)",
+			Duration = 5
+		})
+	end
+
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Debris = game:GetService("Debris")
+local player = Players.LocalPlayer
+
+-- Executor Detection
+local executor = getexecutorname() or identifyexecutor()
+
+if executor then
+    local supportedExecutors = {
+        "Bunni", "Delta", "Krnl", "Volocano", "Wave", "Xeno", "Zenith", "Tenken", "Potassium"
+    }
+
+    local isExecutorSupported = false
+    for _, name in ipairs(supportedExecutors) do
+        if string.find(executor, name) then
+            isExecutorSupported = true
+            break
+        end
+    end
+
+    if isExecutorSupported then
+        print("")
+    else
+        game.Players.LocalPlayer:Kick("Twin, yo exec aint supported!")
+    end
+end
+
+local executorName
+if identifyexecutor then
+    executorName=identifyexecutor()
+elseif getexecutorname then
+    executorName=getexecutorname()
+end
+
+-- End of Executor Detection
+
+repeat task.wait() until player
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "The Rake Remastered Script",
+    Icon = 0,
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by Tenken Scripts Hub",
+    ShowText = "Rayfield",
+    Theme = "Default",
+    ToggleUIKeybind = "K",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TenkenScriptsHub",
+        FileName = "TenkenScriptsHub"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "Script Key System",
+        Subtitle = "Enter key to use script",
+        Note = "Join our discord server for key (discord.gg/dyhub)",
+        FileName = "DYHUB Key System",
+        SaveKey = false,
+        GrabKeyFromSite = false,
+        Key = {"NIGGA"}
+    }
+})
+
+
+local ServerTab = Window:CreateTab("Server Controls")
+
+ServerTab:CreateButton({
+    Name = "Rejoin Server",
+    Callback = function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+    end
+})
+
+ServerTab:CreateButton({
+    Name = "Server Hop",
+    Callback = function()
+        local servers = {}
+        local success, req = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+        end)
+        if not success then return end
+        local data = HttpService:JSONDecode(req)
+        if data and data.data then
+            for _,v in pairs(data.data) do
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    table.insert(servers, v.id)
+                end
+            end
+        end
+        if #servers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1,#servers)], player)
+        else
+            Rayfield:Notify({
+                Title = "Server Hop",
+                Content = "No available servers found.",
+                Duration = 3
+            })
+        end
+    end
+})
+
+
+local MainTab = Window:CreateTab("Main")
+
+
+local thirdPersonEnabled = false
+local function setFirstPerson()
+    pcall(function()
+        player.CameraMaxZoomDistance = 0.5
+        player.CameraMinZoomDistance = 0.5
+        player.DevEnableMouseLock = false
+        player.DevComputerCameraMode = Enum.DevComputerCameraMovementMode.Default
+    end)
+end
+local function setThirdPerson()
+    pcall(function()
+        player.CameraMinZoomDistance = 0.5
+        player.CameraMaxZoomDistance = 30
+        player.DevEnableMouseLock = true
+        player.DevComputerCameraMode = Enum.DevComputerCameraMovementMode.UserChoice
+    end)
+end
+local function enforceThirdPerson()
+    if thirdPersonEnabled then setThirdPerson() end
+end
+MainTab:CreateToggle({
+    Name = "Third Person + Shiftlock",
+    CurrentValue = false,
+    Flag = "ThirdPersonToggle",
+    Callback = function(Value)
+        thirdPersonEnabled = Value
+        if Value then
+            setThirdPerson()
+            player:GetPropertyChangedSignal("CameraMaxZoomDistance"):Connect(enforceThirdPerson)
+            player:GetPropertyChangedSignal("CameraMinZoomDistance"):Connect(enforceThirdPerson)
+        else
+            setFirstPerson()
+        end
+    end
+})
+player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if thirdPersonEnabled then setThirdPerson() else setFirstPerson() end
+end)
+
+local fullBrightEnabled = false
+local savedLighting = {}
+local savedCaptured = false
+local fbChangedConn
+local function captureOriginals()
+    if savedCaptured then return end
+    savedCaptured = true
+    savedLighting.Brightness = Lighting.Brightness
+    savedLighting.ClockTime = Lighting.ClockTime
+    savedLighting.FogEnd = Lighting.FogEnd
+    savedLighting.GlobalShadows = Lighting.GlobalShadows
+    savedLighting.Ambient = Lighting.Ambient
+    savedLighting.OutdoorAmbient = Lighting.OutdoorAmbient
+    savedLighting.ColorShift_Bottom = Lighting.ColorShift_Bottom
+    savedLighting.ColorShift_Top = Lighting.ColorShift_Top
+end
+local function applyFullBrightOnce()
+    pcall(function()
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 1e9
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.new(1,1,1)
+        Lighting.OutdoorAmbient = Color3.new(1,1,1)
+        Lighting.ColorShift_Bottom = Color3.new(1,1,1)
+        Lighting.ColorShift_Top = Color3.new(1,1,1)
+    end)
+    for _,v in ipairs(Lighting:GetChildren()) do
+        pcall(function()
+            if v:IsA("Atmosphere") then
+                if v.Density then v.Density=0 end
+                if v.Offset then v.Offset=0 end
+                v.Color = Color3.new(1,1,1)
+                if v.Decay then v.Decay=0 end
+                if v.Glare then v.Glare=0 end
+            elseif v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("SunRaysEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") then
+                if v.Enabled~=nil then v.Enabled=false end
+            end
+        end)
+    end
+end
+MainTab:CreateToggle({
+    Name = "Full Bright",
+    CurrentValue = false,
+    Flag = "FullBrightToggle",
+    Callback = function(Value)
+        fullBrightEnabled = Value
+        if Value then
+            captureOriginals()
+            applyFullBrightOnce()
+            fbChangedConn = RunService.RenderStepped:Connect(function()
+                if fullBrightEnabled then applyFullBrightOnce() end
+            end)
+        else
+            if fbChangedConn then fbChangedConn:Disconnect() fbChangedConn=nil end
+            pcall(function()
+                for k,v in pairs(savedLighting) do
+                    Lighting[k]=v
+                end
+            end)
+        end
+    end
+})
+
+local noFallEnabled = false
+local fvConnections = {}
+local function clearFallConns()
+    for _,c in ipairs(fvConnections) do pcall(function() c:Disconnect() end) end
+    fvConnections = {}
+end
+local function attachFallGuard(char)
+    local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid",5)
+    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+    if not humanoid or not root then return end
+    local preFallHealth = humanoid.Health
+    local lastState = Enum.HumanoidStateType.Running
+    local fallLoop
+    local function softenFall()
+        if not (root and root.Parent and humanoid and humanoid.Parent) then return end
+        local vy = root.Velocity.Y
+        if vy < -50 then
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(0,1e5,0)
+            bv.P = 3000
+            bv.Velocity = Vector3.new(0, -30, 0)
+            bv.Parent = root
+            task.delay(0.15,function() pcall(function() bv:Destroy() end) end)
+        end
+    end
+    local stateCon = humanoid.StateChanged:Connect(function(_, newState)
+        lastState = newState
+        if newState==Enum.HumanoidStateType.Freefall then
+            preFallHealth = humanoid.Health
+            if fallLoop then pcall(function() fallLoop:Disconnect() end) end
+            fallLoop = RunService.Heartbeat:Connect(function()
+                if noFallEnabled then softenFall() end
+            end)
+        elseif newState==Enum.HumanoidStateType.Landed then
+            if fallLoop then pcall(function() fallLoop:Disconnect() end) end
+            task.delay(0.03,function()
+                if noFallEnabled and humanoid.Health < preFallHealth then
+                    humanoid.Health = preFallHealth
+                end
+            end)
+        end
+    end)
+    local healthCon = humanoid.HealthChanged:Connect(function()
+        if noFallEnabled and lastState==Enum.HumanoidStateType.Landed and humanoid.Health<preFallHealth then
+            humanoid.Health = preFallHealth
+        end
+    end)
+    table.insert(fvConnections,stateCon)
+    table.insert(fvConnections,healthCon)
+end
+local function enableNoFall()
+    if noFallEnabled then return end
+    noFallEnabled=true
+    if player.Character then attachFallGuard(player.Character) end
+    local ca = player.CharacterAdded:Connect(function(ch)
+        task.wait(0.35)
+        if noFallEnabled then attachFallGuard(ch) end
+    end)
+    table.insert(fvConnections, ca)
+    Rayfield:Notify({Title="No Fall Damage",Content="Enabled",Duration=3})
+end
+local function disableNoFall()
+    noFallEnabled=false
+    clearFallConns()
+    Rayfield:Notify({Title="No Fall Damage",Content="Disabled",Duration=3})
+end
+MainTab:CreateToggle({
+    Name="No Fall Damage",
+    CurrentValue=false,
+    Flag="NoFallDamageToggle",
+    Callback=function(Value)
+        if Value then enableNoFall() else disableNoFall() end
+    end
+})
+
+local Paragraph = MainTab:CreateParagraph({
+    Title = "No Fall Damage Note",
+    Content = "When falling, please do not hold any key until you are on the ground."
+})
+
+local autoSprintEnabled = false
+local sprintConnections = {}
+local normalWalkSpeed = 16
+local sprintSpeed = 30
+local function clearSprintConns()
+    for _,c in ipairs(sprintConnections) do pcall(function() c:Disconnect() end) end
+    sprintConnections={}
+end
+local function maintainSprint(char)
+    local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid",5)
+    if not humanoid then return end
+    local stamina = humanoid:FindFirstChild("Stamina") or humanoid:FindFirstChild("Energy")
+    local conn = RunService.RenderStepped:Connect(function()
+        if autoSprintEnabled then
+            if humanoid and humanoid.Parent then
+                humanoid.WalkSpeed = sprintSpeed
+                if stamina then pcall(function() stamina.Value=stamina.MaxValue or 100 end) end
+            end
+        else
+            if humanoid and humanoid.Parent then humanoid.WalkSpeed = normalWalkSpeed end
+        end
+    end)
+    table.insert(sprintConnections, conn)
+end
+local function enableAutoSprint()
+    if autoSprintEnabled then return end
+    autoSprintEnabled=true
+    if player.Character then maintainSprint(player.Character) end
+    local charConn = player.CharacterAdded:Connect(function(ch)
+        task.wait(0.2)
+        if autoSprintEnabled then maintainSprint(ch) end
+    end)
+    table.insert(sprintConnections, charConn)
+    Rayfield:Notify({Title="Auto Sprint",Content="Enabled",Duration=3})
+end
+local function disableAutoSprint()
+    autoSprintEnabled=false
+    clearSprintConns()
+    if player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.WalkSpeed = normalWalkSpeed end
+    end
+    Rayfield:Notify({Title="Auto Sprint",Content="Disabled",Duration=3})
+end
+MainTab:CreateToggle({
+    Name="Auto Sprint",
+    CurrentValue=false,
+    Flag="AutoSprintToggle",
+    Callback=function(Value)
+        if Value then enableAutoSprint() else disableAutoSprint() end
+    end
+})
+
+local Section = MainTab:CreateSection("Miscellaneous")
+
+-- rake autokill 
+local RakeKillauraToggle = MainTab:CreateToggle({
+		Name = "Rake Killaura",
+		CurrentValue = false,
+		Flag = "RakeAura",
+		Callback = function(state)
+			_G.RakeKillAura = state
+			Rayfield:Notify({
+				Title = "Rake Killaura",
+				Content = "Rake Killaura : "..tostring(_G.RakeKillAura),
+				Duration = 1,
+				Image = 4483362458,
+			})
+			if _G.RakeKillAura == true then
+				repeat wait()
+					pcall(function()
+						for i,v in pairs(ClonedService("Workspace"):GetChildren()) do
+							if ClonedService("Workspace"):FindFirstChild("Rake") then
+								if (ClonedService("Workspace").Rake.HumanoidRootPart.Position - ClonedService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 300 then
+									ClonedService("Players").LocalPlayer.Character.StunStick.Event:FireServer("S")
+									wait()
+									ClonedService("Players").LocalPlayer.Character.StunStick.Event:FireServer("H", workspace.Rake.HumanoidRootPart)	
+								end
+							end
+						end
+						wait(.1)
+					end)
+				until _G.RakeKillAura == false
+			end
+		end,
+	})
+
+	-- rake killaura hitpart 
+	ClonedService("RunService").Heartbeat:Connect(function()
+		if AllowRunService == true then
+			if _G.RakeKillAura == true then
+				pcall(function()
+					if ClonedService("Workspace"):FindFirstChild("Rake") then
+						ClonedService("Players").LocalPlayer.Character.StunStick.HitPart.Position = ClonedService("Workspace"):FindFirstChild("Rake").HumanoidRootPart.Position
+					end
+				end)
+			end
+		end
+	end)
+
+    -- bring scraps
+
+MainTab:CreateButton({
+		Name = "Bring Scraps",
+		Callback = function()
+			for i,v in pairs(ClonedService("Workspace").Filter.ScrapSpawns:GetDescendants()) do
+				if v.Name:lower() == "scrap" then
+					v:PivotTo(ClonedService("Players").LocalPlayer.Character:GetPivot())
+				end
+			end
+		end,
+	})
+
+
+
+
+local AutofarmTab = Window:CreateTab("Autofarm")
+
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = {
+    DETECTION_RANGE = 50,
+    MIN_RUN_DISTANCE = 20,
+    MAX_RUN_DISTANCE = 40,
+    SPEED_MULTIPLIER = 2,
+    MIN_UPDATE_DELAY = 0.01,
+    MAX_UPDATE_DELAY = 0.05,
+    DISTANCE_SCALING = 200,
+    CLOSE_RANGE = 10,
+    SMOOTHNESS_CLOSE = 0.05,
+    SMOOTHNESS_FAR = 0.1,
+    RAY_HEIGHT = 5,
+    RAY_DEPTH = -10,
+    ALTERNATIVE_OFFSETS = {
+        Vector3.new(5, 0, 5),
+        Vector3.new(-5, 0, 5),
+        Vector3.new(5, 0, -5),
+        Vector3.new(-5, 0, -5)
+    }
+}
+
+local State = {
+    isActive = false,
+    connections = {},
+    originalWalkSpeed = nil,
+    targetPart = nil
+}
+
+
+local function clearConnections()
+    for _, connection in ipairs(State.connections) do
+        connection:Disconnect()
+    end
+    table.clear(State.connections)
+end
+
+local function findSafePosition(desiredPosition, speaker)
+    local rayOrigin = desiredPosition + Vector3.new(0, Config.RAY_HEIGHT, 0)
+    local rayDirection = Vector3.new(0, Config.RAY_DEPTH, 0)
+    
+    local collision = workspace:FindPartOnRayWithIgnoreList(
+        Ray.new(rayOrigin, rayDirection),
+        {speaker.Character}
+    )
+    
+    if not collision then
+        return desiredPosition
+    end
+    
+    for _, offset in ipairs(Config.ALTERNATIVE_OFFSETS) do
+        local altPosition = desiredPosition + offset
+        local altRayOrigin = altPosition + Vector3.new(0, Config.RAY_HEIGHT, 0)
+        local altCollision = workspace:FindPartOnRayWithIgnoreList(
+            Ray.new(altRayOrigin, rayDirection),
+            {speaker.Character}
+        )
+        
+        if not altCollision then
+            return altPosition
+        end
+    end
+    
+    return desiredPosition + Vector3.new(0, 2, 0)
+end
+
+local function updateTargetPart()
+    local rake = workspace:FindFirstChild("Rake")
+    State.targetPart = rake and rake:FindFirstChild("HumanoidRootPart")
+    return State.targetPart ~= nil
+end
+
+local function runAwayFromTarget(speaker)
+    local character = speaker.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    
+    if not (humanoidRootPart and humanoid) then return end
+    
+    if humanoid.SeatPart then
+        humanoid.Sit = false
+        task.wait(0.0001)
+    end
+    
+    if not (State.targetPart and State.targetPart:IsDescendantOf(workspace)) then
+        return
+    end
+    
+    local targetPosition = State.targetPart.Position
+    local currentPosition = humanoidRootPart.Position
+    local distance = (targetPosition - currentPosition).Magnitude
+    
+    if distance <= Config.DETECTION_RANGE then
+        local runDistance = math.min(
+            Config.MAX_RUN_DISTANCE,
+            math.max(Config.MIN_RUN_DISTANCE, distance * 0.75)
+        )
+        
+        local directionAwayFromTarget = (currentPosition - targetPosition).Unit
+        local desiredPosition = currentPosition + (directionAwayFromTarget * runDistance)
+        
+        local safePosition = findSafePosition(desiredPosition, speaker)
+        
+        local targetLook = CFrame.new(safePosition, targetPosition)
+        local smoothness = distance < Config.CLOSE_RANGE and 
+            Config.SMOOTHNESS_CLOSE or Config.SMOOTHNESS_FAR
+        
+        humanoidRootPart.CFrame = humanoidRootPart.CFrame:Lerp(targetLook, smoothness)
+        humanoid:MoveTo(safePosition)
+        
+        local delay = math.max(
+            Config.MIN_UPDATE_DELAY,
+            math.min(Config.MAX_UPDATE_DELAY, distance / Config.DISTANCE_SCALING)
+        )
+        task.wait(delay)
+    end
+end
+
+local function setupTargetTracking()
+    local workspaceConnection = workspace.ChildAdded:Connect(function(child)
+        if child.Name == "Rake" then
+            task.wait()
+            updateTargetPart()
+        end
+    end)
+    table.insert(State.connections, workspaceConnection)
+    
+    workspace.ChildRemoved:Connect(function(child)
+        if child.Name == "Rake" then
+            State.targetPart = nil
+        end
+    end)
+    table.insert(State.connections, workspaceConnection)
+end
+
+local function toggleRunningAway(value)
+    if State.isActive == value then return end
+    
+    State.isActive = value
+    local player = Players.LocalPlayer
+    
+    if value then
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            State.originalWalkSpeed = humanoid.WalkSpeed
+            humanoid.WalkSpeed = State.originalWalkSpeed * Config.SPEED_MULTIPLIER
+        end
+        
+        updateTargetPart()
+        
+        setupTargetTracking()
+        
+        local updateConnection = RunService.Heartbeat:Connect(function()
+            if State.isActive then
+                runAwayFromTarget(player)
+            end
+        end)
+        table.insert(State.connections, updateConnection)
+        
+    else
+        clearConnections()
+        
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid and State.originalWalkSpeed then
+            humanoid.WalkSpeed = State.originalWalkSpeed
+        end
+    end
+end
+
+
+local antiRakeToggle = AutofarmTab:CreateToggle({
+    Name = "Anti-Rake Chase (Autofarm)",
+    CurrentValue = false,
+    Flag = "AntiRake",
+    Callback = function(Value)
+        toggleRunningAway(Value)
+    end
+})
+-- End
+
+
+-- ESP
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local ActiveESP = {}
+local espObjects = {}
+
+local ESPOptions = {"Players","Rake","Flare Gun","Scrap","Supply Drop"}
+
+local espColors = {
+    ["Players"] = Color3.fromRGB(0,255,0),
+    ["Rake"] = Color3.fromRGB(255,0,0),
+    ["Flare Gun"] = Color3.fromRGB(255,165,0),
+    ["Scrap"] = Color3.fromRGB(0,191,255),
+    ["Supply Drop"] = Color3.fromRGB(251,255,0),
+}
+
+local function makeBillboard(part, text, color)
+    if not part or not part:IsA("BasePart") then return nil end
+    local bgui = Instance.new("BillboardGui")
+    bgui.Size = UDim2.new(0, 70, 0, 14)
+    bgui.StudsOffset = Vector3.new(0, 2.6, 0)
+    bgui.AlwaysOnTop = true
+    bgui.Adornee = part
+    bgui.Parent = part
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = color
+    label.Font = Enum.Font.SourceSansBold
+    label.TextScaled = true
+    label.TextStrokeTransparency = 0
+    label.Text = text or ""
+    label.Parent = bgui
+
+    return bgui
+end
+
+-- returns adorneeModel (Model or BasePart) and adorneePart (BasePart for billboards)
+local function getAdornee(inst)
+    if not inst then return nil, nil end
+
+    if inst:IsA("Model") then
+        local part = inst.PrimaryPart or inst:FindFirstChild("HumanoidRootPart") or inst:FindFirstChild("Handle") or inst:FindFirstChildWhichIsA("BasePart")
+        return inst, part
+    elseif inst:IsA("Tool") then
+        local handle = inst:FindFirstChild("Handle") or inst:FindFirstChildWhichIsA("BasePart")
+        if handle then
+            if inst.Parent and inst.Parent:IsA("Model") then
+                local model = inst.Parent
+                local part = model.PrimaryPart or handle
+                return model, part
+            else
+                return inst, handle
+            end
+        end
+    elseif inst:IsA("BasePart") then
+        local model = inst:FindFirstAncestorWhichIsA("Model")
+        if model then
+            return model, inst
+        else
+            return inst, inst
+        end
+    end
+
+    local model = inst:FindFirstAncestorWhichIsA("Model")
+    if model then
+        local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+        return model, part
+    end
+
+    return nil, nil
+end
+
+local function removeESP(key)
+    if not key then return end
+    local obj = espObjects[key]
+    if not obj then return end
+    pcall(function()
+        if obj.Highlight and obj.Highlight.Parent then obj.Highlight:Destroy() end
+    end)
+    pcall(function()
+        if obj.Billboard and obj.Billboard.Parent then obj.Billboard:Destroy() end
+    end)
+    if obj.Conn then
+        pcall(function() obj.Conn:Disconnect() end)
+    end
+    espObjects[key] = nil
+end
+
+local function createESP(rawTarget, typeName, customName)
+    if not rawTarget or not typeName then return end
+
+    local adorneeModel, adorneePart = getAdornee(rawTarget)
+    local key = adorneeModel or rawTarget
+    if not key then return end
+
+    if espObjects[key] then return end
+
+    local success, highlight = pcall(function()
+        local h = Instance.new("Highlight")
+        h.Adornee = (adorneeModel or rawTarget)
+        h.FillColor = espColors[typeName] or Color3.new(1,1,1)
+        h.OutlineColor = Color3.new(0,0,0)
+        h.FillTransparency = 0.5
+        h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        if adorneeModel and adorneeModel:IsA("Model") then
+            h.Parent = adorneeModel
+        elseif rawTarget.Parent then
+            h.Parent = rawTarget
+        else
+            h.Parent = Workspace
+        end
+        return h
+    end)
+    if not success then return end
+
+    local billboard
+    if adorneePart and adorneePart:IsA("BasePart") then
+        billboard = makeBillboard(adorneePart, customName or typeName, espColors[typeName] or Color3.new(1,1,1))
+    end
+
+    local conn
+    pcall(function()
+        conn = key.AncestryChanged:Connect(function(_, parent)
+            if not parent then
+                removeESP(key)
+            end
+        end)
+    end)
+
+    espObjects[key] = {Highlight = highlight, Billboard = billboard, Type = typeName, Conn = conn}
+end
+
+local function safeValueGet(obj, name)
+    if not obj then return nil end
+    local success, val = pcall(function()
+        local child = obj:FindFirstChild(name)
+        if child and (child:IsA("IntValue") or child:IsA("NumberValue") or child:IsA("StringValue")) then
+            return child.Value
+        elseif child and child.Value ~= nil then
+            return child.Value
+        end
+        return nil
+    end)
+    if success then return val end
+    return nil
+end
+
+local function refreshESP()
+    -- Players
+    if ActiveESP["Players"] then
+        for _, pl in ipairs(Players:GetPlayers()) do
+            if pl ~= LocalPlayer and pl.Character then
+                createESP(pl.Character, "Players", pl.Name)
+            end
+        end
+    end
+
+    -- Rake
+    if ActiveESP["Rake"] then
+        local rake = Workspace:FindFirstChild("Rake")
+        if rake then createESP(rake, "Rake", "Rake") end
+    end
+
+    -- Flare Gun
+    if ActiveESP["Flare Gun"] then
+        local seen = {}
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj and obj.Name then
+                local lname = obj.Name:lower()
+                if obj:IsA("Tool") and lname:find("flare") then
+                    local keyModel = obj.Parent and obj.Parent:IsA("Model") and obj.Parent or obj
+                    if not seen[keyModel] then
+                        createESP(obj, "Flare Gun", "Flare Gun")
+                        seen[keyModel] = true
+                    end
+                elseif obj:IsA("Model") and lname:find("flare") then
+                    if not seen[obj] then
+                        createESP(obj, "Flare Gun", "Flare Gun")
+                        seen[obj] = true
+                    end
+                elseif obj:IsA("BasePart") and lname:find("flare") then
+                    local model = obj:FindFirstAncestorWhichIsA("Model") or obj
+                    if not seen[model] then
+                        createESP(model, "Flare Gun", "Flare Gun")
+                        seen[model] = true
+                    end
+                end
+            end
+        end
+    end
+
+    -- Scrap
+    if ActiveESP["Scrap"] then
+        local okFilter = Workspace:FindFirstChild("Filter")
+        if okFilter and okFilter:FindFirstChild("ScrapSpawns") then
+            for _, obj in ipairs(okFilter.ScrapSpawns:GetDescendants()) do
+                if obj and obj:IsA("BasePart") then
+                    local lname = obj.Name:lower()
+                    if lname:find("scrap") then
+                        local model = obj:FindFirstAncestorWhichIsA("Model") or obj
+                        local label = "Scrap"
+                        local points = safeValueGet(model, "PointsVal")
+                        local level = safeValueGet(model, "LevelVal")
+                        if points or level then
+                            points = points and tostring(points) or "N/A"
+                            level = level and tostring(level) or "N/A"
+                            label = "Scrap, Points "..points..", Level "..level
+                        end
+                        createESP(model, "Scrap", label)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Supply Drop
+    if ActiveESP["Supply Drop"] then
+        local debris = Workspace:FindFirstChild("Debris")
+        if debris and debris:FindFirstChild("SupplyCrates") then
+            for _, drop in ipairs(debris.SupplyCrates:GetChildren()) do
+                if drop then
+                    if drop.Name == "Box" or drop.Name:lower():find("crate") or drop:FindFirstChild("HitBox") then
+                        createESP(drop, "Supply Drop", "Supply Drop")
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- UI
+local ESPTab = Window:CreateTab("ESP")
+
+ESPTab:CreateDropdown({
+    Name = "ESP Options",
+    Options = ESPOptions,
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "ESPSelection",
+    Callback = function(selected)
+        ActiveESP = {}
+        for _, name in ipairs(selected) do
+            ActiveESP[name] = true
+        end
+        for target, obj in pairs(espObjects) do
+            if not ActiveESP[obj.Type] then removeESP(target) end
+        end
+        refreshESP()
+    end
+})
+
+
+-- Player join/respawn
+Players.PlayerAdded:Connect(function(pl)
+    pl.CharacterAdded:Connect(function()
+        if ActiveESP["Players"] then
+            task.wait(1)
+            createESP(pl.Character, "Players", pl.Name)
+        end
+    end)
+end)
+Players.PlayerRemoving:Connect(function(pl)
+    if pl and pl.Character then
+        removeESP(pl.Character)
+    end
+end)
+
+-- Workspace updates
+Workspace.ChildAdded:Connect(function()
+    task.wait(1)
+    refreshESP()
+end)
+
+-- End of ESP
+
+
+local SettingsTab = Window:CreateTab("Settings", nil)
+local Themes = {
+   ["Default"]    = "Default",
+   ["Amber Glow"] = "AmberGlow",
+   ["Amethyst"]   = "Amethyst",
+   ["Bloom"]      = "Bloom",
+   ["Dark Blue"]  = "DarkBlue",
+   ["Green"]      = "Green",
+   ["Light"]      = "Light",
+   ["Ocean"]      = "Ocean",
+   ["Serenity"]   = "Serenity"
+}
+
+local selectedTheme = "Default"
+
+local Dropdown = SettingsTab:CreateDropdown({
+   Name = "Change Theme",
+   Options = {"Default", "Amber Glow", "Amethyst", "Bloom", "Dark Blue", "Green", "Light", "Ocean", "Serenity"},
+   CurrentOption = selectedTheme,
+   Flag = "ThemeSelection", 
+   Callback = function(Selected)
+      
+      local key = type(Selected) == "table" and Selected[1] or Selected
+      print("Selected option:", key)
+
+      
+      local ident = Themes[key] or key
+      print("Applying theme:", ident)
+
+      
+      if type(Window.ModifyTheme) == "function" then
+         Window.ModifyTheme(ident)
+      elseif type(Window.ModifyTheme) == "function" then
+         Window:ModifyTheme(ident)
+      else
+         warn("ModifyTheme function not found in Window")
+      end
+   end, 
+})
+
+local CreditsTab = Window:CreateTab("Credits", nil)
+
+ local Section = CreditsTab:CreateSection("Discord: _.strivex")
+ local Section = CreditsTab:CreateSection("YouTube: official_tenken")
+ local Section = CreditsTab:CreateSection("Scriptblox: OfficialTenkenAlt")
+ local Button = CreditsTab:CreateButton({
+    Name = "Copy Discord Link",
+    Callback = function()
+        setclipboard("https://discord.gg/Q5JVtgrrqX")
+    end,
+ })
+ local Button = CreditsTab:CreateButton({
+    Name = "Copy Discord Short Link",
+    Callback = function()
+        setclipboard("https://dsc.gg/tenkenscripts")
+    end,
+ })
