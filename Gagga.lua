@@ -1,4 +1,4 @@
--- V541
+-- V543
 
 repeat task.wait() until game:IsLoaded()
 
@@ -2691,9 +2691,9 @@ Tabs.More:Section({ Title = "Feature: Auto Exe, Auto Server-Hop", Icon = "info" 
 
 -- ปุ่มในแท็บ More
 Tabs.More:Button({
-    Title = "Auto Farm (Cào Mod)",
+    Title = "Auto Farm (Pigeon Hub)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Idk.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/collonroger/pigeonhub/refs/heads/main/autofarmdiamonds.lua"))()
     end
 })
 
