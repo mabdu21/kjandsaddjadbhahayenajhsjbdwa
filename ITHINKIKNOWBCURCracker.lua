@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.0.5"
+local version = "5.0.7"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -747,14 +747,18 @@ SurTab:Toggle({
                                     local dist = (root.Position - targetRoot.Position).Magnitude
                                     if dist <= closestDist then
                                         closestDist = dist
-                                        closestTarget = plr.Character
+                                        closestTarget = plr
                                     end
                                 end
                             end
                         end
 
                         if closestTarget then
-                            local args = {"success", 1, closestTarget}
+                            local args = {
+                                "success",
+                                1,
+                                closestTarget.Character
+                            }
                             remote:FireServer(unpack(args))
                         end
                     end
