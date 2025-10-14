@@ -1,25 +1,27 @@
-
-
 local function ClonedService(name)
-		local Service = (game.GetService);
-		local Reference = (cloneref) or function(reference) return reference end
-		return Reference(Service(game, name));
-	end
+    local Service = (game.GetService)
+    local Reference = (cloneref) or function(reference) return reference end
+    return Reference(Service(game, name))
+end
 
-	if syn then
-		ClonedService("StarterGui"):SetCore("SendNotification", {
-			Title = "Info",
-			Text = "Thank you for using our script! Join our discord server for more scripts and updates (discord.gg/Q5JVtgrrqX)",
-			Duration = 5
-		})
-	else
-		ClonedService("StarterGui"):SetCore("SendNotification", {
-			Title = "Info",
-			Text = "Thank you for using our script! Join our discord server for more scripts and updates (discord.gg/Q5JVtgrrqX)",
-			Duration = 5
-		})
-	end
-
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
+end
 
 -- SERVICES
 local Players = game:GetService("Players")
@@ -68,28 +70,28 @@ repeat task.wait() until player
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "The Rake Remastered Script",
-    Icon = 0,
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "by Tenken Scripts Hub",
-    ShowText = "Rayfield",
+    Name = "DYHUB | The Rake REMASTERED",
+    Icon = 104487529937663,
+    LoadingTitle = "DYHUB Loaded! - The Rake REMASTERED",
+    LoadingSubtitle = "Join our at dsc.gg/dyhub",
+    ShowText = "DYHUB",
     Theme = "Default",
     ToggleUIKeybind = "K",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "TenkenScriptsHub",
-        FileName = "TenkenScriptsHub"
+        FolderName = "DYHUB_TRR",
+        FileName = "Config_TRR"
     },
     Discord = {
         Enabled = true,
-        Invite = "",
+        Invite = "jWNDPNMmyB",
         RememberJoins = true
     },
     KeySystem = false,
     KeySettings = {
         Title = "Script Key System",
         Subtitle = "Enter key to use script",
-        Note = "Join our discord server for key (discord.gg/dyhub)",
+        Note = "Join our discord server for key (dsc.gg/dyhub)",
         FileName = "DYHUB Key System",
         SaveKey = false,
         GrabKeyFromSite = false,
@@ -375,6 +377,14 @@ MainTab:CreateToggle({
         if Value then enableAutoSprint() else disableAutoSprint() end
     end
 })
+MainTab:CreateToggle({
+    Name="Infinite Stamina",
+    CurrentValue=false,
+    Flag="AutoSprintTogglev2",
+    Callback=function(Value)
+        if Value then enableAutoSprint() else disableAutoSprint() end
+    end
+})
 
 local Section = MainTab:CreateSection("Miscellaneous")
 
@@ -439,7 +449,7 @@ MainTab:CreateButton({
 
 
 
-local AutofarmTab = Window:CreateTab("Autofarm")
+local AutofarmTab = Window:CreateTab("Auto Farm")
 
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -618,12 +628,80 @@ end
 
 
 local antiRakeToggle = AutofarmTab:CreateToggle({
-    Name = "Anti-Rake Chase (Autofarm)",
+    Name = "Anti-Rake (Escape Rake)",
     CurrentValue = false,
     Flag = "AntiRake",
     Callback = function(Value)
         toggleRunningAway(Value)
     end
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+local AntiAfkEnabled = false
+local AntiAfkConnection
+local FarmPart
+
+local function EnableAntiAfk()
+	if AntiAfkEnabled then return end
+	AntiAfkEnabled = true
+	AntiAfkConnection = player.Idled:Connect(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new())
+	end)
+end
+
+local function DisableAntiAfk()
+	if AntiAfkConnection then
+		AntiAfkConnection:Disconnect()
+	end
+	AntiAfkEnabled = false
+end
+
+local function CreateFloatingPart()
+	if FarmPart and FarmPart.Parent then return end
+	FarmPart = Instance.new("Part")
+	FarmPart.Size = Vector3.new(20, 1, 20)
+	FarmPart.Anchored = true
+	FarmPart.Position = rootPart.Position + Vector3.new(0, 100, 0)
+	FarmPart.Name = "AutoFarmPlatform"
+	FarmPart.Transparency = 0.5
+	FarmPart.Color = Color3.fromRGB(0, 255, 0)
+	FarmPart.Parent = workspace
+end
+
+local function TeleportToPart()
+	if FarmPart then
+		rootPart.CFrame = FarmPart.CFrame + Vector3.new(0, 5, 0)
+	end
+end
+
+local AutoFarmToggle = AutofarmTab:CreateToggle({
+	Name = "Auto Farm (AFK)",
+	CurrentValue = false,
+	Flag = "AutoFarm",
+	Callback = function(Value)
+		if Value then
+			CreateFloatingPart()
+			task.wait(0.2)
+			TeleportToPart()
+			EnableAntiAfk()
+			toggleRunningAway(Value)
+		else
+			DisableAntiAfk()
+			if FarmPart and FarmPart.Parent then
+				FarmPart:Destroy()
+				FarmPart = nil
+			end
+			toggleRunningAway(Value)
+		end
+	end
 })
 -- End
 
@@ -950,18 +1028,18 @@ local Dropdown = SettingsTab:CreateDropdown({
 
 local CreditsTab = Window:CreateTab("Credits", nil)
 
- local Section = CreditsTab:CreateSection("Discord: _.strivex")
- local Section = CreditsTab:CreateSection("YouTube: official_tenken")
- local Section = CreditsTab:CreateSection("Scriptblox: OfficialTenkenAlt")
+ local Section = CreditsTab:CreateSection("Discord: dsc.gg/dyhub")
+ local Section = CreditsTab:CreateSection("YouTube: DYHUB")
+ local Section = CreditsTab:CreateSection("Update: ESP")
  local Button = CreditsTab:CreateButton({
     Name = "Copy Discord Link",
     Callback = function()
-        setclipboard("https://discord.gg/Q5JVtgrrqX")
+        setclipboard("https://discord.gg/jWNDPNMmyB")
     end,
  })
  local Button = CreditsTab:CreateButton({
     Name = "Copy Discord Short Link",
     Callback = function()
-        setclipboard("https://dsc.gg/tenkenscripts")
+        setclipboard("https://dsc.gg/dyhub")
     end,
  })
