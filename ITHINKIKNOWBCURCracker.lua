@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.0.7"
+local version = "5.1.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -975,6 +975,13 @@ SurTab:Button({
                 Message("ERROR OWNER", "YOU CANT FLING OWNER", 8)
             end
         end
+    end
+})
+
+SurTab:Button({
+    Title = "Invisible (Skid by me)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/INV.lua"))()
     end
 })
 
