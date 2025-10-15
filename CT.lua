@@ -1,5 +1,5 @@
 -- =========================
-local version = "2.4.3"
+local version = "2.4.7"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -170,19 +170,19 @@ Shop:Toggle({
 -- Dropdowns
 Shop:Dropdown({
     Title = "Select Chest (Normal)",
-    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9"},
+    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9","Chest10","Chest11","Chest12","Chest13"},
     Multi = true,
     Callback = function(values) selectedNormal = values end
 })
 Shop:Dropdown({
     Title = "Select Chest (Giant)",
-    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9"},
+    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9","Chest10","Chest11","Chest12","Chest13"},
     Multi = true,
     Callback = function(values) selectedGiant = values end
 })
 Shop:Dropdown({
     Title = "Select Chest (Huge)",
-    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9"},
+    Values = {"Chest1","Chest2","Chest3","Chest4","Chest5","Chest6","Chest7","Chest8","Chest9","Chest10","Chest11","Chest12","Chest13"},
     Multi = true,
     Callback = function(values) selectedHuge = values end
 })
@@ -342,6 +342,8 @@ Main:Toggle({
 TP:Section({ Title = "World Teleport", Icon = "map" })
 TP:Button({ Title = "Teleport to World 1", Callback = function() LocalPlayer.Character:PivotTo(CFrame.new(-115, 3.5, -120)) end })
 TP:Button({ Title = "Teleport to World 2", Callback = function() LocalPlayer.Character:PivotTo(CFrame.new(-1000, 3.5, -125)) end })
+TP:Button({ Title = "Teleport to World 3", Callback = function() LocalPlayer.Character:PivotTo(CFrame.new(-1935, 3.5, -125)) end })
+TP:Button({ Title = "Teleport to World 4 (IDK)", Callback = function() LocalPlayer.Character:PivotTo(CFrame.new(-3540, 3.5, -140)) end })
 
 -- ====================== MISC TAB ======================
 Misc:Section({ Title = "Misc", Icon = "settings" })
