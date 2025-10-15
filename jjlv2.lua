@@ -1,5 +1,5 @@
 -- =========================
-local version = "1.4.6"
+local version = "1.4.7"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -123,13 +123,17 @@ getgenv().DYHUBGAMEPASS = false
 local killaura = false
 local distance = 20
 
-MainReal:Slider({
-    Title = "Kill Aura Range",
-    Description = "Adjust how far your kill aura can reach (NPC detection).",
-    Value = {Min = 1, Max = 50, Default = distance},
-    Step = 1,
-    Callback = function(val)
-        distance = val
+MainReal:Input({  
+    Title = "Kill Aura Range",  
+    Placeholder = "20 (1 ~ 50)",  
+    Callback = function(txt)
+        local n = tonumber(txt)
+        if n and n >= 1 and n <= 50 then
+            distance = n
+            print("[DYHUB] Kill Aura Range set to "..distance)
+        else
+            warn("[DYHUB] Invalid Range. Please enter a number from 1 to 50.")
+        end
     end
 })
 
