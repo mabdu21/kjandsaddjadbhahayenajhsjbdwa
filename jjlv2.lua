@@ -1,5 +1,5 @@
 -- =========================
-local version = "1.3.1"
+local version = "1.4.6"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -25,12 +25,53 @@ end
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
+-- ====================== SERVICE ======================
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
 -- ====================== WINDOW ======================
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/dyumra/Whitelist/refs/heads/main/DYHUB-PREMIUM.lua"
+
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success then
+        return FreeVersion
+    end
+
+    local premiumData
+    local func, err = loadstring(response)
+    if func then
+        premiumData = func()
+    else
+        return FreeVersion
+    end
+
+    if premiumData[playerName] then
+        return PremiumVersion
+    else
+        return FreeVersion
+    end
+end
+
+local player = Players.LocalPlayer
+local userversion = checkVersion(player.Name)
+
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "Jujutsu Legacy | Free Version",
+    Author = "Jujutsu Legacy | " .. userversion,
     Folder = "DYHUB_JJL",
     Size = UDim2.fromOffset(500, 350),
     Transparent = true,
@@ -60,14 +101,15 @@ Window:EditOpenButton({
 
 local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
 local MainDivider = Window:Divider()
-local Main = Window:Tab({ Title = "Main", Icon = "rocket" })
+local MainReal = Window:Tab({ Title = "Main", Icon = "rocket" })
+local Main = Window:Tab({ Title = "Dupe", Icon = "infinity" })
 local Gamepass = Window:Tab({ Title = "Gamepass", Icon = "star" })
 Window:SelectTab(1)
 
 -- ====================== DATA ======================
 local shop = {
     raceList = { "Human", "Death Paiting", "Cursed Spirit", "Angel", "Fallen Angel" },
-    techniqueList = { "Ratio", "Blood Manipulation", "Disaster Flames", "Divergent Fist", "Disaster Tides", "Cursed Speech", "Boogie Woogie", "Star Rage", "Sound Amplification", "Blast Energy", "Moon Dregs", "Straw Doll", "Jackpot", "Infinity", "Idle Transfiguration", "Deadly Sentencing", "Projection", "Ice Formation", "Comedian", "Anti Gravity", "Ten Shadows", "Heavenly Restriction", "Rika", "Curse Manipulation", "Super Senior Infinity", "Super Senior Shrine" },
+    techniqueList = { "Ratio", "Blood Manipulation", "Disaster Flames", "Divergent Fist", "Disaster Tides", "Cursed Speech", "Boogie Woogie", "Star Rage", "Sound Amplification", "Blast Energy", "Moon Dregs", "Straw Doll", "Jackpot", "Infinity", "Idle Transfiguration", "Deadly Sentencing", "Projection", "Ice Formation", "Comedian", "Anti Gravity", "Ten Shadows", "Heavenly Restriction", "Rika", "Curse Manipulation", "Super Senior Infinity", "Super Senior Shrine", "Gege Akutami", "Infected Infinity" },
     clanList = { "Itadori", "Todo", "Nanami", "Geto", "Kamo", "Zenin", "Okkotsu", "Fushiguro", "Gojo", "Rejected Zenin", "Ryomen" },
     traitList = { "Soon" },
 }
@@ -77,7 +119,58 @@ local selectedGamepasses = {}
 
 getgenv().DYHUBGAMEPASS = false
 
--- ====================== RACE ======================
+-- ====================== Kill ======================
+local killaura = false
+local distance = 20
+
+MainReal:Slider({
+    Title = "Kill Aura Range",
+    Description = "Adjust how far your kill aura can reach (NPC detection).",
+    Value = {Min = 1, Max = 50, Default = distance},
+    Step = 1,
+    Callback = function(val)
+        distance = val
+    end
+})
+
+MainReal:Toggle({
+    Title = "Kill Aura (NPC)",
+    Description = "Automatically attacks nearby NPCs that have health.",
+    Value = false,
+    Callback = function(state)
+        killaura = state
+
+        if state then
+            task.spawn(function()
+                while killaura do
+                    task.wait(0.2)
+                    for _, obj in pairs(workspace:GetChildren()) do
+                        local hum = obj:FindFirstChildOfClass("Humanoid")
+                        local hrp = obj:FindFirstChild("HumanoidRootPart")
+
+                        if hum and hrp and hum.Health > 0 then
+                            local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if myHRP and (myHRP.Position - hrp.Position).Magnitude <= distance then
+                                local args = {"Anti Gravity", "UseV"}
+                                ReplicatedStorage:WaitForChild("RemoteEvent"):WaitForChild("information"):FireServer(unpack(args))
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+-- ====================== Dupe ======================
+Main:Paragraph({
+    Title = "Warning",
+    Desc = "You must have spin: x1\nbefore using it every time",
+    Image = "triangle-alert",
+    ImageSize = 50,
+    Locked = false
+})
+
 Main:Section({ Title = "Race", Icon = "rabbit" })
 
 Main:Dropdown({
@@ -213,11 +306,9 @@ Gamepass:Dropdown({
     end
 })
 
-Gamepass:Toggle({
+Gamepass:Button({
     Title = "Unlocked Gamepass",
-    Default = false,
-    Callback = function(state)
-        getgenv().DYHUBGAMEPASS = state
+    Callback = function()
         local plr = game:GetService("Players").LocalPlayer
         local gpFolder = plr:FindFirstChild("OwnedGamepassFolder")
 
@@ -234,10 +325,15 @@ Gamepass:Toggle({
                 val.Name = name
                 val.Parent = gpFolder
             end
-            val.Value = table.find(selectedGamepasses, name) ~= nil and state or false
+            val.Value = table.find(selectedGamepasses, name) ~= nil
         end
 
-        print("[DYHUB] Gamepass:", state, "| Selected:", table.concat(selectedGamepasses, ", "))
+        print("[DYHUB] Gamepass Unlocked | Selected:", table.concat(selectedGamepasses, ", "))
+
+        task.wait(0.5)
+        if plr.Character then
+            plr.Character:BreakJoints()
+        end
     end
 })
 
