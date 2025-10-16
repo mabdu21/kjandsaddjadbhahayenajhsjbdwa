@@ -1,5 +1,5 @@
 -- =========================
-local version = "1.4.7"
+local version = "1.4.9"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -109,7 +109,7 @@ Window:SelectTab(1)
 -- ====================== DATA ======================
 local shop = {
     raceList = { "Human", "Death Paiting", "Cursed Spirit", "Angel", "Fallen Angel" },
-    techniqueList = { "Ratio", "Blood Manipulation", "Disaster Flames", "Divergent Fist", "Disaster Tides", "Cursed Speech", "Boogie Woogie", "Star Rage", "Sound Amplification", "Blast Energy", "Moon Dregs", "Straw Doll", "Jackpot", "Infinity", "Idle Transfiguration", "Deadly Sentencing", "Projection", "Ice Formation", "Comedian", "Anti Gravity", "Ten Shadows", "Heavenly Restriction", "Rika", "Curse Manipulation", "Super Senior Infinity", "Super Senior Shrine", "Gege Akutami", "Infected Infinity" },
+    techniqueList = { "Ratio", "Blood Manipulation", "Disaster Flames", "Divergent Fist", "Disaster Tides", "Cursed Speech", "Boogie Woogie", "Star Rage", "Sound Amplification", "Blast Energy", "Moon Dregs", "Straw Doll", "Jackpot", "Infinity", "Idle Transfiguration", "Deadly Sentencing", "Projection", "Ice Formation", "Comedian", "Anti Gravity", "Ten Shadows", "Heavenly Restriction", "Rika", "Curse Manipulation", "Super Senior Infinity (Bugs)", "Super Senior Shrine (Bugs)", "Gege Akutami (Bugs)", "Infected Infinity (Bugs)" },
     clanList = { "Itadori", "Todo", "Nanami", "Geto", "Kamo", "Zenin", "Okkotsu", "Fushiguro", "Gojo", "Rejected Zenin", "Ryomen" },
     traitList = { "Soon" },
 }
