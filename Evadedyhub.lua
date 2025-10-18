@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.2"
+local version = "5.3.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -434,7 +434,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(0, 500, 0)
+                            securityPart.Position = Vector3.new(0, 999, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
@@ -494,7 +494,7 @@ GameTab:Toggle({
                         local securityPart = Instance.new("Part")
                         securityPart.Name = "SecurityPartTemp"
                         securityPart.Size = Vector3.new(10, 1, 10)
-                        securityPart.Position = Vector3.new(0, 500, 0)
+                        securityPart.Position = Vector3.new(0, 999, 0)
                         securityPart.Anchored = true
                         securityPart.Transparency = 1
                         securityPart.CanCollide = true
@@ -544,7 +544,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(0, 500, 0)
+                            securityPart.Position = Vector3.new(0, 999, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
