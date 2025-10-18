@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.2.7"
+local version = "5.2.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -556,47 +556,6 @@ local function fireVoteServer(selectedMapNumber)
         warn("Events folder not found in ReplicatedStorage.")
     end
 end
-
-local selectedMapNumber = 1
-local autoVoteEnabled = false
-local voteConnection = nil
-
-GameTab:Section({ Title = "Feature Vote", Icon = "badge-check" })
-
-GameTab:Dropdown({
-    Title = "Select Map",
-    Values = {"1", "2", "3", "4"},
-    Callback = function(value)
-            selectedMapNumber = value
-        end
-    end
-})
-
-GameTab:Button({
-    Title = "Vote!",
-    Callback = function()
-        fireVoteServer(selectedMapNumber)
-    end
-})
-
-GameTab:Toggle({
-    Title = "Auto Vote",
-    Callback = function(state)
-        autoVoteEnabled = state
-        if autoVoteEnabled then
-            if not voteConnection then
-                voteConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                    fireVoteServer(selectedMapNumber)
-                end)
-            end
-        else
-            if voteConnection then
-                voteConnection:Disconnect()
-                voteConnection = nil
-            end
-        end
-    end
-})
 
 local loopFakeBundleConnection = nil
 local loopFakeBundleEnabled = false
