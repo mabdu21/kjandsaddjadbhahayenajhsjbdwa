@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.1"
+local version = "5.3.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -192,69 +192,93 @@ PlayerTab:Toggle({
     end
 })
 
-local originalBrightness = game.Lighting.Brightness
-local originalOutdoorAmbient = game.Lighting.OutdoorAmbient
-local originalAmbient = game.Lighting.Ambient
-local originalGlobalShadows = game.Lighting.GlobalShadows
-local originalFogEnd = game.Lighting.FogEnd
-local originalFogStart = game.Lighting.FogStart
-local originalFogColor = game.Lighting.FogColor
-local originalColorCorrectionEnabled = game.Lighting.ColorCorrection.Enabled
-local originalSaturation = game.Lighting.ColorCorrection.Saturation
-local originalContrast = game.Lighting.ColorCorrection.Contrast
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
 
+-- ตรวจสอบและสร้าง ColorCorrection ถ้าไม่มี
+local colorCorrection = Lighting:FindFirstChild("ColorCorrection")
+if not colorCorrection then
+    colorCorrection = Instance.new("ColorCorrectionEffect")
+    colorCorrection.Name = "ColorCorrection"
+    colorCorrection.Parent = Lighting
+end
+
+-- เก็บค่าต้นฉบับทั้งหมด
+local originalBrightness = Lighting.Brightness
+local originalOutdoorAmbient = Lighting.OutdoorAmbient
+local originalAmbient = Lighting.Ambient
+local originalGlobalShadows = Lighting.GlobalShadows
+local originalFogEnd = Lighting.FogEnd
+local originalFogStart = Lighting.FogStart
+local originalFogColor = Lighting.FogColor
+local originalColorCorrectionEnabled = colorCorrection.Enabled
+local originalSaturation = colorCorrection.Saturation
+local originalContrast = colorCorrection.Contrast
+
+-- ฟังก์ชันปรับแสง / หมอก / สี
 local function applyFullBrightness()
-    game.Lighting.Brightness = 2
-    game.Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    game.Lighting.GlobalShadows = false
+    Lighting.Brightness = 2
+    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    Lighting.GlobalShadows = false
 end
 
 local function removeFullBrightness()
-    game.Lighting.Brightness = originalBrightness
-    game.Lighting.OutdoorAmbient = originalOutdoorAmbient
-    game.Lighting.Ambient = originalAmbient
-    game.Lighting.GlobalShadows = originalGlobalShadows
+    Lighting.Brightness = originalBrightness
+    Lighting.OutdoorAmbient = originalOutdoorAmbient
+    Lighting.Ambient = originalAmbient
+    Lighting.GlobalShadows = originalGlobalShadows
 end
 
 local function applySuperFullBrightness()
-    game.Lighting.Brightness = 15
-    game.Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    game.Lighting.GlobalShadows = false
+    Lighting.Brightness = 15
+    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    Lighting.GlobalShadows = false
 end
 
 local function applyNoFog()
-    game.Lighting.FogEnd = 1000000
-    game.Lighting.FogStart = 999999
+    Lighting.FogEnd = 1000000
+    Lighting.FogStart = 999999
 end
 
 local function removeNoFog()
-    game.Lighting.FogEnd = originalFogEnd
-    game.Lighting.FogStart = originalFogStart
+    Lighting.FogEnd = originalFogEnd
+    Lighting.FogStart = originalFogStart
 end
 
 local function applyVibrant()
-    game.Lighting.ColorCorrection.Enabled = true
-    game.Lighting.ColorCorrection.Saturation = 0.8
-    game.Lighting.ColorCorrection.Contrast = 0.4
+    if colorCorrection then
+        colorCorrection.Enabled = true
+        colorCorrection.Saturation = 0.8
+        colorCorrection.Contrast = 0.4
+    end
 end
 
 local function removeVibrant()
-    game.Lighting.ColorCorrection.Enabled = originalColorCorrectionEnabled
-    game.Lighting.ColorCorrection.Saturation = originalSaturation
-    game.Lighting.ColorCorrection.Contrast = originalContrast
+    if colorCorrection then
+        colorCorrection.Enabled = originalColorCorrectionEnabled
+        colorCorrection.Saturation = originalSaturation
+        colorCorrection.Contrast = originalContrast
+    end
 end
 
 local afk = true
+local FullbrightEnabled = false
+local SuperFullBrightnessEnabled = false
+local NoFogEnabled = false
+local VibrantEnabled = false
 
 MiscTab:Section({ Title = "Miscellaneous", Icon = "settings" })
 
+-- 💤 Anti-AFK
 MiscTab:Toggle({
     Title = "Anti-AFK",
     Default = true,
     Callback = function(state)
-        afk = state -- อัปเดตตัวแปรหลัก
+        afk = state
         if state then
             task.spawn(function()
                 while afk do
@@ -270,6 +294,9 @@ MiscTab:Toggle({
     end
 })
 
+MiscTab:Section({ Title = "World Visual", Icon = "lightbulb" })
+
+-- 💡 Full Brightness
 MiscTab:Toggle({
     Title = "Full Brightness",
     Default = false,
@@ -283,6 +310,7 @@ MiscTab:Toggle({
     end
 })
 
+-- 🌞 Super Full Brightness
 MiscTab:Toggle({
     Title = "Super Full Brightness",
     Default = false,
@@ -296,6 +324,7 @@ MiscTab:Toggle({
     end
 })
 
+-- 🌫️ No Fog
 MiscTab:Toggle({
     Title = "No Fog",
     Default = false,
@@ -309,6 +338,7 @@ MiscTab:Toggle({
     end
 })
 
+-- 🌈 Vibrant Mode +200%
 MiscTab:Toggle({
     Title = "Vibrant +200%",
     Default = false,
@@ -322,16 +352,14 @@ MiscTab:Toggle({
     end
 })
 
-
-
 if FullbrightEnabled then
     applyFullBrightness()
 end
-if NoFogEnabled then
-    applyNoFog()
-end
 if SuperFullBrightnessEnabled then
     applySuperFullBrightness()
+end
+if NoFogEnabled then
+    applyNoFog()
 end
 if VibrantEnabled then
     applyVibrant()
