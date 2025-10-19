@@ -40,20 +40,119 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
 local EspTab = Window:CreateTab("Esp", 4483362458)
 local AutoTab = Window:CreateTab("Auto", 4483362458)
+local AntiTab = Window:CreateTab("Anti", 4483362458)
 local Main = Window:CreateTab("Others", 4483362458) -- Title, Image
-local Section = Main:CreateSection("Hubs")
 
-local Button = Main:CreateButton({
+local Section = Main:CreateSection("Everything")
+local Chaos = Main:CreateButton({
    Name = "Chaos Hub (Work on mobile)",
    Callback = function()
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/cjbbth1-crypto/Chaos-Hub-GB/refs/heads/main/Chaos%20Hub"))()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/cjbbth1-crypto/Chaos-Hub-GB/refs/heads/main/Chaos%20Hub"))()
+   end,
+})
+local Boost = Main:CreateButton({
+   Name = "Boost FPS (By DYHUB)",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/Nigga.lua"))()
    end,
 })
 
 local Section = AutoTab:CreateSection("Auto Farm")
 
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HumanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+-- 🏷 ตัวแปรปรับแต่ง
+local ESCAPE_DISTANCE = 8
+local ESCAPE_SPEED = 1
+local WARP_OFFSET = 3
+local ATTACK_DISTANCE = 16
+local autoFarmConnection
+local killAuraEnabled2 = false
+
+-- 🔹 ฟังก์ชันหา melee tool ของเรา
+local function getMeleeTool()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    for _, item in pairs(char:GetChildren()) do
+        if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
+            return item
+        end
+    end
+    return nil
+end
+
+AutoTab:CreateToggle({
+    Name = "Auto Farm (AFK)",
+    CurrentValue = false,
+    Callback = function(value)
+        killAuraEnabled2 = value
+
+        if value then
+            if autoFarmConnection then return end -- ป้องกันสร้างซ้ำ
+            autoFarmConnection = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if not char then return end
+                    HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+                    if not HumanoidRootPart then return end
+
+                    local tool = getMeleeTool()
+                    local zombiesFolder = workspace:FindFirstChild("Zombies")
+                    if not zombiesFolder then return end
+
+                    -- 🔎 หา zombie ใกล้ที่สุด
+                    local closestZombie
+                    local shortestDist = 9999
+                    for _, zombie in ipairs(zombiesFolder:GetChildren()) do
+                        local hum = zombie:FindFirstChildOfClass("Humanoid")
+                        local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+                        if hum and root and hum.Health > 0 then
+                            local dist = (HumanoidRootPart.Position - root.Position).Magnitude
+                            if dist < shortestDist then
+                                shortestDist = dist
+                                closestZombie = root
+                            end
+                        end
+                    end
+
+                    if closestZombie then
+                        local dist = (HumanoidRootPart.Position - closestZombie.Position).Magnitude
+
+                        -- 🔹 วาร์ปตัวเราไปข้างหน้า zombie
+                        local forward = (closestZombie.Position - HumanoidRootPart.Position).Unit
+                        HumanoidRootPart.CFrame = CFrame.new(closestZombie.Position - forward * WARP_OFFSET, closestZombie.Position)
+
+                        -- 🔹 ถ้า zombie เข้ามาใกล้เรา → ถอยหนีเล็กน้อย
+                        if dist < ESCAPE_DISTANCE then
+                            local escapeDir = (HumanoidRootPart.Position - closestZombie.Position).Unit
+                            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + escapeDir * ESCAPE_SPEED
+                        end
+
+                        -- 🔹 ยิง Kill Aura ถ้า tool พร้อมและอยู่ในระยะ
+                        if tool and dist <= ATTACK_DISTANCE then
+                            local event = tool:FindFirstChild("RemoteEvent")
+                            if event then
+                                event:FireServer("Swing", "Thrust")
+                                event:FireServer("HitZombie", closestZombie.Parent, closestZombie.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
+                            end
+                        end
+                    end
+                end)
+            end)
+        else
+            if autoFarmConnection then
+                autoFarmConnection:Disconnect()
+                autoFarmConnection = nil
+            end
+        end
+    end
+})
+
 local Button = AutoTab:CreateButton({
-   Name = "Auto Farm V3 (Reworked)",
+   Name = "Auto Farm V1 (Reworked)",
    Callback = function()
       local player = game:GetService("Players").LocalPlayer
       local RunService = game:GetService("RunService")
@@ -66,7 +165,7 @@ local Button = AutoTab:CreateButton({
       _G.DYHUB_AutoFarm_Running = true
 
       -- ⚙ SETTINGS
-      local ATTACK_COOLDOWN = 0.5
+      local ATTACK_COOLDOWN = 1
       local LAG_LEVEL = 8
       local highlightEnabled = true
       local currentMode = 2 -- 1: Stop | 2: Normal | 3: Clear Mode
@@ -102,7 +201,7 @@ local Button = AutoTab:CreateButton({
       TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.05}):Play()
 
       local title = Instance.new("TextLabel", frame)
-      title.Text = "🤖 DYHUB | Auto Farm V3"
+      title.Text = "DYHUB | Auto Farm V1"
       title.Size = UDim2.new(1, 0, 0.3, 0)
       title.BackgroundTransparency = 1
       title.TextColor3 = Color3.fromRGB(0, 255, 130)
@@ -127,12 +226,15 @@ local Button = AutoTab:CreateButton({
       modeBtn.AutoButtonColor = false
       modeBtn.BackgroundTransparency = 0.1
 
+      local UICorner2 = Instance.new("UICorner", modeBtn)
+      UICorner2.CornerRadius = UDim.new(0, 12)
+
       local colors = {
          [1] = Color3.fromRGB(255, 60, 60),
          [2] = Color3.fromRGB(40, 180, 80),
          [3] = Color3.fromRGB(255, 200, 60)
       }
-      local names = {"Stop", "Normal", "Clear Mode"}
+      local names = {"Stop", "Normal", "Kill All"}
 
       local function updateMode()
          modeBtn.Text = "Mode: " .. names[currentMode]
@@ -191,7 +293,7 @@ local Button = AutoTab:CreateButton({
 
                   if currentMode == 3 then
                      for i = 1, 4 do
-                        task.wait(0.05)
+                        task.wait(0.15)
                         event:FireServer("Swing", "Thrust")
                         event:FireServer("HitZombie", zombie, pos + Vector3.new(0, 0.2 * i, 0), true, knock * (1 + i * 0.1), "Head", Vector3.new(math.random(), math.random(), math.random()).Unit)
                      end
@@ -213,7 +315,7 @@ local Button = AutoTab:CreateButton({
          local hl = Instance.new("Highlight")
          hl.Name = "DYHUB_Highlight"
          hl.Adornee = model
-         hl.FillTransparency = 0.25
+         hl.FillTransparency = 0.5
          hl.OutlineTransparency = 0.2
          hl.FillColor = Color3.fromRGB(0, 255, 120)
          hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -233,14 +335,14 @@ local Button = AutoTab:CreateButton({
          while _G.DYHUB_AutoFarm_Running do
             pcall(attack)
             task.wait(waitDelay)
-            pcall(updateHighlights)
-            task.wait(waitDelay)
+            --pcall(updateHighlights)
+            --task.wait(waitDelay)
          end
       end)
 
       game.StarterGui:SetCore("SendNotification", {
          Title = "✅ DYHUB Auto Farm V3",
-         Text = "Smooth Auto-Attack & ESP Enabled",
+         Text = "Smooth Auto-Attack Enabled",
          Duration = 6
       })
    end,
@@ -311,12 +413,45 @@ task.spawn(function()
             local char = LocalPlayer.Character
             local tool = getMeleeTool()
             if char and tool then
-                local target = getClosestZombie(20)
+                local target = getClosestZombie(19)
                 if target then
                     local rootPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
                     if rootPart then
                         local distance = (rootPart.Position - char.HumanoidRootPart.Position).Magnitude
-                        if distance <= 19 then
+                        if distance <= 18 then
+                            pcall(function()
+                                tool.RemoteEvent:FireServer("Swing", "Thrust")
+                                tool.RemoteEvent:FireServer(
+                                    "HitZombie",
+                                    target,
+                                    rootPart.Position,
+                                    true,
+                                    Vector3.new(0, 15, 0),
+                                    "Head",
+                                    Vector3.new(0, 1, 0)
+                                )
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.001) -- ลดโหลดเครื่อง
+        if killAuraEnabled2 then
+            local char = LocalPlayer.Character
+            local tool = getMeleeTool()
+            if char and tool then
+                local target = getClosestZombie(19)
+                if target then
+                    local rootPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+                    if rootPart then
+                        local distance = (rootPart.Position - char.HumanoidRootPart.Position).Magnitude
+                        if distance <= 18 then
                             pcall(function()
                                 tool.RemoteEvent:FireServer("Swing", "Thrust")
                                 tool.RemoteEvent:FireServer(
@@ -365,7 +500,7 @@ MainTab:CreateToggle({
     end
 })
 
-local Section = MainTab:CreateSection("Walkspeed")
+local Section = MainTab:CreateSection("Player")
 
 
 --====================================================
@@ -469,12 +604,155 @@ task.spawn(function()
     end
 end)
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local noclipConnection -- เก็บ connection ของ Noclip
+
+AntiTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(value)
+        if value then
+            -- 🔧 เปิด Noclip
+            if not noclipConnection then
+                noclipConnection = RunService.Stepped:Connect(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in pairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            end
+        else
+            -- 🔧 ปิด Noclip
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+            -- คืนค่า CanCollide ให้ปกติ
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
+
 MainTab:CreateButton({
    Name = "Fly (V3)",
    Callback = function()
    loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))() 
 
    end,
+})
+
+local Section = AntiTab:CreateSection("Anti Mobs")
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HumanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+local ESCAPE_DISTANCE_DEER = 15   -- ระยะที่เริ่มหนี
+local ESCAPE_SPEED_DEER = 1       -- ความเร็วหนี
+local escapeLoopDeer
+
+AntiTab:CreateToggle({
+    Name = "Anti Zombie (All)",
+    CurrentValue = false,
+    Callback = function(value)
+        if value then
+            escapeLoopDeer = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if not char then return end
+                    HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+                    if not HumanoidRootPart then return end
+
+                    local zombiesFolder = workspace:FindFirstChild("Zombies")
+                    if not zombiesFolder then return end
+
+                    local closestZombie
+                    local shortestDist = ESCAPE_DISTANCE_DEER
+
+                    -- 🔎 หา zombie ใกล้ที่สุด
+                    for _, deer in ipairs(zombiesFolder:GetChildren()) do
+                        local hum = deer:FindFirstChildOfClass("Humanoid")
+                        local root = deer:FindFirstChild("HumanoidRootPart") or deer:FindFirstChild("Head")
+                        if hum and root and hum.Health > 0 then
+                            local distance = (HumanoidRootPart.Position - root.Position).Magnitude
+                            if distance < shortestDist then
+                                shortestDist = distance
+                                closestZombie = root
+                            end
+                        end
+                    end
+
+                    -- ⚡ หนี zombie ใกล้ที่สุด
+                    if closestZombie then
+                        local direction = (HumanoidRootPart.Position - closestZombie.Position).Unit
+                        HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + direction * ESCAPE_SPEED_DEER
+                    end
+                end)
+            end)
+        else
+            if escapeLoopDeer then
+                escapeLoopDeer:Disconnect()
+                escapeLoopDeer = nil
+            end
+        end
+    end
+})
+
+local Section = AntiTab:CreateSection("Anti Boss")
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HumanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+local ESCAPE_DISTANCE_BOSS = 20  -- ระยะที่เริ่มหนีจาก Boss
+local ESCAPE_SPEED_BOSS = 2      -- ความเร็วหนี
+local escapeLoopBoss
+
+local boss = workspace:WaitForChild("Sleepy Hollow").Modes.Boss.HeadlessHorsemanBoss.HeadlessHorseman
+
+AntiTab:CreateToggle({
+    Name = "Anti Headless Horseman (Escape)",
+    CurrentValue = false,
+    Callback = function(value)
+        if value then
+            escapeLoopBoss = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if not char then return end
+                    HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+                    if not HumanoidRootPart then return end
+
+                    if boss and boss:FindFirstChild("HumanoidRootPart") then
+                        local bossRoot = boss.HumanoidRootPart
+                        local distance = (HumanoidRootPart.Position - bossRoot.Position).Magnitude
+
+                        if distance < ESCAPE_DISTANCE_BOSS then
+                            local direction = (HumanoidRootPart.Position - bossRoot.Position).Unit
+                            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + direction * ESCAPE_SPEED_BOSS
+                        end
+                    end
+                end)
+            end)
+        else
+            if escapeLoopBoss then
+                escapeLoopBoss:Disconnect()
+                escapeLoopBoss = nil
+            end
+        end
+    end
 })
 
 local Section = EspTab:CreateSection("ESP")
@@ -1393,7 +1671,7 @@ end)
 
 Rayfield:Notify({
    Title = "Guts & Blackpowder",
-   Content = "Loaded sucefuly",
+   Content = "Version: 1.7.2",
    Duration = 3.1,
    Image = 104487529937663,
 })
