@@ -66,8 +66,13 @@ OthersTab:CreateButton({
    end,
 })
 
+-- Auto Farm V2 (Upgraded - ChatGPT style UI)
+-- ดึงเป้าจาก workspace.Zombies ทุกตัว (ไม่สนชื่อซ้ำ)
+-- เพิ่ม slider สำหรับปรับ ATTACK_RANGE และ HITBOX_SCALE
+-- ESP สำหรับตัวใน list และระบบอัปเดตอัตโนมัติ
+
 OthersTab:CreateButton({
-   Name = "Auto Farm V2",
+   Name = "Auto Farm V3 (Recomended)",
    Callback = function()
       local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
@@ -81,76 +86,185 @@ OthersTab:CreateButton({
       end
       _G.DYHUBKillAuraRunning = true
 
-      -- ⚙ SETTINGS
-      local ATTACK_RANGE = 19
-      local ATTACK_COOLDOWN = 1
-      local SCAN_INTERVAL = 0.25
+      -- ⚙ SETTINGS (ค่าพื้นฐาน)
+      local ATTACK_RANGE = 20
+      local ATTACK_COOLDOWN = 0.1
+      local SCAN_INTERVAL = 0.15
       local ESP_INTERVAL = 1.0
-      local ZOMBIE_TYPES = {"Agent", "Slim"}
       local highlightEnabled = true
       local autoAttackEnabled = true
-      local currentMode = 2
-      local zombies = {}
+      local currentMode = 2 -- 1 Stop, 2 Normal, 3 Clear
+      local zombies = {}              -- เก็บ reference model ของ zombie
+      local zombieIndex = {}          -- map model -> true (ช่วยเช็คเร็ว)
       local lastAttackTime = 0
       local lastESPUpdate = 0
+      local HITBOX_SCALE = 1.5        -- 1.0 = ปกติ, >1 ขยาย hitbox (แบบสร้าง part ใกล้หัว)
+      local HITBOX_FOLDER_NAME = "DYHUB_Hitboxes"
+      local zombiesFolder = workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")
 
       ------------------------------------------------------------
-      -- 🧱 CACHE SYSTEM
+      -- 🧱 UTIL - สร้าง folder เก็บ hitbox
       ------------------------------------------------------------
-      local function updateZombieList()
+      local function ensureHitboxFolder()
+         local f = workspace:FindFirstChild(HITBOX_FOLDER_NAME)
+         if not f then
+            f = Instance.new("Folder")
+            f.Name = HITBOX_FOLDER_NAME
+            f.Parent = workspace
+         end
+         return f
+      end
+      local hitboxFolder = ensureHitboxFolder()
+
+      ------------------------------------------------------------
+      -- 🧱 CACHE SYSTEM (ดึงจาก workspace.Zombies ทุกตัว)
+      ------------------------------------------------------------
+      local function clearZombieTables()
          table.clear(zombies)
-         for _, obj in ipairs(workspace:GetDescendants()) do
-            for _, typeName in ipairs(ZOMBIE_TYPES) do
-               if obj.Name == typeName and obj:FindFirstChild("Head") then
-                  table.insert(zombies, obj)
-               end
-            end
+         for k in pairs(zombieIndex) do zombieIndex[k] = nil end
+      end
+
+      local function addZombieModel(model)
+         if not model or not model:IsA("Model") then return end
+         if zombieIndex[model] then return end
+         -- เราต้องมี Head และ Humanoid (หรืออย่างน้อย Head)
+         local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
+         if head then
+            table.insert(zombies, model)
+            zombieIndex[model] = true
          end
       end
-      updateZombieList()
 
-      workspace.DescendantAdded:Connect(function(obj)
-         for _, typeName in ipairs(ZOMBIE_TYPES) do
-            if obj.Name == typeName and obj:FindFirstChild("Head") then
-               table.insert(zombies, obj)
+      local function removeZombieModel(model)
+         if not zombieIndex[model] then return end
+         for i = #zombies, 1, -1 do
+            if zombies[i] == model then
+               table.remove(zombies, i)
+            end
+         end
+         zombieIndex[model] = nil
+         -- ลบ hitbox ถ้ามี
+         local hb = hitboxFolder:FindFirstChild(tostring(model:GetDebugId())) or hitboxFolder:FindFirstChild(model.Name .. "_" .. tostring(model:GetDebugId()))
+         if hb then pcall(function() hb:Destroy() end) end
+      end
+
+      local function updateZombieListFromFolder()
+         clearZombieTables()
+         zombiesFolder = workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")
+         if not zombiesFolder then return end
+         for _, child in ipairs(zombiesFolder:GetChildren()) do
+            addZombieModel(child)
+         end
+      end
+
+      -- อัปเดตตอนเริ่ม
+      updateZombieListFromFolder()
+
+      -- ฟังการเปลี่ยนแปลงในโฟลเดอร์ Zombies (ChildAdded / ChildRemoved)
+      if zombiesFolder then
+         zombiesFolder.ChildAdded:Connect(function(ch)
+            addZombieModel(ch)
+         end)
+         zombiesFolder.ChildRemoved:Connect(function(ch)
+            removeZombieModel(ch)
+         end)
+      end
+
+      -- ในกรณีที่ folder ถูกสร้างหรือลบ เราคอยสแกนทุกวินาที
+      task.spawn(function()
+         while _G.DYHUBKillAuraRunning do
+            if not (workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")) then
+               -- รอแล้วลองอีกครั้ง
+               task.wait(1)
+               updateZombieListFromFolder()
+            else
+               task.wait(2)
             end
          end
       end)
 
       ------------------------------------------------------------
+      -- 🎯 ATTACK HELPERS - หา remote event ของ tool ให้ยืดหยุ่น
+      ------------------------------------------------------------
+      local function findToolEvent(char)
+         if not char then return nil end
+         -- มองหา Tool ที่กำลังถือ
+         local tool = char:FindFirstChildOfClass("Tool")
+         if not tool then
+            -- บางเกมเก็บเป็น folder ชื่อ Weapon หรือใน Humanoid:FindFirstChildWhichIsA("Tool")
+            for _, v in ipairs(char:GetChildren()) do
+               if v:IsA("Tool") then
+                  tool = v
+                  break
+               end
+            end
+         end
+         if not tool then
+            -- ดูใน Backpack เผื่อยังไม่ได้ equip
+            local backpackTool = player.Backpack and player.Backpack:FindFirstChildOfClass("Tool")
+            if backpackTool then tool = backpackTool end
+         end
+         if not tool then return nil end
+
+         -- หาว่า remote อยู่ที่ไหน (หลายรูปแบบ)
+         local evt = nil
+         evt = tool:FindFirstChildWhichIsA("RemoteEvent") or evt
+         if not evt and tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent") then
+            evt = tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent")
+         end
+         -- บางเกมอาจใช้ RemoteFunction หรือ BindableEvent; เราดูเฉพาะ RemoteEvent ที่พบ
+         return evt, tool
+      end
+
+      ------------------------------------------------------------
       -- ⚔ AUTO ATTACK FUNCTION
       ------------------------------------------------------------
+      local function getHumanoid(model)
+         return model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildWhichIsA("Humanoid")
+      end
+
       local function attack()
          if not autoAttackEnabled or currentMode == 1 then return end
-
          local now = os.clock()
          if now - lastAttackTime < ATTACK_COOLDOWN then return end
 
          local char = player.Character
-         local root = char and char:FindFirstChild("HumanoidRootPart")
+         local root = char and char:FindFirstChild("HumanoidRootPart") or (char and char:FindFirstChild("Torso"))
          if not root then return end
 
-         local tool = char:FindFirstChildWhichIsA("Tool")
-         local event = tool and (tool:FindFirstChildWhichIsA("RemoteEvent") or tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent"))
-         if not event then return end
+         local evt, tool = findToolEvent(char)
+         if not evt then
+            -- ถ้าไม่มี remote ที่คาดไว้ อาจจะยังไม่มีอาวุธ หยุดการโจมตี
+            return
+         end
 
-         for _, obj in ipairs(zombies) do
-            local head = obj:FindFirstChild("Head")
-            local hum = obj:FindFirstChildOfClass("Humanoid")
-            if head and hum and hum.Health > 0 then
-               local dist = (head.Position - root.Position).Magnitude
-               if dist <= ATTACK_RANGE then
-                  local dir = (head.Position - root.Position).Unit
-                  local knock = dir * 15
-                  event:FireServer("Swing", "Thrust")
-                  event:FireServer("HitZombie", obj, head.Position, true, knock, "Head", Vector3.new())
-
-                  if currentMode == 3 then
-                     for i = 1, 3 do
-                        task.wait(0.03)
-                        event:FireServer("Swing", "Thrust")
-                        event:FireServer("HitZombie", obj, head.Position + Vector3.new(0, 0.2 * i, 0), true, knock, "Head", Vector3.new())
-                     end
+         -- loop ผ่านทุก zombie ใน list
+         for _, model in ipairs(zombies) do
+            if model and model.Parent then
+               local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
+               local hum = getHumanoid(model)
+               if head and hum and hum.Health > 0 then
+                  local dist = (head.Position - root.Position).Magnitude
+                  if dist <= ATTACK_RANGE then
+                     -- คำนวณแรง knock ตามทิศ
+                     local ok, _ = pcall(function()
+                        local dir = (head.Position - root.Position)
+                        if dir.Magnitude == 0 then dir = Vector3.new(0,0,0) end
+                        local unit = (dir.Magnitude > 0) and dir.Unit or Vector3.new(0,0,0)
+                        local knock = unit * 15
+                        -- ส่ง event แบบยืดหยุ่น: บางเกมอาจต้อง arguments ต่างกัน
+                        -- เราพยายามส่งแบบที่เกมต้นแบบของคุณใช้
+                        evt:FireServer("Swing", "Thrust")
+                        evt:FireServer("HitZombie", model, head.Position, true, knock, "Head", Vector3.new())
+                        if currentMode == 3 then
+                           for i = 1, 3 do
+                              task.wait(0.03)
+                              evt:FireServer("Swing", "Thrust")
+                              evt:FireServer("HitZombie", model, head.Position + Vector3.new(0, 0.2 * i, 0), true, knock, "Head", Vector3.new())
+                           end
+                        end
+                     end)
+                     -- หากต้องการเพิ่ม delay ระหว่างสองตัว ใส่ task.wait นิดหน่อย (แต่ตอนนี้พึ่ง cooldown)
                   end
                end
             end
@@ -160,133 +274,343 @@ OthersTab:CreateButton({
       end
 
       ------------------------------------------------------------
-      -- 🔦 ESP (Highlight)
+      -- 🔦 ESP (Highlight) & Hitbox updater
       ------------------------------------------------------------
-      local function updateESP()
-         if not highlightEnabled then return end
-         local cameraFolder = workspace:FindFirstChild("Camera")
-         if not cameraFolder then return end
+      local function applyHighlightToModel(model)
+         if not model then return end
+         -- เช็กว่า model มี Highlight อยู่แล้วหรือไม่
+         local existing = nil
+         for _, c in ipairs(model:GetDescendants()) do
+            if c:IsA("Highlight") then
+               existing = c
+               break
+            end
+         end
+         if not existing and highlightEnabled then
+            local hl = Instance.new("Highlight")
+            hl.Name = "DYHUB_Highlight"
+            hl.FillTransparency = 0.2
+            hl.FillColor = Color3.fromRGB(255, 180, 0)
+            hl.OutlineTransparency = 0.4
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Adornee = model
+            hl.Parent = model
+         end
+      end
 
-         for _, model in ipairs(cameraFolder:GetDescendants()) do
-            if model:IsA("Model") and model.Name == "m_Zombie" then
-               if not model:FindFirstChildOfClass("Highlight") then
-                  local hl = Instance.new("Highlight")
-                  hl.FillTransparency = 0.2
-                  hl.FillColor = Color3.fromRGB(255, 180, 0)
-                  hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                  hl.Adornee = model
-                  hl.Parent = model
+      local function removeHighlightFromModel(model)
+         if not model then return end
+         for _, c in ipairs(model:GetDescendants()) do
+            if c:IsA("Highlight") and c.Name == "DYHUB_Highlight" then
+               pcall(function() c:Destroy() end)
+            end
+         end
+      end
+
+      -- สร้าง/อัปเดต Hitbox part ใกล้หัว (transparent, cancollide=false)
+      local function createOrUpdateHitboxFor(model, scale)
+         if not model then return end
+         local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
+         if not head then return end
+         local idName = model.Name .. "_" .. tostring(model:GetDebugId())
+         local part = hitboxFolder:FindFirstChild(idName)
+         if not part then
+            part = Instance.new("Part")
+            part.Name = idName
+            part.Size = Vector3.new(1,1,1)
+            part.Transparency = 1
+            part.CanCollide = false
+            part.Anchored = true
+            part.Parent = hitboxFolder
+         end
+         local s = math.clamp(scale, 0.3, 10)
+         part.Size = Vector3.new(s, s, s)
+         part.CFrame = head.CFrame
+      end
+
+      local function cleanupAllHitboxes()
+         for _, c in ipairs(hitboxFolder:GetChildren()) do
+            pcall(function() c:Destroy() end)
+         end
+      end
+
+      local function updateESPAndHitboxes()
+         if not highlightEnabled and HITBOX_SCALE <= 1 then
+            -- ถ้าทั้งสองปิด อาจล้าง highlight
+            for _, model in ipairs(zombies) do
+               removeHighlightFromModel(model)
+            end
+            cleanupAllHitboxes()
+            return
+         end
+
+         for _, model in ipairs(zombies) do
+            if model and model.Parent then
+               if highlightEnabled then
+                  applyHighlightToModel(model)
+               else
+                  removeHighlightFromModel(model)
+               end
+               if HITBOX_SCALE and HITBOX_SCALE > 1 then
+                  pcall(function() createOrUpdateHitboxFor(model, HITBOX_SCALE) end)
+               else
+                  -- ถ้า scale <=1 ให้ลบ hitbox ของ model นั้น (ถ้ามี)
+                  local idName = model.Name .. "_" .. tostring(model:GetDebugId())
+                  local hb = hitboxFolder:FindFirstChild(idName)
+                  if hb then pcall(function() hb:Destroy() end) end
                end
             end
          end
       end
 
       ------------------------------------------------------------
-      -- 🧭 CONTROL UI
+      -- 🧭 CONTROL UI (ChatGPT-like minimal)
       ------------------------------------------------------------
-      local gui = Instance.new("ScreenGui", player.PlayerGui)
-      gui.Name = "DYHUBCombatUI"
-      gui.ResetOnSpawn = false
+      local function createChatGPTStyleGui()
+         -- หน้าตาแบบมินิมอล: dark card, softened corners
+         local gui = Instance.new("ScreenGui")
+         gui.Name = "DYHUBCombatUI"
+         gui.ResetOnSpawn = false
+         gui.Parent = player:WaitForChild("PlayerGui")
 
-      local frame = Instance.new("Frame", gui)
-      frame.Size = UDim2.new(0, 280, 0, 140)
-      frame.Position = UDim2.new(0.5, -140, 0, 20)
-      frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-      frame.BackgroundTransparency = 0.2
-      frame.BorderSizePixel = 0
-      frame.Active = true
-      frame.Draggable = true
-      frame.ZIndex = 10
+         local frame = Instance.new("Frame", gui)
+         frame.Size = UDim2.new(0, 320, 0, 180)
+         frame.Position = UDim2.new(0.5, -160, 0, 24)
+         frame.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+         frame.BackgroundTransparency = 0
+         frame.BorderSizePixel = 0
+         frame.AnchorPoint = Vector2.new(0.5, 0)
+         frame.ZIndex = 50
+         frame.Active = true
+         frame.Draggable = true
+         frame.ClipsDescendants = true
+         frame.Name = "MainCard"
+         -- rounding (if UICorner supported)
+         local uic = Instance.new("UICorner", frame)
+         uic.CornerRadius = UDim.new(0, 10)
 
-      local title = Instance.new("TextLabel", frame)
-      title.Text = "DYHUB | FARM"
-      title.Size = UDim2.new(1, 0, 0, 25)
-      title.BackgroundTransparency = 1
-      title.TextColor3 = Color3.fromRGB(0, 255, 0)
-      title.Font = Enum.Font.GothamBold
-      title.TextSize = 16
+         local title = Instance.new("TextLabel", frame)
+         title.Size = UDim2.new(1, -20, 0, 28)
+         title.Position = UDim2.new(0, 10, 0, 8)
+         title.BackgroundTransparency = 1
+         title.Text = "DYHUB • Auto Farm V2"
+         title.TextColor3 = Color3.fromRGB(200, 255, 220)
+         title.Font = Enum.Font.GothamBold
+         title.TextSize = 16
+         title.TextXAlignment = Enum.TextXAlignment.Left
 
-      local attackBtn = Instance.new("TextButton", frame)
-      attackBtn.Size = UDim2.new(0.45, 0, 0, 30)
-      attackBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
-      attackBtn.Text = "Auto Attack: ON"
-      attackBtn.Font = Enum.Font.GothamBold
-      attackBtn.TextSize = 14
-      attackBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
-      attackBtn.TextColor3 = Color3.new(1, 1, 1)
+         -- status label
+         local status = Instance.new("TextLabel", frame)
+         status.Size = UDim2.new(1, -20, 0, 20)
+         status.Position = UDim2.new(0, 10, 0, 34)
+         status.BackgroundTransparency = 1
+         status.Text = "Status: Running"
+         status.Font = Enum.Font.Gotham
+         status.TextSize = 12
+         status.TextColor3 = Color3.fromRGB(170, 170, 170)
+         status.TextXAlignment = Enum.TextXAlignment.Left
 
-      local espBtn = Instance.new("TextButton", frame)
-      espBtn.Size = UDim2.new(0.45, 0, 0, 30)
-      espBtn.Position = UDim2.new(0.5, 0, 0.25, 0)
-      espBtn.Text = "ESP: ON"
-      espBtn.Font = Enum.Font.GothamBold
-      espBtn.TextSize = 14
-      espBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-      espBtn.TextColor3 = Color3.new(1, 1, 1)
+         -- Auto Attack Toggle
+         local attackBtn = Instance.new("TextButton", frame)
+         attackBtn.Size = UDim2.new(0.48, -6, 0, 32)
+         attackBtn.Position = UDim2.new(0, 10, 0, 60)
+         attackBtn.Text = "Auto Attack: ON"
+         attackBtn.Font = Enum.Font.GothamBold
+         attackBtn.TextSize = 13
+         attackBtn.BackgroundTransparency = 0
+         attackBtn.BackgroundColor3 = Color3.fromRGB(45, 160, 45)
+         attackBtn.TextColor3 = Color3.new(1, 1, 1)
+         attackBtn.Name = "AutoAttackBtn"
+         local aui = Instance.new("UICorner", attackBtn); aui.CornerRadius = UDim.new(0, 6)
 
-      local modeBtn = Instance.new("TextButton", frame)
-      modeBtn.Size = UDim2.new(0.9, 0, 0, 30)
-      modeBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-      modeBtn.Font = Enum.Font.GothamBold
-      modeBtn.TextSize = 14
-      modeBtn.TextColor3 = Color3.new(1, 1, 1)
+         -- ESP Toggle
+         local espBtn = Instance.new("TextButton", frame)
+         espBtn.Size = UDim2.new(0.48, -6, 0, 32)
+         espBtn.Position = UDim2.new(0.52, -6, 0, 60)
+         espBtn.Text = "ESP: ON"
+         espBtn.Font = Enum.Font.GothamBold
+         espBtn.TextSize = 13
+         espBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 210)
+         espBtn.TextColor3 = Color3.new(1, 1, 1)
+         local eui = Instance.new("UICorner", espBtn); eui.CornerRadius = UDim.new(0, 6)
 
-      local function updateMode()
-         local colors = {
-            [1] = Color3.fromRGB(180, 40, 40),
-            [2] = Color3.fromRGB(40, 180, 40),
-            [3] = Color3.fromRGB(180, 180, 40)
+         -- Mode button
+         local modeBtn = Instance.new("TextButton", frame)
+         modeBtn.Size = UDim2.new(1, -20, 0, 30)
+         modeBtn.Position = UDim2.new(0, 10, 0, 100)
+         modeBtn.Font = Enum.Font.GothamBold
+         modeBtn.TextSize = 13
+         modeBtn.TextColor3 = Color3.new(1, 1, 1)
+         modeBtn.Name = "ModeBtn"
+         local mui = Instance.new("UICorner", modeBtn); mui.CornerRadius = UDim.new(0, 6)
+
+         local function updateModeUI()
+            local colors = {
+               [1] = Color3.fromRGB(160, 40, 40),
+               [2] = Color3.fromRGB(45, 160, 45),
+               [3] = Color3.fromRGB(200, 170, 30)
+            }
+            local names = {"Stop", "Normal", "Clear"}
+            modeBtn.Text = "Mode: " .. names[currentMode]
+            modeBtn.BackgroundColor3 = colors[currentMode]
+         end
+         updateModeUI()
+
+         -- Slider controls (Attack Range and Hitbox Scale)
+         local function createSlider(parent, y, labelText, min, max, initial)
+            local lbl = Instance.new("TextLabel", parent)
+            lbl.Size = UDim2.new(0.6, -10, 0, 18)
+            lbl.Position = UDim2.new(0, 10, 0, y)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = labelText .. " : " .. tostring(initial)
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextSize = 12
+            lbl.TextColor3 = Color3.fromRGB(190,190,190)
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+            local sliderBg = Instance.new("Frame", parent)
+            sliderBg.Size = UDim2.new(0.9, -10, 0, 10)
+            sliderBg.Position = UDim2.new(0, 10, 0, y + 20)
+            sliderBg.BackgroundColor3 = Color3.fromRGB(35,35,38)
+            sliderBg.BorderSizePixel = 0
+            local sbd = Instance.new("UICorner", sliderBg); sbd.CornerRadius = UDim.new(0, 6)
+
+            local fill = Instance.new("Frame", sliderBg)
+            fill.Size = UDim2.new((initial - min)/(max - min), 0, 1, 0)
+            fill.BackgroundColor3 = Color3.fromRGB(80,180,120)
+            fill.BorderSizePixel = 0
+            local fcu = Instance.new("UICorner", fill); fcu.CornerRadius = UDim.new(0, 6)
+
+            -- invisible button to capture clicks
+            local btn = Instance.new("TextButton", sliderBg)
+            btn.BackgroundTransparency = 1
+            btn.Size = UDim2.new(1, 0, 1, 0)
+            btn.Text = ""
+            btn.AutoButtonColor = false
+
+            local function setValueFromX(x)
+               local abs = math.clamp(x - sliderBg.AbsolutePosition.X, 0, sliderBg.AbsoluteSize.X)
+               local frac = abs / sliderBg.AbsoluteSize.X
+               local value = min + (max - min) * frac
+               fill.Size = UDim2.new(frac, 0, 1, 0)
+               lbl.Text = labelText .. " : " .. string.format("%.2f", value)
+               return value
+            end
+
+            btn.InputBegan:Connect(function(inp)
+               if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                  local val = setValueFromX(inp.Position.X)
+                  return val
+               end
+            end)
+            btn.InputChanged:Connect(function(inp)
+               if inp.UserInputType == Enum.UserInputType.MouseMovement and inp:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                  local val = setValueFromX(inp.Position.X)
+                  return val
+               end
+            end)
+
+            -- helper to update externally
+            return {
+               set = function(v)
+                  local frac = (v - min) / (max - min)
+                  frac = math.clamp(frac, 0, 1)
+                  fill.Size = UDim2.new(frac, 0, 1, 0)
+                  lbl.Text = labelText .. " : " .. string.format("%.2f", v)
+               end,
+               onChangeConnect = function(fn)
+                  -- replace btn event to call fn with value
+                  btn.InputBegan:Connect(function(inp)
+                     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local val = setValueFromX(inp.Position.X)
+                        fn(val)
+                     end
+                  end)
+                  btn.InputChanged:Connect(function(inp)
+                     if inp.UserInputType == Enum.UserInputType.MouseMovement and inp:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                        local val = setValueFromX(inp.Position.X)
+                        fn(val)
+                     end
+                  end)
+                  -- also call once to send initial
+                  fn(initial)
+               end
+            }
+         end
+
+         local slider1 = createSlider(frame, 140, "Attack Range", 4, 60, ATTACK_RANGE)
+         slider1.onChangeConnect(function(v)
+            ATTACK_RANGE = v
+         end)
+
+         local slider2 = createSlider(frame, 180, "Hitbox Scale", 1, 6, HITBOX_SCALE)
+         slider2.onChangeConnect(function(v)
+            HITBOX_SCALE = v
+         end)
+
+         -- Adjust frame size to include sliders
+         frame.Size = UDim2.new(0, 320, 0, 260)
+
+         -- Close button
+         local closeBtn = Instance.new("TextButton", frame)
+         closeBtn.Size = UDim2.new(0.48, -6, 0, 30)
+         closeBtn.Position = UDim2.new(0.02, 0, 1, -40)
+         closeBtn.Text = "Stop & Close"
+         closeBtn.Font = Enum.Font.GothamBold
+         closeBtn.TextSize = 13
+         closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+         closeBtn.TextColor3 = Color3.new(1,1,1)
+         local cui = Instance.new("UICorner", closeBtn); cui.CornerRadius = UDim.new(0, 6)
+
+         -- Connect UI actions
+         attackBtn.MouseButton1Click:Connect(function()
+            autoAttackEnabled = not autoAttackEnabled
+            attackBtn.Text = "Auto Attack: " .. (autoAttackEnabled and "ON" or "OFF")
+            attackBtn.BackgroundColor3 = autoAttackEnabled and Color3.fromRGB(45, 160, 45) or Color3.fromRGB(90,90,90)
+         end)
+
+         espBtn.MouseButton1Click:Connect(function()
+            highlightEnabled = not highlightEnabled
+            espBtn.Text = "ESP: " .. (highlightEnabled and "ON" or "OFF")
+            espBtn.BackgroundColor3 = highlightEnabled and Color3.fromRGB(0, 140, 210) or Color3.fromRGB(90,90,90)
+         end)
+
+         modeBtn.MouseButton1Click:Connect(function()
+            currentMode = currentMode % 3 + 1
+            updateModeUI()
+            StarterGui:SetCore("SendNotification", {
+               Title = "Mode Changed",
+               Text = modeBtn.Text,
+               Duration = 2
+            })
+         end)
+
+         closeBtn.MouseButton1Click:Connect(function()
+            _G.DYHUBKillAuraRunning = false
+            -- cleanup
+            pcall(function()
+               gui:Destroy()
+               cleanupAllHitboxes()
+            end)
+            StarterGui:SetCore("SendNotification", {
+               Title = "DYHUB Disabled",
+               Text = "All systems stopped.",
+               Duration = 3
+            })
+         end)
+
+         return {
+            gui = gui,
+            frame = frame,
+            updateModeUI = updateModeUI,
+            setStatus = function(txt) status.Text = txt end
          }
-         local names = {"Stop", "Normal", "Clear Zombie"}
-         modeBtn.Text = "Mode: " .. names[currentMode]
-         modeBtn.BackgroundColor3 = colors[currentMode]
       end
-      updateMode()
 
-      local closeBtn = Instance.new("TextButton", frame)
-      closeBtn.Size = UDim2.new(0.9, 0, 0, 30)
-      closeBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
-      closeBtn.Text = "❌ Stop & Close"
-      closeBtn.Font = Enum.Font.GothamBold
-      closeBtn.TextSize = 14
-      closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-      closeBtn.TextColor3 = Color3.new(1, 1, 1)
-
-      -- 🧠 UI Logic
-      attackBtn.MouseButton1Click:Connect(function()
-         autoAttackEnabled = not autoAttackEnabled
-         attackBtn.Text = "Auto Attack: " .. (autoAttackEnabled and "ON" or "OFF")
-         attackBtn.BackgroundColor3 = autoAttackEnabled and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(100, 100, 100)
-      end)
-
-      espBtn.MouseButton1Click:Connect(function()
-         highlightEnabled = not highlightEnabled
-         espBtn.Text = "ESP: " .. (highlightEnabled and "ON" or "OFF")
-         espBtn.BackgroundColor3 = highlightEnabled and Color3.fromRGB(0, 180, 255) or Color3.fromRGB(100, 100, 100)
-      end)
-
-      modeBtn.MouseButton1Click:Connect(function()
-         currentMode = currentMode % 3 + 1
-         updateMode()
-         StarterGui:SetCore("SendNotification", {
-            Title = "Mode Changed",
-            Text = modeBtn.Text,
-            Duration = 3
-         })
-      end)
-
-      closeBtn.MouseButton1Click:Connect(function()
-         _G.DYHUBKillAuraRunning = false
-         gui:Destroy()
-         StarterGui:SetCore("SendNotification", {
-            Title = "DYHUB Disabled",
-            Text = "All systems stopped.",
-            Duration = 3
-         })
-      end)
+      local ui = createChatGPTStyleGui()
 
       ------------------------------------------------------------
-      -- 🔁 MAIN LOOP
+      -- 🔁 MAIN LOOPs
       ------------------------------------------------------------
       task.spawn(function()
          while _G.DYHUBKillAuraRunning do
@@ -299,18 +623,30 @@ OthersTab:CreateButton({
 
       task.spawn(function()
          while _G.DYHUBKillAuraRunning do
-            if highlightEnabled and os.clock() - lastESPUpdate >= ESP_INTERVAL then
-               pcall(updateESP)
+            if os.clock() - lastESPUpdate >= ESP_INTERVAL then
+               pcall(updateESPAndHitboxes)
                lastESPUpdate = os.clock()
             end
             task.wait(ESP_INTERVAL)
          end
       end)
 
+      -- Heartbeat updater: keep hitboxes tracking head position
+      RunService.Heartbeat:Connect(function()
+         if not _G.DYHUBKillAuraRunning then return end
+         if HITBOX_SCALE and HITBOX_SCALE > 1 then
+            for _, model in ipairs(zombies) do
+               if model and model.Parent then
+                  pcall(function() createOrUpdateHitboxFor(model, HITBOX_SCALE) end)
+               end
+            end
+         end
+      end)
+
       StarterGui:SetCore("SendNotification", {
-         Title = "✅ DYHUB Kill Aura Active",
-         Text = "Optimized & Smooth Edition loaded!",
-         Duration = 5
+         Title = "✅ DYHUB Auto Farm Active",
+         Text = "Optimized & ChatGPT-style UI loaded!",
+         Duration = 4
       })
    end,
 })
