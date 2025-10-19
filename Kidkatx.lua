@@ -23,7 +23,7 @@ RunService.RenderStepped:Connect(function()
         FrameTimer = tick()
         FrameCounter = 0
     end
-    Library:SetWatermark(('Velocity Trial | %s fps | %s ms'):format(
+    Library:SetWatermark(('DYHUB | %s fps | %s ms | Game: KAT X'):format(
         math.floor(FPS),
         math.floor(Stats.Network.ServerStatsItem['Data Ping']:GetValue())
     ))
@@ -39,9 +39,9 @@ local Toggles = Library.Toggles
 
 -- Create Window
 local Window = Library:CreateWindow({
-    Title = "Velocity",
-    Footer = "version: Version 1.0",
-    Icon = 128828160470041,
+    Title = "DYHUB",
+    Footer = "Premium @ Kat X | V2.0",
+    Icon = 104487529937663,
     NotifySide = "Right",
     ShowCustomCursor = false,
 })
@@ -50,7 +50,7 @@ local Window = Library:CreateWindow({
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
     Esp = Window:AddTab({Name = "Visuals", Description = "Visuals & Players & World Options", Icon = "eye"}),
-    AutoFarm = Window:AddTab({Name = "AutoFarm", Description = "Automatically Farm", Icon = "axe"}),
+    AutoFarm = Window:AddTab({Name = "Auto Farm", Description = "Automatically Farm", Icon = "axe"}),
  
 }-- ==== Silent Aim Group ====
 local SAGroup = Tabs.Main:AddLeftGroupbox("Silent Aim", "crosshair")
@@ -574,14 +574,14 @@ WorldGroup:AddSlider("VisualBrightnessSlider",{Text="Brightness",Default=VisualB
 end})
 
 WorldGroup:AddButton("Stretched Resolution",function()
-    getgenv().Resolution={[".gg/scripters"]=0.65}
+    getgenv().Resolution={[".gg/dyhub"]=0.65}
     local Camera=workspace.CurrentCamera
     if getgenv().gg_scripters==nil then
         game:GetService("RunService").RenderStepped:Connect(function()
-            Camera.CFrame=Camera.CFrame*CFrame.new(0,0,0,1,0,0,0,getgenv().Resolution[".gg/scripters"],0,0,0,1)
+            Camera.CFrame=Camera.CFrame*CFrame.new(0,0,0,1,0,0,0,getgenv().Resolution[".gg/dyhub"],0,0,0,1)
         end)
     end
-    getgenv().gg_scripters="Aori0001"
+    getgenv().gg_scripters="dyhub"
 end)
 
 WorldGroup:AddButton("FPS Boost (BloxStrap)",function()
