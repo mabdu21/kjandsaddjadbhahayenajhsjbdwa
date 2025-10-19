@@ -1,6 +1,6 @@
-local start = getgenv().auto_farm or false
+local start = getgenv().auto_farm or true
 
-local DELAY_BEFORE_WARP = getgenv().delay_teleport or 0.1
+local DELAY_BEFORE_WARP = getgenv().delay_teleport or 0.05
 local OFFSET_ABOVE = 1
 local ESCAPE_DISTANCE = getgenv().escape_distance or 50
 local MONSTER_RADIUS = getgenv().monster_radius or 20
