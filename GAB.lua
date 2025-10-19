@@ -716,34 +716,54 @@ local Section = AntiTab:CreateSection("Anti Boss")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local HumanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-local ESCAPE_DISTANCE_BOSS = 20  -- ระยะที่เริ่มหนีจาก Boss
-local ESCAPE_SPEED_BOSS = 2      -- ความเร็วหนี
+local ESCAPE_DISTANCE_BOSS = 22  -- ระยะที่เริ่มหนีจาก Boss
+local ESCAPE_SPEED_BOSS = 4.5      -- ความเร็วหนี
 local escapeLoopBoss
 
-local boss = workspace:WaitForChild("Sleepy Hollow").Modes.Boss.HeadlessHorsemanBoss.HeadlessHorseman
+-- ฟังก์ชันสำหรับรอ Boss ให้ปรากฏตัว
+local function getBoss()
+    local sleepyHollow = workspace:WaitForChild("Sleepy Hollow")
+    local modes = sleepyHollow:WaitForChild("Modes")
+    local bossFolder = modes:WaitForChild("Boss")
+    local bossObject
+
+    -- รอจนกว่า HeadlessHorsemanBoss จะขึ้น
+    repeat
+        bossObject = bossFolder:FindFirstChild("HeadlessHorsemanBoss")
+        if bossObject then
+            bossObject = bossObject:FindFirstChild("HeadlessHorseman")
+        end
+        wait(0.5)
+    until bossObject
+
+    return bossObject
+end
 
 AntiTab:CreateToggle({
     Name = "Anti Headless Horseman (Escape)",
     CurrentValue = false,
     Callback = function(value)
         if value then
-            escapeLoopBoss = RunService.RenderStepped:Connect(function()
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    if not char then return end
-                    HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-                    if not HumanoidRootPart then return end
+            -- รอ Boss ให้ขึ้นก่อน แล้วค่อยเริ่ม loop
+            spawn(function()
+                local boss = getBoss()
+                escapeLoopBoss = RunService.RenderStepped:Connect(function()
+                    pcall(function()
+                        local char = LocalPlayer.Character
+                        if not char then return end
+                        local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+                        if not HumanoidRootPart then return end
 
-                    if boss and boss:FindFirstChild("HumanoidRootPart") then
-                        local bossRoot = boss.HumanoidRootPart
-                        local distance = (HumanoidRootPart.Position - bossRoot.Position).Magnitude
+                        if boss and boss:FindFirstChild("HumanoidRootPart") then
+                            local bossRoot = boss.HumanoidRootPart
+                            local distance = (HumanoidRootPart.Position - bossRoot.Position).Magnitude
 
-                        if distance < ESCAPE_DISTANCE_BOSS then
-                            local direction = (HumanoidRootPart.Position - bossRoot.Position).Unit
-                            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + direction * ESCAPE_SPEED_BOSS
+                            if distance < ESCAPE_DISTANCE_BOSS then
+                                local direction = (HumanoidRootPart.Position - bossRoot.Position).Unit
+                                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + direction * ESCAPE_SPEED_BOSS
+                            end
                         end
-                    end
+                    end)
                 end)
             end)
         else
