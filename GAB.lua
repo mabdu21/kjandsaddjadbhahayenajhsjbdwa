@@ -66,63 +66,167 @@ OthersTab:CreateButton({
    end,
 })
 
--- The existing Kill Aura & ESP button (retained from original script)
 OthersTab:CreateButton({
-   Name = "DYHUB Kill Aura & ESP (Original)",
+   Name = "Auto Farm V2",
    Callback = function()
-      local player = game:GetService("Players").LocalPlayer
+      local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
+      local StarterGui = game:GetService("StarterGui")
+      local workspace = game:GetService("Workspace")
+      local player = Players.LocalPlayer
 
-      if _G.ZacCombatRunning then
-         warn("[BluuGui] DYHUB Kill Aura already active!")
+      if _G.DYHUBKillAuraRunning then
+         warn("[DYHUB] Already running!")
          return
       end
-      _G.ZacCombatRunning = true
+      _G.DYHUBKillAuraRunning = true
 
-      -- ⚙ Settings
-      local LAG_LEVEL = 9.5     -- Higher = slower = less lag
-      local ATTACK_COOLDOWN = 1 -- seconds between attacks
+      -- ⚙ SETTINGS
+      local ATTACK_RANGE = 19
+      local ATTACK_COOLDOWN = 1
+      local SCAN_INTERVAL = 0.25
+      local ESP_INTERVAL = 1.0
       local ZOMBIE_TYPES = {"Agent", "Slim"}
-      local currentMode = 2     -- 1: Stop | 2: Normal | 3: Clear Zombie
       local highlightEnabled = true
+      local autoAttackEnabled = true
+      local currentMode = 2
+      local zombies = {}
       local lastAttackTime = 0
+      local lastESPUpdate = 0
 
-      local waitDelay = math.clamp(LAG_LEVEL * 0.4, 0, 1.5)
+      ------------------------------------------------------------
+      -- 🧱 CACHE SYSTEM
+      ------------------------------------------------------------
+      local function updateZombieList()
+         table.clear(zombies)
+         for _, obj in ipairs(workspace:GetDescendants()) do
+            for _, typeName in ipairs(ZOMBIE_TYPES) do
+               if obj.Name == typeName and obj:FindFirstChild("Head") then
+                  table.insert(zombies, obj)
+               end
+            end
+         end
+      end
+      updateZombieList()
 
-      -- 📊 Create mini control UI
+      workspace.DescendantAdded:Connect(function(obj)
+         for _, typeName in ipairs(ZOMBIE_TYPES) do
+            if obj.Name == typeName and obj:FindFirstChild("Head") then
+               table.insert(zombies, obj)
+            end
+         end
+      end)
+
+      ------------------------------------------------------------
+      -- ⚔ AUTO ATTACK FUNCTION
+      ------------------------------------------------------------
+      local function attack()
+         if not autoAttackEnabled or currentMode == 1 then return end
+
+         local now = os.clock()
+         if now - lastAttackTime < ATTACK_COOLDOWN then return end
+
+         local char = player.Character
+         local root = char and char:FindFirstChild("HumanoidRootPart")
+         if not root then return end
+
+         local tool = char:FindFirstChildWhichIsA("Tool")
+         local event = tool and (tool:FindFirstChildWhichIsA("RemoteEvent") or tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent"))
+         if not event then return end
+
+         for _, obj in ipairs(zombies) do
+            local head = obj:FindFirstChild("Head")
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            if head and hum and hum.Health > 0 then
+               local dist = (head.Position - root.Position).Magnitude
+               if dist <= ATTACK_RANGE then
+                  local dir = (head.Position - root.Position).Unit
+                  local knock = dir * 15
+                  event:FireServer("Swing", "Thrust")
+                  event:FireServer("HitZombie", obj, head.Position, true, knock, "Head", Vector3.new())
+
+                  if currentMode == 3 then
+                     for i = 1, 3 do
+                        task.wait(0.03)
+                        event:FireServer("Swing", "Thrust")
+                        event:FireServer("HitZombie", obj, head.Position + Vector3.new(0, 0.2 * i, 0), true, knock, "Head", Vector3.new())
+                     end
+                  end
+               end
+            end
+         end
+
+         lastAttackTime = now
+      end
+
+      ------------------------------------------------------------
+      -- 🔦 ESP (Highlight)
+      ------------------------------------------------------------
+      local function updateESP()
+         if not highlightEnabled then return end
+         local cameraFolder = workspace:FindFirstChild("Camera")
+         if not cameraFolder then return end
+
+         for _, model in ipairs(cameraFolder:GetDescendants()) do
+            if model:IsA("Model") and model.Name == "m_Zombie" then
+               if not model:FindFirstChildOfClass("Highlight") then
+                  local hl = Instance.new("Highlight")
+                  hl.FillTransparency = 0.2
+                  hl.FillColor = Color3.fromRGB(255, 180, 0)
+                  hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                  hl.Adornee = model
+                  hl.Parent = model
+               end
+            end
+         end
+      end
+
+      ------------------------------------------------------------
+      -- 🧭 CONTROL UI
+      ------------------------------------------------------------
       local gui = Instance.new("ScreenGui", player.PlayerGui)
       gui.Name = "DYHUBCombatUI"
       gui.ResetOnSpawn = false
 
       local frame = Instance.new("Frame", gui)
-      frame.Size = UDim2.new(0, 260, 0, 100)
-      frame.Position = UDim2.new(0.5, -130, 0, 10)
-      frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+      frame.Size = UDim2.new(0, 280, 0, 140)
+      frame.Position = UDim2.new(0.5, -140, 0, 20)
+      frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
       frame.BackgroundTransparency = 0.2
       frame.BorderSizePixel = 0
       frame.Active = true
       frame.Draggable = true
+      frame.ZIndex = 10
 
-      local label1 = Instance.new("TextLabel", frame)
-      label1.Text = "⚔ AUTO ATTACK: ENABLED"
-      label1.Size = UDim2.new(1, 0, 0.4, 0)
-      label1.TextColor3 = Color3.fromRGB(0, 255, 0)
-      label1.BackgroundTransparency = 1
-      label1.Font = Enum.Font.GothamBold
-      label1.TextSize = 14
+      local title = Instance.new("TextLabel", frame)
+      title.Text = "DYHUB | FARM"
+      title.Size = UDim2.new(1, 0, 0, 25)
+      title.BackgroundTransparency = 1
+      title.TextColor3 = Color3.fromRGB(0, 255, 0)
+      title.Font = Enum.Font.GothamBold
+      title.TextSize = 16
 
-      local label2 = Instance.new("TextLabel", frame)
-      label2.Text = "🔍 ZOMBIE HIGHLIGHT: ENABLED"
-      label2.Size = UDim2.new(1, 0, 0.4, 0)
-      label2.Position = UDim2.new(0, 0, 0.4, 0)
-      label2.TextColor3 = Color3.fromRGB(0, 200, 255)
-      label2.BackgroundTransparency = 1
-      label2.Font = Enum.Font.GothamBold
-      label2.TextSize = 14
+      local attackBtn = Instance.new("TextButton", frame)
+      attackBtn.Size = UDim2.new(0.45, 0, 0, 30)
+      attackBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
+      attackBtn.Text = "Auto Attack: ON"
+      attackBtn.Font = Enum.Font.GothamBold
+      attackBtn.TextSize = 14
+      attackBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
+      attackBtn.TextColor3 = Color3.new(1, 1, 1)
+
+      local espBtn = Instance.new("TextButton", frame)
+      espBtn.Size = UDim2.new(0.45, 0, 0, 30)
+      espBtn.Position = UDim2.new(0.5, 0, 0.25, 0)
+      espBtn.Text = "ESP: ON"
+      espBtn.Font = Enum.Font.GothamBold
+      espBtn.TextSize = 14
+      espBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+      espBtn.TextColor3 = Color3.new(1, 1, 1)
 
       local modeBtn = Instance.new("TextButton", frame)
-      modeBtn.Size = UDim2.new(0.9, 0, 0.3, 0)
-      modeBtn.Position = UDim2.new(0.05, 0, 0.75, 0)
+      modeBtn.Size = UDim2.new(0.9, 0, 0, 30)
+      modeBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
       modeBtn.Font = Enum.Font.GothamBold
       modeBtn.TextSize = 14
       modeBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -139,122 +243,75 @@ OthersTab:CreateButton({
       end
       updateMode()
 
+      local closeBtn = Instance.new("TextButton", frame)
+      closeBtn.Size = UDim2.new(0.9, 0, 0, 30)
+      closeBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
+      closeBtn.Text = "❌ Stop & Close"
+      closeBtn.Font = Enum.Font.GothamBold
+      closeBtn.TextSize = 14
+      closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+      closeBtn.TextColor3 = Color3.new(1, 1, 1)
+
+      -- 🧠 UI Logic
+      attackBtn.MouseButton1Click:Connect(function()
+         autoAttackEnabled = not autoAttackEnabled
+         attackBtn.Text = "Auto Attack: " .. (autoAttackEnabled and "ON" or "OFF")
+         attackBtn.BackgroundColor3 = autoAttackEnabled and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(100, 100, 100)
+      end)
+
+      espBtn.MouseButton1Click:Connect(function()
+         highlightEnabled = not highlightEnabled
+         espBtn.Text = "ESP: " .. (highlightEnabled and "ON" or "OFF")
+         espBtn.BackgroundColor3 = highlightEnabled and Color3.fromRGB(0, 180, 255) or Color3.fromRGB(100, 100, 100)
+      end)
+
       modeBtn.MouseButton1Click:Connect(function()
          currentMode = currentMode % 3 + 1
          updateMode()
-         game.StarterGui:SetCore("SendNotification", {
+         StarterGui:SetCore("SendNotification", {
             Title = "Mode Changed",
             Text = modeBtn.Text,
             Duration = 3
          })
       end)
 
-      -- 🧟‍♂️ Auto Attack logic
-      local function attack()
-         if currentMode == 1 then return end
-         local now = os.clock()
-         if now - lastAttackTime < ATTACK_COOLDOWN then return end
+      closeBtn.MouseButton1Click:Connect(function()
+         _G.DYHUBKillAuraRunning = false
+         gui:Destroy()
+         StarterGui:SetCore("SendNotification", {
+            Title = "DYHUB Disabled",
+            Text = "All systems stopped.",
+            Duration = 3
+         })
+      end)
 
-         local char = player.Character
-         local root = char and char:FindFirstChild("HumanoidRootPart")
-         if not root then return end
-
-         local tool = char:FindFirstChildWhichIsA("Tool")
-         local event = tool and (tool:FindFirstChildWhichIsA("RemoteEvent") or tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent"))
-         if not event then return end
-
-         for _, obj in ipairs(workspace:GetDescendants()) do
-            for _, typeName in ipairs(ZOMBIE_TYPES) do
-               if obj.Name == typeName and obj:FindFirstChild("Head") then
-                  local head = obj.Head
-                  local hum = obj:FindFirstChildOfClass("Humanoid")
-                  if hum and hum.Health > 0 and (head.Position - root.Position).Magnitude <= 19 then
-                     local pos = head.Position
-                     local dir = (pos - root.Position).Unit
-                     local knock = dir * 15
-
-                     event:FireServer("Swing", "Thrust")
-                     event:FireServer("HitZombie", obj, pos, true, knock, "Head", Vector3.new(math.random(), math.random(), math.random()).Unit)
-
-                     if currentMode == 3 then
-                        for i = 1, 4 do
-                           task.wait(0.05)
-                           event:FireServer("Swing", "Thrust")
-                           event:FireServer("HitZombie", obj, pos + Vector3.new(0, 0.2 * i, 0), true, knock * (1 + i * 0.1), "Head", Vector3.new(math.random(), math.random(), math.random()).Unit)
-                        end
-                     end
-                  end
-               end
+      ------------------------------------------------------------
+      -- 🔁 MAIN LOOP
+      ------------------------------------------------------------
+      task.spawn(function()
+         while _G.DYHUBKillAuraRunning do
+            if autoAttackEnabled then
+               pcall(attack)
             end
-         end
-
-         lastAttackTime = now
-      end
-
-      -- 🔦 Highlight ESP
-      local cameraFolder = workspace:WaitForChild("Camera")
-      local colors = {
-         Torch = Color3.fromRGB(100, 255, 100),
-         Axe = Color3.fromRGB(255, 100, 100),
-         Default = Color3.fromRGB(240, 240, 240)
-      }
-
-      local function highlightModel(model)
-         if not model.PrimaryPart then
-            model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
-         end
-         if not model.PrimaryPart then return end
-
-         for _, v in ipairs(model:GetDescendants()) do
-            if v:IsA("Highlight") then v:Destroy() end
-         end
-
-         local hl = Instance.new("Highlight")
-         hl.Adornee = model
-         hl.FillTransparency = 0.2
-         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
-         if model:FindFirstChild("Torch", true) then
-            hl.FillColor = colors.Torch
-         elseif model:FindFirstChild("Axe", true) then
-            hl.FillColor = colors.Axe
-         else
-            hl.FillColor = colors.Default
-         end
-
-         hl.Parent = model
-      end
-
-      local function updateESP()
-         local char = player.Character
-         local root = char and char:FindFirstChild("HumanoidRootPart")
-         if not root then return end
-         for _, model in ipairs(cameraFolder:GetDescendants()) do
-            if model:IsA("Model") and model.Name == "m_Zombie" then
-               local dist = (root.Position - model.PrimaryPart.Position).Magnitude
-               if dist < 80 then
-                  highlightModel(model)
-               end
-            end
-         end
-      end
-
-      -- 🔁 Main loop
-      RunService.Heartbeat:Connect(function()
-         task.wait(waitDelay)
-         pcall(attack)
-         task.wait(waitDelay)
-         if highlightEnabled then
-            pcall(updateESP)
+            task.wait(SCAN_INTERVAL)
          end
       end)
 
-      game.StarterGui:SetCore("SendNotification", {
-         Title = "✅ Zac Kill Aura Active",
-         Text = "Auto-attack + ESP enabled",
-         Duration = 6
-      })
+      task.spawn(function()
+         while _G.DYHUBKillAuraRunning do
+            if highlightEnabled and os.clock() - lastESPUpdate >= ESP_INTERVAL then
+               pcall(updateESP)
+               lastESPUpdate = os.clock()
+            end
+            task.wait(ESP_INTERVAL)
+         end
+      end)
 
+      StarterGui:SetCore("SendNotification", {
+         Title = "✅ DYHUB Kill Aura Active",
+         Text = "Optimized & Smooth Edition loaded!",
+         Duration = 5
+      })
    end,
 })
 
