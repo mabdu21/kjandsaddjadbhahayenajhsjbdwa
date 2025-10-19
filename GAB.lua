@@ -1,14 +1,14 @@
-     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Guts & Bluupowder",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "Guts & Bluupowder Hub",
-   LoadingSubtitle = "by luauisbluu",
-   ShowText = "G&B", -- for mobile users to unhide rayfield, change if you'd like
-   Theme = "Ocean", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+   Name = "DYHUB | Guts & Blackpowder",
+   Icon = 104487529937663, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "DYHUB Loaded! - G&B",
+   LoadingSubtitle = "Join our at dsc.gg/dyhub",
+   ShowText = "DYHUB", -- for mobile users to unhide rayfield, change if you'd like
+   Theme = "Dark Blue", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 
-   ToggleUIKeybind = "B", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
+   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
 
    DisableRayfieldPrompts = false,
    DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
@@ -16,7 +16,7 @@ local Window = Rayfield:CreateWindow({
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil, -- Create a custom folder for your hub/game
-      FileName = "Big Hub"
+      FileName = "DYHUB_G&B"
    },
 
    Discord = {
@@ -38,9 +38,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
-
 local Main = Window:CreateTab("Others", 4483362458) -- Title, Image
-
 local Section = Main:CreateSection("Hubs")
 
 local Button = Main:CreateButton({
@@ -59,22 +57,14 @@ local Button = Main:CreateButton({
 })
 
 local Button = Main:CreateButton({
-   Name = "Katchi Hub (KeySistem)",
-   Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/milkywiffle-netizen/Katchi-hub/refs/heads/main/KeysyGandB"))()
-  
-    end,
-})
-
-local Button = Main:CreateButton({
-   Name = "Zac Kill Aura & ESP",
+   Name = "DYHUB Kill Aura & ESP",
    Callback = function()
 
       local player = game:GetService("Players").LocalPlayer
       local RunService = game:GetService("RunService")
 
       if _G.ZacCombatRunning then
-         warn("[BluuGui] Zac Kill Aura already active!")
+         warn("[BluuGui] DYHUB Kill Aura already active!")
          return
       end
       _G.ZacCombatRunning = true
@@ -285,7 +275,7 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(0.5) -- slower for toaster
+        task.wait(0.1) -- slower for toaster
         if killAuraEnabled then
             local char = LocalPlayer.Character
             local tool = getMeleeTool()
@@ -293,7 +283,7 @@ task.spawn(function()
                 for _, enemy in pairs(Workspace:GetChildren()) do
                     if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
                         local dist = (enemy.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-                        if dist <= 13 then
+                        if dist <= 16 then
                             pcall(function()
                                 tool.RemoteEvent:FireServer("Swing", "Thrust")
                                 tool.RemoteEvent:FireServer("HitZombie", enemy, enemy.HumanoidRootPart.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
@@ -373,6 +363,13 @@ MainTab:CreateToggle({
             end
         end)
     end,
+})
+MainTab:CreateButton({
+   Name = "Fly (V3)",
+   Callback = function()
+   loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))() 
+
+   end,
 })
 
 local Section = MainTab:CreateSection("ESP")
@@ -1290,10 +1287,10 @@ aimConn = RunService.RenderStepped:Connect(function(dt)
 end)
 
 Rayfield:Notify({
-   Title = "Guts & Bluupowder",
+   Title = "Guts & Blackpowder",
    Content = "Loaded sucefuly",
    Duration = 3.1,
-   Image = 4483362458,
+   Image = 104487529937663,
 })
 
 -- Optional cleanup function (call if you unload script)
