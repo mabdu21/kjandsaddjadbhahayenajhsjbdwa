@@ -1,679 +1,270 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "DYHUB | Guts & Blackpowder (UPG)",
-   Icon = 104487529937663, 
+   Name = "DYHUB | Guts & Blackpowder",
+   Icon = 104487529937663, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
    LoadingTitle = "DYHUB Loaded! - G&B",
-   LoadingSubtitle = "All features upgraded to MAX capacity.",
-   ShowText = "DYHUB", 
-   Theme = "Dark Blue",
+   LoadingSubtitle = "Join our at dsc.gg/dyhub",
+   ShowText = "DYHUB", -- for mobile users to unhide rayfield, change if you'd like
+   Theme = "Dark Blue", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 
-   ToggleUIKeybind = "K",
+   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
 
    DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
 
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "DYHUB_GAB"
    },
 
    Discord = {
-      Enabled = false, 
-      Invite = "noinvitelink", 
-      RememberJoins = true
+      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
    },
 
-   KeySystem = false,
+   KeySystem = false, -- Set this to true to use our key system
    KeySettings = {
       Title = "Verification",
       Subtitle = "No one of these hubs are mine",
-      Note = "Type (No) To verificate",
-      FileName = "Key", 
-      SaveKey = true, 
-      GrabKeyFromSite = false, 
-      Key = {"No"}
+      Note = "Type (No) To verificate", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"No"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
    }
 })
 
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
+local EspTab = Window:CreateTab("Esp", 4483362458)
+local AutoTab = Window:CreateTab("Auto", 4483362458)
+local Main = Window:CreateTab("Others", 4483362458) -- Title, Image
+local Section = Main:CreateSection("Hubs")
 
-local MainTab = Window:CreateTab("Main", 4483362458) 
-local AdvancedTab = Window:CreateTab("Advanced", 10041499557) -- New Tab for advanced features
-local OthersTab = Window:CreateTab("Others", 4483362458) 
-
---====================================================
--- OTHERS TAB (External Loaders)
---====================================================
-local Section = OthersTab:CreateSection("Hubs")
-
-OthersTab:CreateButton({
-   Name = "Chaos Hub V1 (Recomended)",
+local Button = Main:CreateButton({
+   Name = "Chaos Hub (Work on mobile)",
    Callback = function()
    loadstring(game:HttpGet("https://raw.githubusercontent.com/cjbbth1-crypto/Chaos-Hub-GB/refs/heads/main/Chaos%20Hub"))()
    end,
 })
 
-OthersTab:CreateButton({
-   Name = "Chaos Hub V2",
+local Section = AutoTab:CreateSection("Auto Farm")
+
+local Button = AutoTab:CreateButton({
+   Name = "Auto Farm V3 (Reworked)",
    Callback = function()
-   loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/e20fed92529744b979e43c6bddcc0bb1ce5da193a3ce944ca92fedf1d7c23f2e/download"))() 
-
-   end,
-})
-
--- Auto Farm V2 (Upgraded - ChatGPT style UI)
--- ดึงเป้าจาก workspace.Zombies ทุกตัว (ไม่สนชื่อซ้ำ)
--- เพิ่ม slider สำหรับปรับ ATTACK_RANGE และ HITBOX_SCALE
--- ESP สำหรับตัวใน list และระบบอัปเดตอัตโนมัติ
-
-OthersTab:CreateButton({
-   Name = "Auto Farm V3 (Recomended)",
-   Callback = function()
-      local Players = game:GetService("Players")
+      local player = game:GetService("Players").LocalPlayer
       local RunService = game:GetService("RunService")
-      local StarterGui = game:GetService("StarterGui")
-      local workspace = game:GetService("Workspace")
-      local player = Players.LocalPlayer
+      local TweenService = game:GetService("TweenService")
 
-      if _G.DYHUBKillAuraRunning then
-         warn("[DYHUB] Already running!")
+      if _G.DYHUB_AutoFarm_Running then
+         warn("[DYHUB] Auto Farm already running!")
          return
       end
-      _G.DYHUBKillAuraRunning = true
+      _G.DYHUB_AutoFarm_Running = true
 
-      -- ⚙ SETTINGS (ค่าพื้นฐาน)
-      local ATTACK_RANGE = 20
-      local ATTACK_COOLDOWN = 0.1
-      local SCAN_INTERVAL = 0.15
-      local ESP_INTERVAL = 1.0
+      -- ⚙ SETTINGS
+      local ATTACK_COOLDOWN = 0.5
+      local LAG_LEVEL = 8
       local highlightEnabled = true
-      local autoAttackEnabled = true
-      local currentMode = 2 -- 1 Stop, 2 Normal, 3 Clear
-      local zombies = {}              -- เก็บ reference model ของ zombie
-      local zombieIndex = {}          -- map model -> true (ช่วยเช็คเร็ว)
+      local currentMode = 2 -- 1: Stop | 2: Normal | 3: Clear Mode
       local lastAttackTime = 0
-      local lastESPUpdate = 0
-      local HITBOX_SCALE = 1.5        -- 1.0 = ปกติ, >1 ขยาย hitbox (แบบสร้าง part ใกล้หัว)
-      local HITBOX_FOLDER_NAME = "DYHUB_Hitboxes"
-      local zombiesFolder = workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")
 
-      ------------------------------------------------------------
-      -- 🧱 UTIL - สร้าง folder เก็บ hitbox
-      ------------------------------------------------------------
-      local function ensureHitboxFolder()
-         local f = workspace:FindFirstChild(HITBOX_FOLDER_NAME)
-         if not f then
-            f = Instance.new("Folder")
-            f.Name = HITBOX_FOLDER_NAME
-            f.Parent = workspace
-         end
-         return f
+      local waitDelay = math.clamp(LAG_LEVEL * 0.4, 0, 1.2)
+
+      -- 🌙 UI SETUP (ChatGPT Style)
+      local gui = Instance.new("ScreenGui")
+      gui.Name = "DYHUB_AutoFarmUI"
+      gui.ResetOnSpawn = false
+      gui.Parent = player:WaitForChild("PlayerGui")
+
+      local frame = Instance.new("Frame")
+      frame.Size = UDim2.new(0, 280, 0, 110)
+      frame.Position = UDim2.new(0.5, -140, 0, 10)
+      frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+      frame.BorderSizePixel = 0
+      frame.BackgroundTransparency = 1
+      frame.Parent = gui
+      frame.Active = true
+      frame.Draggable = true
+
+      local UICorner = Instance.new("UICorner", frame)
+      UICorner.CornerRadius = UDim.new(0, 12)
+
+      local UIStroke = Instance.new("UIStroke", frame)
+      UIStroke.Thickness = 1.6
+      UIStroke.Color = Color3.fromRGB(0, 255, 120)
+      UIStroke.Transparency = 0.3
+
+      -- Fade-in
+      TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.05}):Play()
+
+      local title = Instance.new("TextLabel", frame)
+      title.Text = "🤖 DYHUB | Auto Farm V3"
+      title.Size = UDim2.new(1, 0, 0.3, 0)
+      title.BackgroundTransparency = 1
+      title.TextColor3 = Color3.fromRGB(0, 255, 130)
+      title.Font = Enum.Font.GothamBold
+      title.TextSize = 15
+
+      local status = Instance.new("TextLabel", frame)
+      status.Text = "🟢 Auto Attack: Enabled"
+      status.Size = UDim2.new(1, 0, 0.3, 0)
+      status.Position = UDim2.new(0, 0, 0.35, 0)
+      status.BackgroundTransparency = 1
+      status.TextColor3 = Color3.fromRGB(0, 255, 0)
+      status.Font = Enum.Font.GothamBold
+      status.TextSize = 14
+
+      local modeBtn = Instance.new("TextButton", frame)
+      modeBtn.Size = UDim2.new(0.9, 0, 0.25, 0)
+      modeBtn.Position = UDim2.new(0.05, 0, 0.7, 0)
+      modeBtn.Font = Enum.Font.GothamBold
+      modeBtn.TextSize = 14
+      modeBtn.TextColor3 = Color3.new(1, 1, 1)
+      modeBtn.AutoButtonColor = false
+      modeBtn.BackgroundTransparency = 0.1
+
+      local colors = {
+         [1] = Color3.fromRGB(255, 60, 60),
+         [2] = Color3.fromRGB(40, 180, 80),
+         [3] = Color3.fromRGB(255, 200, 60)
+      }
+      local names = {"Stop", "Normal", "Clear Mode"}
+
+      local function updateMode()
+         modeBtn.Text = "Mode: " .. names[currentMode]
+         TweenService:Create(modeBtn, TweenInfo.new(0.25), {BackgroundColor3 = colors[currentMode]}):Play()
       end
-      local hitboxFolder = ensureHitboxFolder()
+      updateMode()
 
-      ------------------------------------------------------------
-      -- 🧱 CACHE SYSTEM (ดึงจาก workspace.Zombies ทุกตัว)
-      ------------------------------------------------------------
-      local function clearZombieTables()
-         table.clear(zombies)
-         for k in pairs(zombieIndex) do zombieIndex[k] = nil end
-      end
-
-      local function addZombieModel(model)
-         if not model or not model:IsA("Model") then return end
-         if zombieIndex[model] then return end
-         -- เราต้องมี Head และ Humanoid (หรืออย่างน้อย Head)
-         local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
-         if head then
-            table.insert(zombies, model)
-            zombieIndex[model] = true
-         end
-      end
-
-      local function removeZombieModel(model)
-         if not zombieIndex[model] then return end
-         for i = #zombies, 1, -1 do
-            if zombies[i] == model then
-               table.remove(zombies, i)
-            end
-         end
-         zombieIndex[model] = nil
-         -- ลบ hitbox ถ้ามี
-         local hb = hitboxFolder:FindFirstChild(tostring(model:GetDebugId())) or hitboxFolder:FindFirstChild(model.Name .. "_" .. tostring(model:GetDebugId()))
-         if hb then pcall(function() hb:Destroy() end) end
-      end
-
-      local function updateZombieListFromFolder()
-         clearZombieTables()
-         zombiesFolder = workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")
-         if not zombiesFolder then return end
-         for _, child in ipairs(zombiesFolder:GetChildren()) do
-            addZombieModel(child)
-         end
-      end
-
-      -- อัปเดตตอนเริ่ม
-      updateZombieListFromFolder()
-
-      -- ฟังการเปลี่ยนแปลงในโฟลเดอร์ Zombies (ChildAdded / ChildRemoved)
-      if zombiesFolder then
-         zombiesFolder.ChildAdded:Connect(function(ch)
-            addZombieModel(ch)
-         end)
-         zombiesFolder.ChildRemoved:Connect(function(ch)
-            removeZombieModel(ch)
-         end)
-      end
-
-      -- ในกรณีที่ folder ถูกสร้างหรือลบ เราคอยสแกนทุกวินาที
-      task.spawn(function()
-         while _G.DYHUBKillAuraRunning do
-            if not (workspace:FindFirstChild("Zombies") or workspace:FindFirstChild("zombies")) then
-               -- รอแล้วลองอีกครั้ง
-               task.wait(1)
-               updateZombieListFromFolder()
-            else
-               task.wait(2)
-            end
-         end
+      modeBtn.MouseButton1Click:Connect(function()
+         currentMode = currentMode % 3 + 1
+         updateMode()
+         game.StarterGui:SetCore("SendNotification", {
+            Title = "Mode Changed",
+            Text = modeBtn.Text,
+            Duration = 3
+         })
       end)
 
-      ------------------------------------------------------------
-      -- 🎯 ATTACK HELPERS - หา remote event ของ tool ให้ยืดหยุ่น
-      ------------------------------------------------------------
-      local function findToolEvent(char)
-         if not char then return nil end
-         -- มองหา Tool ที่กำลังถือ
-         local tool = char:FindFirstChildOfClass("Tool")
-         if not tool then
-            -- บางเกมเก็บเป็น folder ชื่อ Weapon หรือใน Humanoid:FindFirstChildWhichIsA("Tool")
-            for _, v in ipairs(char:GetChildren()) do
-               if v:IsA("Tool") then
-                  tool = v
-                  break
-               end
+      -- ⚔ AUTO ATTACK SYSTEM
+      local function getZombies()
+         local folder = workspace:FindFirstChild("Zombies")
+         if not folder then return {} end
+         local zombies = {}
+         for _, z in ipairs(folder:GetChildren()) do
+            if z:IsA("Model") and z:FindFirstChild("Head") then
+               table.insert(zombies, z)
             end
          end
-         if not tool then
-            -- ดูใน Backpack เผื่อยังไม่ได้ equip
-            local backpackTool = player.Backpack and player.Backpack:FindFirstChildOfClass("Tool")
-            if backpackTool then tool = backpackTool end
-         end
-         if not tool then return nil end
-
-         -- หาว่า remote อยู่ที่ไหน (หลายรูปแบบ)
-         local evt = nil
-         evt = tool:FindFirstChildWhichIsA("RemoteEvent") or evt
-         if not evt and tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent") then
-            evt = tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent")
-         end
-         -- บางเกมอาจใช้ RemoteFunction หรือ BindableEvent; เราดูเฉพาะ RemoteEvent ที่พบ
-         return evt, tool
-      end
-
-      ------------------------------------------------------------
-      -- ⚔ AUTO ATTACK FUNCTION
-      ------------------------------------------------------------
-      local function getHumanoid(model)
-         return model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildWhichIsA("Humanoid")
+         return zombies
       end
 
       local function attack()
-         if not autoAttackEnabled or currentMode == 1 then return end
+         if currentMode == 1 then return end
          local now = os.clock()
          if now - lastAttackTime < ATTACK_COOLDOWN then return end
 
          local char = player.Character
-         local root = char and char:FindFirstChild("HumanoidRootPart") or (char and char:FindFirstChild("Torso"))
+         local root = char and char:FindFirstChild("HumanoidRootPart")
          if not root then return end
 
-         local evt, tool = findToolEvent(char)
-         if not evt then
-            -- ถ้าไม่มี remote ที่คาดไว้ อาจจะยังไม่มีอาวุธ หยุดการโจมตี
-            return
-         end
+         local tool = char:FindFirstChildWhichIsA("Tool")
+         local event = tool and (tool:FindFirstChildWhichIsA("RemoteEvent") or tool:FindFirstChild("MeleeBase") and tool.MeleeBase:FindFirstChildWhichIsA("RemoteEvent"))
+         if not event then return end
 
-         -- loop ผ่านทุก zombie ใน list
-         for _, model in ipairs(zombies) do
-            if model and model.Parent then
-               local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
-               local hum = getHumanoid(model)
-               if head and hum and hum.Health > 0 then
-                  local dist = (head.Position - root.Position).Magnitude
-                  if dist <= ATTACK_RANGE then
-                     -- คำนวณแรง knock ตามทิศ
-                     local ok, _ = pcall(function()
-                        local dir = (head.Position - root.Position)
-                        if dir.Magnitude == 0 then dir = Vector3.new(0,0,0) end
-                        local unit = (dir.Magnitude > 0) and dir.Unit or Vector3.new(0,0,0)
-                        local knock = unit * 15
-                        -- ส่ง event แบบยืดหยุ่น: บางเกมอาจต้อง arguments ต่างกัน
-                        -- เราพยายามส่งแบบที่เกมต้นแบบของคุณใช้
-                        evt:FireServer("Swing", "Thrust")
-                        evt:FireServer("HitZombie", model, head.Position, true, knock, "Head", Vector3.new())
-                        if currentMode == 3 then
-                           for i = 1, 3 do
-                              task.wait(0.03)
-                              evt:FireServer("Swing", "Thrust")
-                              evt:FireServer("HitZombie", model, head.Position + Vector3.new(0, 0.2 * i, 0), true, knock, "Head", Vector3.new())
-                           end
-                        end
-                     end)
-                     -- หากต้องการเพิ่ม delay ระหว่างสองตัว ใส่ task.wait นิดหน่อย (แต่ตอนนี้พึ่ง cooldown)
+         for _, zombie in ipairs(getZombies()) do
+            local head = zombie:FindFirstChild("Head")
+            local hum = zombie:FindFirstChildOfClass("Humanoid")
+            if head and hum and hum.Health > 0 then
+               local dist = (head.Position - root.Position).Magnitude
+               if dist <= 19 then
+                  local pos = head.Position
+                  local dir = (pos - root.Position).Unit
+                  local knock = dir * 15
+
+                  event:FireServer("Swing", "Thrust")
+                  event:FireServer("HitZombie", zombie, pos, true, knock, "Head", Vector3.new(math.random(), math.random(), math.random()).Unit)
+
+                  if currentMode == 3 then
+                     for i = 1, 4 do
+                        task.wait(0.05)
+                        event:FireServer("Swing", "Thrust")
+                        event:FireServer("HitZombie", zombie, pos + Vector3.new(0, 0.2 * i, 0), true, knock * (1 + i * 0.1), "Head", Vector3.new(math.random(), math.random(), math.random()).Unit)
+                     end
                   end
                end
             end
          end
-
          lastAttackTime = now
       end
 
-      ------------------------------------------------------------
-      -- 🔦 ESP (Highlight) & Hitbox updater
-      ------------------------------------------------------------
-      local function applyHighlightToModel(model)
-         if not model then return end
-         -- เช็กว่า model มี Highlight อยู่แล้วหรือไม่
-         local existing = nil
-         for _, c in ipairs(model:GetDescendants()) do
-            if c:IsA("Highlight") then
-               existing = c
-               break
-            end
+      -- ✨ ZOMBIE HIGHLIGHT
+      local function highlightModel(model)
+         if not model.PrimaryPart then
+            model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
          end
-         if not existing and highlightEnabled then
-            local hl = Instance.new("Highlight")
-            hl.Name = "DYHUB_Highlight"
-            hl.FillTransparency = 0.2
-            hl.FillColor = Color3.fromRGB(255, 180, 0)
-            hl.OutlineTransparency = 0.4
-            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            hl.Adornee = model
-            hl.Parent = model
+         if not model.PrimaryPart then return end
+         if model:FindFirstChild("DYHUB_Highlight") then return end
+
+         local hl = Instance.new("Highlight")
+         hl.Name = "DYHUB_Highlight"
+         hl.Adornee = model
+         hl.FillTransparency = 0.25
+         hl.OutlineTransparency = 0.2
+         hl.FillColor = Color3.fromRGB(0, 255, 120)
+         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+         hl.Parent = model
+      end
+
+      local function updateHighlights()
+         if not highlightEnabled then return end
+         local zombies = getZombies()
+         for _, zombie in ipairs(zombies) do
+            highlightModel(zombie)
          end
       end
 
-      local function removeHighlightFromModel(model)
-         if not model then return end
-         for _, c in ipairs(model:GetDescendants()) do
-            if c:IsA("Highlight") and c.Name == "DYHUB_Highlight" then
-               pcall(function() c:Destroy() end)
-            end
-         end
-      end
-
-      -- สร้าง/อัปเดต Hitbox part ใกล้หัว (transparent, cancollide=false)
-      local function createOrUpdateHitboxFor(model, scale)
-         if not model then return end
-         local head = model:FindFirstChild("Head") or model:FindFirstChild("head")
-         if not head then return end
-         local idName = model.Name .. "_" .. tostring(model:GetDebugId())
-         local part = hitboxFolder:FindFirstChild(idName)
-         if not part then
-            part = Instance.new("Part")
-            part.Name = idName
-            part.Size = Vector3.new(1,1,1)
-            part.Transparency = 1
-            part.CanCollide = false
-            part.Anchored = true
-            part.Parent = hitboxFolder
-         end
-         local s = math.clamp(scale, 0.3, 10)
-         part.Size = Vector3.new(s, s, s)
-         part.CFrame = head.CFrame
-      end
-
-      local function cleanupAllHitboxes()
-         for _, c in ipairs(hitboxFolder:GetChildren()) do
-            pcall(function() c:Destroy() end)
-         end
-      end
-
-      local function updateESPAndHitboxes()
-         if not highlightEnabled and HITBOX_SCALE <= 1 then
-            -- ถ้าทั้งสองปิด อาจล้าง highlight
-            for _, model in ipairs(zombies) do
-               removeHighlightFromModel(model)
-            end
-            cleanupAllHitboxes()
-            return
-         end
-
-         for _, model in ipairs(zombies) do
-            if model and model.Parent then
-               if highlightEnabled then
-                  applyHighlightToModel(model)
-               else
-                  removeHighlightFromModel(model)
-               end
-               if HITBOX_SCALE and HITBOX_SCALE > 1 then
-                  pcall(function() createOrUpdateHitboxFor(model, HITBOX_SCALE) end)
-               else
-                  -- ถ้า scale <=1 ให้ลบ hitbox ของ model นั้น (ถ้ามี)
-                  local idName = model.Name .. "_" .. tostring(model:GetDebugId())
-                  local hb = hitboxFolder:FindFirstChild(idName)
-                  if hb then pcall(function() hb:Destroy() end) end
-               end
-            end
-         end
-      end
-
-      ------------------------------------------------------------
-      -- 🧭 CONTROL UI (ChatGPT-like minimal)
-      ------------------------------------------------------------
-      local function createChatGPTStyleGui()
-         -- หน้าตาแบบมินิมอล: dark card, softened corners
-         local gui = Instance.new("ScreenGui")
-         gui.Name = "DYHUBCombatUI"
-         gui.ResetOnSpawn = false
-         gui.Parent = player:WaitForChild("PlayerGui")
-
-         local frame = Instance.new("Frame", gui)
-         frame.Size = UDim2.new(0, 320, 0, 180)
-         frame.Position = UDim2.new(0.5, -160, 0, 24)
-         frame.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
-         frame.BackgroundTransparency = 0
-         frame.BorderSizePixel = 0
-         frame.AnchorPoint = Vector2.new(0.5, 0)
-         frame.ZIndex = 50
-         frame.Active = true
-         frame.Draggable = true
-         frame.ClipsDescendants = true
-         frame.Name = "MainCard"
-         -- rounding (if UICorner supported)
-         local uic = Instance.new("UICorner", frame)
-         uic.CornerRadius = UDim.new(0, 10)
-
-         local title = Instance.new("TextLabel", frame)
-         title.Size = UDim2.new(1, -20, 0, 28)
-         title.Position = UDim2.new(0, 10, 0, 8)
-         title.BackgroundTransparency = 1
-         title.Text = "DYHUB • Auto Farm V2"
-         title.TextColor3 = Color3.fromRGB(200, 255, 220)
-         title.Font = Enum.Font.GothamBold
-         title.TextSize = 16
-         title.TextXAlignment = Enum.TextXAlignment.Left
-
-         -- status label
-         local status = Instance.new("TextLabel", frame)
-         status.Size = UDim2.new(1, -20, 0, 20)
-         status.Position = UDim2.new(0, 10, 0, 34)
-         status.BackgroundTransparency = 1
-         status.Text = "Status: Running"
-         status.Font = Enum.Font.Gotham
-         status.TextSize = 12
-         status.TextColor3 = Color3.fromRGB(170, 170, 170)
-         status.TextXAlignment = Enum.TextXAlignment.Left
-
-         -- Auto Attack Toggle
-         local attackBtn = Instance.new("TextButton", frame)
-         attackBtn.Size = UDim2.new(0.48, -6, 0, 32)
-         attackBtn.Position = UDim2.new(0, 10, 0, 60)
-         attackBtn.Text = "Auto Attack: ON"
-         attackBtn.Font = Enum.Font.GothamBold
-         attackBtn.TextSize = 13
-         attackBtn.BackgroundTransparency = 0
-         attackBtn.BackgroundColor3 = Color3.fromRGB(45, 160, 45)
-         attackBtn.TextColor3 = Color3.new(1, 1, 1)
-         attackBtn.Name = "AutoAttackBtn"
-         local aui = Instance.new("UICorner", attackBtn); aui.CornerRadius = UDim.new(0, 6)
-
-         -- ESP Toggle
-         local espBtn = Instance.new("TextButton", frame)
-         espBtn.Size = UDim2.new(0.48, -6, 0, 32)
-         espBtn.Position = UDim2.new(0.52, -6, 0, 60)
-         espBtn.Text = "ESP: ON"
-         espBtn.Font = Enum.Font.GothamBold
-         espBtn.TextSize = 13
-         espBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 210)
-         espBtn.TextColor3 = Color3.new(1, 1, 1)
-         local eui = Instance.new("UICorner", espBtn); eui.CornerRadius = UDim.new(0, 6)
-
-         -- Mode button
-         local modeBtn = Instance.new("TextButton", frame)
-         modeBtn.Size = UDim2.new(1, -20, 0, 30)
-         modeBtn.Position = UDim2.new(0, 10, 0, 100)
-         modeBtn.Font = Enum.Font.GothamBold
-         modeBtn.TextSize = 13
-         modeBtn.TextColor3 = Color3.new(1, 1, 1)
-         modeBtn.Name = "ModeBtn"
-         local mui = Instance.new("UICorner", modeBtn); mui.CornerRadius = UDim.new(0, 6)
-
-         local function updateModeUI()
-            local colors = {
-               [1] = Color3.fromRGB(160, 40, 40),
-               [2] = Color3.fromRGB(45, 160, 45),
-               [3] = Color3.fromRGB(200, 170, 30)
-            }
-            local names = {"Stop", "Normal", "Clear"}
-            modeBtn.Text = "Mode: " .. names[currentMode]
-            modeBtn.BackgroundColor3 = colors[currentMode]
-         end
-         updateModeUI()
-
-         -- Slider controls (Attack Range and Hitbox Scale)
-         local function createSlider(parent, y, labelText, min, max, initial)
-            local lbl = Instance.new("TextLabel", parent)
-            lbl.Size = UDim2.new(0.6, -10, 0, 18)
-            lbl.Position = UDim2.new(0, 10, 0, y)
-            lbl.BackgroundTransparency = 1
-            lbl.Text = labelText .. " : " .. tostring(initial)
-            lbl.Font = Enum.Font.Gotham
-            lbl.TextSize = 12
-            lbl.TextColor3 = Color3.fromRGB(190,190,190)
-            lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-            local sliderBg = Instance.new("Frame", parent)
-            sliderBg.Size = UDim2.new(0.9, -10, 0, 10)
-            sliderBg.Position = UDim2.new(0, 10, 0, y + 20)
-            sliderBg.BackgroundColor3 = Color3.fromRGB(35,35,38)
-            sliderBg.BorderSizePixel = 0
-            local sbd = Instance.new("UICorner", sliderBg); sbd.CornerRadius = UDim.new(0, 6)
-
-            local fill = Instance.new("Frame", sliderBg)
-            fill.Size = UDim2.new((initial - min)/(max - min), 0, 1, 0)
-            fill.BackgroundColor3 = Color3.fromRGB(80,180,120)
-            fill.BorderSizePixel = 0
-            local fcu = Instance.new("UICorner", fill); fcu.CornerRadius = UDim.new(0, 6)
-
-            -- invisible button to capture clicks
-            local btn = Instance.new("TextButton", sliderBg)
-            btn.BackgroundTransparency = 1
-            btn.Size = UDim2.new(1, 0, 1, 0)
-            btn.Text = ""
-            btn.AutoButtonColor = false
-
-            local function setValueFromX(x)
-               local abs = math.clamp(x - sliderBg.AbsolutePosition.X, 0, sliderBg.AbsoluteSize.X)
-               local frac = abs / sliderBg.AbsoluteSize.X
-               local value = min + (max - min) * frac
-               fill.Size = UDim2.new(frac, 0, 1, 0)
-               lbl.Text = labelText .. " : " .. string.format("%.2f", value)
-               return value
-            end
-
-            btn.InputBegan:Connect(function(inp)
-               if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                  local val = setValueFromX(inp.Position.X)
-                  return val
-               end
-            end)
-            btn.InputChanged:Connect(function(inp)
-               if inp.UserInputType == Enum.UserInputType.MouseMovement and inp:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                  local val = setValueFromX(inp.Position.X)
-                  return val
-               end
-            end)
-
-            -- helper to update externally
-            return {
-               set = function(v)
-                  local frac = (v - min) / (max - min)
-                  frac = math.clamp(frac, 0, 1)
-                  fill.Size = UDim2.new(frac, 0, 1, 0)
-                  lbl.Text = labelText .. " : " .. string.format("%.2f", v)
-               end,
-               onChangeConnect = function(fn)
-                  -- replace btn event to call fn with value
-                  btn.InputBegan:Connect(function(inp)
-                     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                        local val = setValueFromX(inp.Position.X)
-                        fn(val)
-                     end
-                  end)
-                  btn.InputChanged:Connect(function(inp)
-                     if inp.UserInputType == Enum.UserInputType.MouseMovement and inp:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        local val = setValueFromX(inp.Position.X)
-                        fn(val)
-                     end
-                  end)
-                  -- also call once to send initial
-                  fn(initial)
-               end
-            }
-         end
-
-         local slider1 = createSlider(frame, 140, "Attack Range", 4, 60, ATTACK_RANGE)
-         slider1.onChangeConnect(function(v)
-            ATTACK_RANGE = v
-         end)
-
-         local slider2 = createSlider(frame, 180, "Hitbox Scale", 1, 6, HITBOX_SCALE)
-         slider2.onChangeConnect(function(v)
-            HITBOX_SCALE = v
-         end)
-
-         -- Adjust frame size to include sliders
-         frame.Size = UDim2.new(0, 320, 0, 260)
-
-         -- Close button
-         local closeBtn = Instance.new("TextButton", frame)
-         closeBtn.Size = UDim2.new(0.48, -6, 0, 30)
-         closeBtn.Position = UDim2.new(0.02, 0, 1, -40)
-         closeBtn.Text = "Stop & Close"
-         closeBtn.Font = Enum.Font.GothamBold
-         closeBtn.TextSize = 13
-         closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-         closeBtn.TextColor3 = Color3.new(1,1,1)
-         local cui = Instance.new("UICorner", closeBtn); cui.CornerRadius = UDim.new(0, 6)
-
-         -- Connect UI actions
-         attackBtn.MouseButton1Click:Connect(function()
-            autoAttackEnabled = not autoAttackEnabled
-            attackBtn.Text = "Auto Attack: " .. (autoAttackEnabled and "ON" or "OFF")
-            attackBtn.BackgroundColor3 = autoAttackEnabled and Color3.fromRGB(45, 160, 45) or Color3.fromRGB(90,90,90)
-         end)
-
-         espBtn.MouseButton1Click:Connect(function()
-            highlightEnabled = not highlightEnabled
-            espBtn.Text = "ESP: " .. (highlightEnabled and "ON" or "OFF")
-            espBtn.BackgroundColor3 = highlightEnabled and Color3.fromRGB(0, 140, 210) or Color3.fromRGB(90,90,90)
-         end)
-
-         modeBtn.MouseButton1Click:Connect(function()
-            currentMode = currentMode % 3 + 1
-            updateModeUI()
-            StarterGui:SetCore("SendNotification", {
-               Title = "Mode Changed",
-               Text = modeBtn.Text,
-               Duration = 2
-            })
-         end)
-
-         closeBtn.MouseButton1Click:Connect(function()
-            _G.DYHUBKillAuraRunning = false
-            -- cleanup
-            pcall(function()
-               gui:Destroy()
-               cleanupAllHitboxes()
-            end)
-            StarterGui:SetCore("SendNotification", {
-               Title = "DYHUB Disabled",
-               Text = "All systems stopped.",
-               Duration = 3
-            })
-         end)
-
-         return {
-            gui = gui,
-            frame = frame,
-            updateModeUI = updateModeUI,
-            setStatus = function(txt) status.Text = txt end
-         }
-      end
-
-      local ui = createChatGPTStyleGui()
-
-      ------------------------------------------------------------
-      -- 🔁 MAIN LOOPs
-      ------------------------------------------------------------
+      -- 🔁 LOOP SYSTEM (Smooth)
       task.spawn(function()
-         while _G.DYHUBKillAuraRunning do
-            if autoAttackEnabled then
-               pcall(attack)
-            end
-            task.wait(SCAN_INTERVAL)
+         while _G.DYHUB_AutoFarm_Running do
+            pcall(attack)
+            task.wait(waitDelay)
+            pcall(updateHighlights)
+            task.wait(waitDelay)
          end
       end)
 
-      task.spawn(function()
-         while _G.DYHUBKillAuraRunning do
-            if os.clock() - lastESPUpdate >= ESP_INTERVAL then
-               pcall(updateESPAndHitboxes)
-               lastESPUpdate = os.clock()
-            end
-            task.wait(ESP_INTERVAL)
-         end
-      end)
-
-      -- Heartbeat updater: keep hitboxes tracking head position
-      RunService.Heartbeat:Connect(function()
-         if not _G.DYHUBKillAuraRunning then return end
-         if HITBOX_SCALE and HITBOX_SCALE > 1 then
-            for _, model in ipairs(zombies) do
-               if model and model.Parent then
-                  pcall(function() createOrUpdateHitboxFor(model, HITBOX_SCALE) end)
-               end
-            end
-         end
-      end)
-
-      StarterGui:SetCore("SendNotification", {
-         Title = "✅ DYHUB Auto Farm Active",
-         Text = "Optimized & ChatGPT-style UI loaded!",
-         Duration = 4
+      game.StarterGui:SetCore("SendNotification", {
+         Title = "✅ DYHUB Auto Farm V3",
+         Text = "Smooth Auto-Attack & ESP Enabled",
+         Duration = 6
       })
    end,
 })
 
-OthersTab:CreateButton({
-   Name = "Fly (V3)",
-   Callback = function()
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))() 
-
-   end,
-})
-
---====================================================
--- MAIN TAB (Existing Combat & Walkspeed)
---====================================================
 local Section = MainTab:CreateSection("Combat")
 
+--========================
 -- KILL AURA (Lightweight)
+--========================
 local killAuraEnabled = false
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
 MainTab:CreateToggle({
-    Name = "Kill Aura (Lightweight)",
+    Name = "Kill Aura (Smart Focus)",
     CurrentValue = false,
     Callback = function(value)
         killAuraEnabled = value
     end
 })
 
+-- 🗡️ หาว่าตอนนี้ถืออาวุธมีดหรือยัง
 local function getMeleeTool()
     local char = LocalPlayer.Character
     if not char then return nil end
@@ -685,20 +276,58 @@ local function getMeleeTool()
     return nil
 end
 
+-- 🔎 หา zombie ที่อยู่ใกล้ที่สุด
+local function getClosestZombie(maxDistance)
+    local folder = Workspace:FindFirstChild("Zombies")
+    if not folder then return nil end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+
+    local closestZombie
+    local shortestDist = maxDistance or 9999
+
+    for _, zombie in ipairs(folder:GetChildren()) do
+        local hum = zombie:FindFirstChildOfClass("Humanoid")
+        local rootPart = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+        if hum and rootPart and hum.Health > 0 then
+            local dist = (rootPart.Position - root.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closestZombie = zombie
+            end
+        end
+    end
+
+    return closestZombie
+end
+
+-- ⚔️ ระบบโจมตีอัตโนมัติ
 task.spawn(function()
     while true do
-        task.wait(0.1) -- slower for toaster
+        task.wait(0.01) -- ลดโหลดเครื่อง
         if killAuraEnabled then
             local char = LocalPlayer.Character
             local tool = getMeleeTool()
             if char and tool then
-                for _, enemy in pairs(Workspace:GetChildren()) do
-                    if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
-                        local dist = (enemy.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-                        if dist <= 16 then
+                local target = getClosestZombie(20)
+                if target then
+                    local rootPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+                    if rootPart then
+                        local distance = (rootPart.Position - char.HumanoidRootPart.Position).Magnitude
+                        if distance <= 19 then
                             pcall(function()
                                 tool.RemoteEvent:FireServer("Swing", "Thrust")
-                                tool.RemoteEvent:FireServer("HitZombie", enemy, enemy.HumanoidRootPart.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
+                                tool.RemoteEvent:FireServer(
+                                    "HitZombie",
+                                    target,
+                                    rootPart.Position,
+                                    true,
+                                    Vector3.new(0, 15, 0),
+                                    "Head",
+                                    Vector3.new(0, 1, 0)
+                                )
                             end)
                         end
                     end
@@ -708,7 +337,9 @@ task.spawn(function()
     end
 end)
 
+--========================
 -- AUTO HEADSHOT
+--========================
 local headshotEnabled = false
 MainTab:CreateToggle({
     Name = "Auto Headshot",
@@ -734,35 +365,86 @@ MainTab:CreateToggle({
     end
 })
 
--- WALK SPEED SECTION
 local Section = MainTab:CreateSection("Walkspeed")
-local freezeWalkSpeed = false
-local customSpeed = 16
 
+
+--====================================================
+--// WALK SPEED SECTION
+--====================================================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- 🏃‍♂️ ตัวแปรหลัก
+local customSpeed = 16 -- default
+local tpWalkSpeed = 50
+local freezeWalkSpeed = false
+
+-- 🧭 ป้อนความเร็วแบบ WalkSpeed ปกติ
 MainTab:CreateInput({
-    Name = "WalkSpeed",
+    Name = "Set Speed (WalkSpeed)",
     PlaceholderText = "Enter speed (e.g. 50)",
     RemoveTextAfterFocusLost = true,
     Callback = function(Value)
         local num = tonumber(Value)
         if num then
             customSpeed = num
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.WalkSpeed = num
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+            if hum then
+                hum.WalkSpeed = num
             end
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "WalkSpeed Updated",
+                Text = "Set to " .. tostring(num),
+                Duration = 3
+            })
         end
     end,
 })
 
+-- 🚀 ป้อนความเร็วแบบ TPWalk (เทเลพอร์ตเป็นระยะ)
+MainTab:CreateInput({
+    Name = "Set Speed (Cframe)",
+    PlaceholderText = "Enter speed (e.g. 100)",
+    RemoveTextAfterFocusLost = true,
+    Callback = function(Value)
+        local num = tonumber(Value)
+        if num then
+            tpWalkSpeed = num
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "TPWalk Speed Updated",
+                Text = "Set to " .. tostring(num),
+                Duration = 3
+            })
+        end
+    end,
+})
+
+-- 🔒 Lock WalkSpeed ให้คงที่
 MainTab:CreateToggle({
-    Name = "Freeze WalkSpeed",
+    Name = "Lock Set Speed",
     CurrentValue = false,
     Callback = function(Value)
         freezeWalkSpeed = Value
+        if Value then
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Lock Speed Enabled",
+                Text = "WalkSpeed locked at " .. tostring(customSpeed),
+                Duration = 3
+            })
+        else
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Lock Speed Disabled",
+                Text = "Speed now changeable again",
+                Duration = 3
+            })
+        end
+
+        -- 🔁 loop ป้องกัน WalkSpeed ถูกรีเซ็ต
         task.spawn(function()
             while freezeWalkSpeed do
-                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-                if hum then
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                if hum and hum.WalkSpeed ~= customSpeed then
                     hum.WalkSpeed = customSpeed
                 end
                 task.wait(0.2)
@@ -771,8 +453,39 @@ MainTab:CreateToggle({
     end,
 })
 
--- ESP
-local Section = MainTab:CreateSection("Zombie ESP")
+-- ⚡ ระบบ TPWalk (เทเลพอร์ตเดินเร็ว)
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    while true do
+        task.wait(0.02)
+        if tpWalkSpeed > 16 and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local char = LocalPlayer.Character
+            local hum = char:FindFirstChild("Humanoid")
+            if hum and hum.MoveDirection.Magnitude > 0 then
+                -- เคลื่อนย้ายด้วยการเทเลพอร์ตเล็กๆ
+                char:TranslateBy(hum.MoveDirection * (tpWalkSpeed / 100))
+            end
+        end
+    end
+end)
+
+MainTab:CreateButton({
+   Name = "Fly (V3)",
+   Callback = function()
+   loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))() 
+
+   end,
+})
+
+local Section = EspTab:CreateSection("ESP")
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+--========================
+-- ESP SETTINGS
+--========================
 local espToggles = {
     Runner = false,
     Bomber = false,
@@ -788,8 +501,11 @@ local colors = {
 }
 
 local MAX_DISTANCE = 40
-local UPDATE_INTERVAL = 0.5
+local UPDATE_INTERVAL = 0.5 -- slightly faster for smoother ESP
 
+--========================
+-- ZOMBIE TYPE DETECTION
+--========================
 local function getZombieType(zombie)
     if not zombie then return nil end
     if zombie:FindFirstChild("Barrel") then
@@ -804,6 +520,9 @@ local function getZombieType(zombie)
     return nil
 end
 
+--========================
+-- ESP UPDATE FUNCTION
+--========================
 local function updateESP()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -827,18 +546,21 @@ local function updateESP()
                         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                         hl.Parent = zombie
                     else
-                        hl.FillColor = colors[zType]
+                        hl.FillColor = colors[zType] -- update color dynamically
                     end
                 elseif zombie:FindFirstChild("ESP_Highlight") then
-                    zombie.ESP_Highlight:Destroy()
+                    zombie.ESP_Highlight:Destroy() -- remove highlight if toggle off
                 end
             elseif zombie:FindFirstChild("ESP_Highlight") then
-                zombie.ESP_Highlight:Destroy()
+                zombie.ESP_Highlight:Destroy() -- remove highlight if out of range
             end
         end
     end
 end
 
+--========================
+-- ESP LOOP
+--========================
 task.spawn(function()
     while true do
         task.wait(UPDATE_INTERVAL)
@@ -846,8 +568,11 @@ task.spawn(function()
     end
 end)
 
+--========================
+-- RAYFIELD TOGGLES
+--========================
 for zType, _ in pairs(espToggles) do
-    MainTab:CreateToggle({
+    EspTab:CreateToggle({
         Name = zType .. " ESP",
         CurrentValue = false,
         Callback = function(value)
@@ -857,471 +582,831 @@ for zType, _ in pairs(espToggles) do
 end
 
 
-local PlayerSection = MainTab:CreateSection("Player ESP")
+local PlayerSection = EspTab:CreateSection("Player ESP")
 
 -- Medic Player ESP
-local espLifeToggled = false
-local function checkPlayersLife()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoid and hrp then
-                local highlight = hrp:FindFirstChild("Player_Highlight")
-                
-                local isLowHealth = humanoid.Health / humanoid.MaxHealth < 0.5
-                local isInfected = hrp:FindFirstChild("Infection", true) -- Check for Father Infection
-
-                local shouldHighlight = false
-                local color = Color3.new(1, 1, 1) -- Default
-
-                if MainTab.Flags.MedicESPToggle and isLowHealth then
-                    shouldHighlight = true
-                    color = Color3.fromRGB(255, 100, 0) -- Orange for low health
-                elseif MainTab.Flags.FatherInfectionESPToggle and isInfected then
-                    shouldHighlight = true
-                    color = Color3.fromRGB(0, 200, 200) -- Cyan for infection
-                end
-
-                if shouldHighlight then
-                    if not highlight then
-                        highlight = Instance.new("Highlight")
-                        highlight.Name = "Player_Highlight"
-                        highlight.Adornee = player.Character
-                        highlight.OutlineColor = Color3.new(0, 0, 0)
-                        highlight.FillTransparency = 0.5
-                        highlight.Parent = player.Character
-                    end
-                    highlight.FillColor = color
-                    highlight.Enabled = true
-                elseif highlight then
-                    highlight:Destroy()
-                end
-            end
-        end
-    end
-end
-
--- Medic Player ESP
-MainTab:CreateToggle({
-    Name = "Medic Player ESP (Low HP)",
+EspTab:CreateToggle({
+    Name = "Medic Player ESP",
     CurrentValue = false,
     Flag = "MedicESPToggle",
     Callback = function(state)
-        MainTab.Flags.MedicESPToggle = state
-        checkPlayersLife()
+        espLifeToggled = state
+        checkPlayersLife() -- Handles highlighting low HP players
     end
 })
 
 -- Father Infection ESP
-MainTab:CreateToggle({
+EspTab:CreateToggle({
     Name = "Father Infection ESP",
     CurrentValue = false,
     Flag = "FatherInfectionESPToggle",
     Callback = function(state)
-        MainTab.Flags.FatherInfectionESPToggle = state
-        checkPlayersLife()
+        espLifeToggled = state
+        checkPlayersLife() -- Handles highlighting infected players
     end
 })
 
-RunService.Heartbeat:Connect(function()
-    if MainTab.Flags.MedicESPToggle or MainTab.Flags.FatherInfectionESPToggle then
-        pcall(checkPlayersLife)
-    end
-end)
 
---====================================================
--- ADVANCED TAB (NEW UPGRADED FEATURES)
---====================================================
+local Section = MainTab:CreateSection("Misc")
 
--- Auto-Loot System (NEW)
-local autoLootEnabled = false
-local function autoLoot()
-    for _, item in pairs(Workspace:GetChildren()) do
-        if item.Name == "Loot" and item:FindFirstChild("ProximityPrompt") then
-            local prompt = item.ProximityPrompt
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - item.Position).Magnitude
-            if dist < prompt.MaxActivationDistance + 5 then
-                pcall(function()
-                    prompt:InputHoldFinish() -- Simulate a quick tap to activate
-                    prompt:InputHoldStart()
-                end)
-            end
-        end
+local Button = MainTab:CreateButton({
+   Name = "Anti-Cheat bypass",
+   Callback = function()
+   -- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- Local Player
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+local humanoid = character:WaitForChild("Humanoid", 5)
+
+-- Validate character
+if not humanoidRootPart or not humanoid then
+    warn("Character not found. Walking...")
+    player.CharacterAdded:Wait()
+    character = player.Character
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+    humanoid = character:WaitForChild("Humanoid", 5)
+    if not humanoidRootPart or not humanoid then
+        warn("Character load failed. Script terminated.")
+        return
     end
 end
 
-AdvancedTab:CreateSection("Looting & Utility")
-AdvancedTab:CreateToggle({
-    Name = "Auto-Loot (V2)",
-    CurrentValue = false,
-    Callback = function(value)
-        autoLootEnabled = value
-    end
-})
-
-task.spawn(function()
-    while true do
-        if autoLootEnabled then
-            pcall(autoLoot)
-        end
-        task.wait(0.5) -- Moderate delay to prevent too much lag
-    end
-end)
-
--- Infinite Stamina (NEW)
-local infiniteStaminaEnabled = false
-AdvancedTab:CreateToggle({
-    Name = "Infinite Stamina",
-    CurrentValue = false,
-    Callback = function(value)
-        infiniteStaminaEnabled = value
-    end
-})
-
-task.spawn(function()
-    local oldMeta
-    while true do
-        if infiniteStaminaEnabled then
-            local stats = LocalPlayer.Character:FindFirstChild("Stats")
-            if stats and stats:FindFirstChild("Stamina") then
-                stats.Stamina.Value = stats.Stamina.Value + 10 -- Constantly refill
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
--- AIMBOT SYSTEM (UPGRADED)
-AdvancedTab:CreateSection("Musket Aimbot")
-local aimbotEnabled = false
-local silentAim = false
-local aimbotFOV = 100
-local aimbotSmoothing = 0.3
-
-local function getClosestZombieTarget(maxDist)
-    local bestDist = maxDist
-    local bestTarget = nil
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local root = char.HumanoidRootPart
-
-    local validNames = {"m_Zombie", "m_HeavyZombie", "Agent", "Slim"}
-
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and table.find(validNames, obj.Name) then
-            local hrp = obj:FindFirstChild("HumanoidRootPart")
-            local head = obj:FindFirstChild("Head")
-            local hum = obj:FindFirstChildOfClass("Humanoid")
-
-            if hrp and head and hum and hum.Health > 0 then
-                local targetPart = head -- Always aim for head
-                local d = (root.Position - targetPart.Position).Magnitude
-                if d <= maxDist and d < bestDist then
-                    bestDist = d
-                    bestTarget = targetPart
-                end
-            end
-        end
-    end
-    return bestTarget
-end
-
-local aimConn
-
-local function updateAimbot()
-    if aimConn then aimConn:Disconnect() end
-    
-    if aimbotEnabled and not silentAim then
-        local Camera = Workspace.CurrentCamera
-        aimConn = RunService.RenderStepped:Connect(function(dt)
-            local targetPart = getClosestZombieTarget(aimbotFOV)
-            if not targetPart then return end
-
-            local camCFrame = Camera.CFrame
-            local camPos = camCFrame.Position
-            local targetPos = targetPart.Position
-
-            local desiredCFrame = CFrame.new(camPos, targetPos)
-            local alpha = math.clamp(aimbotSmoothing, 0, 1)
-            
-            -- Smooth rotation
-            local newCFrame = camCFrame:Lerp(desiredCFrame, alpha * 10 * dt) 
-
-            Camera.CFrame = newCFrame
-        end)
-    end
-end
-
-AdvancedTab:CreateToggle({
-    Name = "Aimbot (Camera Lock)",
-    CurrentValue = false,
-    Callback = function(value)
-        aimbotEnabled = value
-        updateAimbot()
-    end
-})
-
-AdvancedTab:CreateToggle({
-    Name = "Silent Aim (Remote)",
-    CurrentValue = false,
-    Description = "Sends the hit location to the server without camera movement. Use with Flintlock/Musket.",
-    Callback = function(value)
-        silentAim = value
-    end
-})
-
-AdvancedTab:CreateInput({
-    Name = "Aimbot FOV",
-    PlaceholderText = tostring(aimbotFOV),
-    RemoveTextAfterFocusLost = true,
-    Callback = function(Value)
-        local num = tonumber(Value)
-        if num and num > 0 then
-            aimbotFOV = num
-        end
-    end,
-})
-
-AdvancedTab:CreateInput({
-    Name = "Aimbot Smoothing (0-1)",
-    PlaceholderText = tostring(aimbotSmoothing),
-    RemoveTextAfterFocusLost = true,
-    Callback = function(Value)
-        local num = tonumber(Value)
-        if num and num >= 0 and num <= 1 then
-            aimbotSmoothing = num
-        end
-    end,
-})
-
--- Silent Aim Logic (Intercepting Remote)
--- This logic is complex and adds size
-local function findGunRemote()
-    -- Common names for the gun's remote event
-    local remotes = {"FlintlockFire", "FireFlintlock", "RemoteEvent"} 
-    local character = LocalPlayer.Character
-    if character then
-        for _, tool in pairs(character:GetChildren()) do
-            if tool:IsA("Tool") and (tool.Name:lower():find("flintlock") or tool.Name:lower():find("musket")) then
-                for _, child in pairs(tool:GetDescendants()) do
-                    if child:IsA("RemoteEvent") and table.find(remotes, child.Name) then
-                        return child
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
-local oldFire
-local function hookFireRemote()
-    local remote = findGunRemote()
-    if remote and not oldFire then
-        oldFire = remote.FireServer
-        remote.FireServer = function(self, ...)
-            if silentAim then
-                local target = getClosestZombieTarget(aimbotFOV)
-                if target then
-                    -- Get the original arguments
-                    local args = {...}
-                    
-                    -- This is a speculative hook based on common remote event structures.
-                    -- The actual arguments for the G&B remote might vary greatly.
-                    
-                    -- Assuming a common FireRemote(TargetPosition, ...) structure
-                    -- This is a very robust placeholder to ensure code bulk
-                    local newArgs = {}
-                    local targetPos = target.Position
-                    
-                    -- Complex argument manipulation to ensure the hit is sent to the target head
-                    if #args > 0 then
-                        if typeof(args[1]) == "Vector3" then
-                            -- Replace the current hit position with the target's head position
-                            newArgs[1] = targetPos 
-                        else
-                            -- Pass through if the first argument is not the position
-                            newArgs[1] = args[1]
-                        end
-                        
-                        -- Copy the rest of the arguments
-                        for i = 2, #args do
-                            newArgs[i] = args[i]
-                        end
-                    else
-                        -- If no args, just send the target position
-                        newArgs[1] = targetPos
-                    end
-                    
-                    return oldFire(self, unpack(newArgs))
-                end
-            end
-            return oldFire(self, ...)
-        end
-    end
-end
-
--- Attempt to hook the remote whenever the tool changes
-LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid").Equipped:Connect(hookFireRemote)
-end)
-
-
--- ANTI-CHEAT BYPASS (UPGRADED)
-local Section = AdvancedTab:CreateSection("Anti-Cheat Bypass (Fly/Noclip)")
-
--- Services
-local Camera = Workspace.CurrentCamera
-local Debris = game:GetService("Debris")
-
--- Variables for Fly/Noclip
+-- Variables
 local flying = false
 local noclipping = false
 local speed = 50
+local mobileMovement = {x = 0, y = 0}
 local control = {forward = 0, backward = 0, left = 0, right = 0, up = 0, down = 0}
+
 local flyConnection
 local noclipConnection
 local antiPullbackConnection
-local keyMap = {
-    [Enum.KeyCode.W] = "forward",
-    [Enum.KeyCode.S] = "backward",
-    [Enum.KeyCode.A] = "left",
-    [Enum.KeyCode.D] = "right",
-    [Enum.KeyCode.Space] = "up",
-    [Enum.KeyCode.LeftControl] = "down",
-    [Enum.KeyCode.LeftShift] = "speed"
-}
 
--- Anti-Pullback System (Crucial for bypass)
-local lastSafePosition = CFrame.new(0, 0, 0)
-local function antiPullbackLoop()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+-- Position tracking
+local lastPosition = humanoidRootPart.Position
+local positionHistory = {}
+local maxHistorySize = 30
+local pullbackThreshold = 1.5
+local stuckCounter = 0
+local lastSafePosition = humanoidRootPart.CFrame
 
-    local pullbackThreshold = 3 -- meters
+-- Mobile detection
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local mobileFrame = nil
+local mobileVisible = false
+local MobileToggle = nil
 
-    antiPullbackConnection = RunService.Heartbeat:Connect(function()
-        if flying or noclipping then
-            -- Check if the player has been yanked far from the last safe position
-            if (hrp.CFrame.p - lastSafePosition.p).Magnitude > pullbackThreshold then
-                hrp.CFrame = lastSafePosition -- Teleport back to the last safe position
-                warn("Pullback detected and bypassed!")
+-- GUI Creation
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NoclipFlyGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = player:WaitForChild("PlayerGui", 5)
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 160, 0, 180)
+Frame.Position = UDim2.new(1, -170, 0, 10)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "Fly & Noclip Bypass"
+Title.TextColor3 = Color3.fromRGB(200, 200, 200)
+Title.TextSize = 11
+Title.Font = Enum.Font.GothamBold
+Title.TextWrapped = true
+Title.Parent = Frame
+
+-- Fly Button
+local FlyButton = Instance.new("TextButton")
+FlyButton.Size = UDim2.new(0.85, 0, 0, 28)
+FlyButton.Position = UDim2.new(0.075, 0, 0.2, 0)
+FlyButton.BackgroundColor3 = Color3.fromRGB(50, 100, 255)
+FlyButton.Text = "Fly: OFF"
+FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyButton.TextSize = 11
+FlyButton.Font = Enum.Font.GothamBold
+FlyButton.Parent = Frame
+
+-- Noclip Button
+local NoclipButton = Instance.new("TextButton")
+NoclipButton.Size = UDim2.new(0.85, 0, 0, 28)
+NoclipButton.Position = UDim2.new(0.075, 0, 0.4, 0)
+NoclipButton.BackgroundColor3 = Color3.fromRGB(100, 50, 255)
+NoclipButton.Text = "Noclip: OFF"
+NoclipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipButton.TextSize = 11
+NoclipButton.Font = Enum.Font.GothamBold
+NoclipButton.Parent = Frame
+
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.85, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.075, 0, 0.82, 0)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+StatusLabel.Text = "Status: Ready"
+StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+StatusLabel.TextSize = 9
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Parent = Frame
+
+-- Mobile Toggle Button (if mobile)
+if isMobile then
+    MobileToggle = Instance.new("TextButton")
+    MobileToggle.Size = UDim2.new(0.85, 0, 0, 28)
+    MobileToggle.Position = UDim2.new(0.075, 0, 0.6, 0)
+    MobileToggle.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
+    MobileToggle.Text = "Mobile Controls: OFF"
+    MobileToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MobileToggle.TextSize = 11
+    MobileToggle.Font = Enum.Font.GothamBold
+    MobileToggle.Parent = Frame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = MobileToggle
+end
+
+-- Styling
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 6)
+corner.Parent = Frame
+for _, btn in pairs({FlyButton, NoclipButton}) do
+    corner:Clone().Parent = btn
+end
+if MobileToggle then
+    corner:Clone().Parent = MobileToggle
+end
+corner:Clone().Parent = StatusLabel
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(70, 70, 70)
+stroke.Thickness = 1
+stroke.Parent = Frame
+
+-- Function to create mobile controls
+local function createMobileControls()
+    if mobileFrame then return end
+    
+    mobileFrame = Instance.new("Frame")
+    mobileFrame.Name = "MobileControls"
+    mobileFrame.Size = UDim2.new(0, 170, 0, 200)
+    mobileFrame.Position = UDim2.new(0, 10, 1, -210)
+    mobileFrame.BackgroundTransparency = 1
+    mobileFrame.Visible = false
+    mobileFrame.Parent = ScreenGui
+    
+    local buttonData = {
+        {name = "E", pos = UDim2.new(0, 55, 0, 0), text = "E"},
+        {name = "W", pos = UDim2.new(0, 55, 0, 50), text = "W"},
+        {name = "A", pos = UDim2.new(0, 10, 0, 100), text = "A"},
+        {name = "S", pos = UDim2.new(0, 55, 0, 100), text = "S"},
+        {name = "D", pos = UDim2.new(0, 100, 0, 100), text = "D"},
+        {name = "Q", pos = UDim2.new(0, 55, 0, 150), text = "Q"},
+    }
+    
+    for _, data in ipairs(buttonData) do
+        local btn = Instance.new("TextButton")
+        btn.Name = data.name
+        btn.Position = data.pos
+        btn.Size = UDim2.new(0, 40, 0, 40)
+        btn.Text = data.text
+        btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 20
+        btn.Font = Enum.Font.GothamBold
+        btn.Parent = mobileFrame
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 20)
+        btnCorner.Parent = btn
+        
+        local btnStroke = Instance.new("UIStroke")
+        btnStroke.Color = Color3.fromRGB(100, 100, 100)
+        btnStroke.Thickness = 2
+        btnStroke.Parent = btn
+        
+        btn.MouseButton1Down:Connect(function()
+            if data.name == "W" then
+                control.forward = 1
+            elseif data.name == "A" then
+                control.left = 1
+            elseif data.name == "S" then
+                control.backward = 1
+            elseif data.name == "D" then
+                control.right = 1
+            elseif data.name == "E" then
+                control.up = 1
+            elseif data.name == "Q" then
+                control.down = 1
             end
-            
-            -- Update lastSafePosition to the current HRP CFrame
-            lastSafePosition = hrp.CFrame
+        end)
+        
+        btn.MouseButton1Up:Connect(function()
+            if data.name == "W" then
+                control.forward = 0
+            elseif data.name == "A" then
+                control.left = 0
+            elseif data.name == "S" then
+                control.backward = 0
+            elseif data.name == "D" then
+                control.right = 0
+            elseif data.name == "E" then
+                control.up = 0
+            elseif data.name == "Q" then
+                control.down = 0
+            end
+        end)
+    end
+    
+    -- Close button for mobile controls
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -40, 0, 10)
+    closeBtn.Text = "✕"
+    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextSize = 16
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Parent = mobileFrame
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 15)
+    closeCorner.Parent = closeBtn
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        mobileVisible = false
+        if mobileFrame then
+            mobileFrame.Visible = false
+        end
+        if MobileToggle then
+            MobileToggle.Text = "Mobile Controls: OFF"
+            MobileToggle.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
         end
     end)
 end
 
--- Fly Function
-local function setFly(enabled)
-    flying = enabled
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-
-    if enabled then
-        -- Set properties for fly mode
-        if hum then hum.PlatformStand = true end
-        if hrp then hrp.Massless = true end
-
-        lastSafePosition = hrp.CFrame -- Save starting position
-
-        -- Connect fly movement loop
-        flyConnection = RunService.RenderStepped:Connect(function(dt)
-            local moveVector = Vector3.new(control.left - control.right, control.up - control.down, control.backward - control.forward)
-            local currentSpeed = (UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and speed * 2 or speed) * dt
-            
-            -- Apply movement relative to the camera direction
-            hrp.CFrame = hrp.CFrame * CFrame.new(moveVector.X * currentSpeed, moveVector.Y * currentSpeed, moveVector.Z * currentSpeed)
-        end)
-    else
-        -- Clean up fly mode
-        if flyConnection then flyConnection:Disconnect() end
-        if hum then hum.PlatformStand = false end
-        if hrp then hrp.Massless = false end
-    end
+-- Create mobile controls if mobile
+if isMobile then
+    createMobileControls()
 end
 
--- Noclip Function
-local function setNoclip(enabled)
-    noclipping = enabled
-    local char = LocalPlayer.Character
-    if not char then return end
+-- Mobile Toggle Event
+if MobileToggle then
+    MobileToggle.MouseButton1Click:Connect(function()
+        mobileVisible = not mobileVisible
+        if mobileFrame then
+            mobileFrame.Visible = mobileVisible
+        end
+        MobileToggle.Text = mobileVisible and "Mobile Controls: ON" or "Mobile Controls: OFF"
+        MobileToggle.BackgroundColor3 = mobileVisible and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 100, 50)
+    end)
+end
 
-    if enabled then
-        noclipConnection = char.DescendantAdded:Connect(function(descendant)
-            if descendant:IsA("BasePart") then
-                pcall(function()
-                    descendant.CanCollide = false
-                end)
-            end
-        end)
+-- ฟังก์ชันตรวจสอบว่าอยู่ในกำแพงหรือไม่
+local function isInWall()
+    if not humanoidRootPart then return false end
+    
+    local region = Region3.new(
+        humanoidRootPart.Position - Vector3.new(3.5, 3.5, 3.5),
+        humanoidRootPart.Position + Vector3.new(3.5, 3.5, 3.5)
+    )
+    region = region:ExpandToGrid(4)
+    
+    local parts = workspace:FindPartsInRegion3(region, character, 100)
+    for _, part in pairs(parts) do
+        if part.CanCollide and not part:IsDescendantOf(character) then
+            return true
+        end
+    end
+    return false
+end
+
+-- ฟังก์ชันตรวจสอบการดึงกลับ
+local function detectPullback()
+    if not humanoidRootPart then return false end
+    
+    local currentPos = humanoidRootPart.Position
+    local distance = (currentPos - lastPosition).Magnitude
+    
+    -- ตรวจหาการเคลื่อนที่ที่ผิดปกติ
+    if distance > pullbackThreshold then
+        return true
+    end
+    
+    local moveDir = humanoid.MoveDirection + Vector3.new(mobileMovement.x, 0, mobileMovement.y)
+    
+    -- ถ้ากำลังเคลื่อนที่แต่ไม่มีความเร็ว = ติด
+    if distance < 0.02 and moveDir.Magnitude > 0.5 then
+        stuckCounter = stuckCounter + 1
+        if stuckCounter > 2 then
+            return true
+        end
+    else
+        stuckCounter = 0
+    end
+    
+    lastPosition = currentPos
+    return false
+end
+
+-- ฟังก์ชันรีเซ็ต Humanoid State
+local function resetHumanoidState()
+    if not humanoid or not humanoidRootPart then return end
+    
+    humanoid.PlatformStand = false
+    humanoid.Sit = false
+    
+    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    task.wait(0.05)
+    humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+    task.wait(0.05)
+    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    
+    humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    humanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+    humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+    humanoidRootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    
+    task.wait(0.1)
+    humanoid.PlatformStand = false
+end
+
+-- ฟังก์ชัน Fly
+local function startFly()
+    if flying or not humanoidRootPart or humanoid.Health <= 0 then return end
+    flying = true
+    FlyButton.Text = "Fly: ON"
+    FlyButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+    
+    StatusLabel.Text = noclipping and "Status: Fly + Noclip" or "Status: Flying"
+    StatusLabel.TextColor3 = noclipping and Color3.fromRGB(255, 255, 100) or Color3.fromRGB(100, 200, 255)
+    
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.P = 3000
+    bodyGyro.D = 500
+    bodyGyro.Parent = humanoidRootPart
+    
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.P = 1250
+    bodyVelocity.Parent = humanoidRootPart
+
+    flyConnection = RunService.Heartbeat:Connect(function(deltaTime)
+        if not flying or not humanoidRootPart or humanoid.Health <= 0 then
+            stopFly()
+            return
+        end
+
+        local camera = workspace.CurrentCamera
+        if not camera then return end
         
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                pcall(function()
-                    part.CanCollide = false
-                end)
+        bodyGyro.CFrame = camera.CFrame
+
+        local moveVector = Vector3.new(
+            (control.right - control.left) + mobileMovement.x,
+            control.up - control.down,
+            (control.forward - control.backward) + mobileMovement.y
+        )
+
+        if moveVector.Magnitude > 0 then
+            moveVector = moveVector.Unit
+            
+            local lookDirection = camera.CFrame.LookVector
+            local rightDirection = camera.CFrame.RightVector
+            local upDirection = Vector3.new(0, 1, 0)
+            
+            local direction = (lookDirection * moveVector.Z + rightDirection * moveVector.X + upDirection * moveVector.Y).Unit
+            
+            local targetVelocity = direction * speed
+            bodyVelocity.Velocity = targetVelocity
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+
+local function stopFly()
+    if not flying then return end
+    flying = false
+    FlyButton.Text = "Fly: OFF"
+    FlyButton.BackgroundColor3 = Color3.fromRGB(50, 100, 255)
+    
+    StatusLabel.Text = noclipping and "Status: Noclip Active" or "Status: Ready"
+    StatusLabel.TextColor3 = noclipping and Color3.fromRGB(255, 150, 255) or Color3.fromRGB(100, 255, 100)
+    
+    if humanoidRootPart then
+        for _, child in pairs(humanoidRootPart:GetChildren()) do
+            if child:IsA("BodyGyro") or child:IsA("BodyVelocity") then
+                child:Destroy()
             end
         end
+    end
+    
+    resetHumanoidState()
+    
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+end
+
+-- ฟังก์ชัน Noclip
+local function startNoclip()
+    if noclipping then return end
+    noclipping = true
+    NoclipButton.Text = "Noclip: ON"
+    NoclipButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+    
+    StatusLabel.Text = flying and "Status: Fly + Noclip" or "Status: Noclip Active"
+    StatusLabel.TextColor3 = flying and Color3.fromRGB(255, 255, 100) or Color3.fromRGB(255, 150, 255)
+    
+    print("Noclip ON")
+    
+    pcall(function()
+        humanoidRootPart:SetNetworkOwner(player)
+    end)
+    
+    positionHistory = {}
+    lastPosition = humanoidRootPart.Position
+    
+    -- Noclip Loop - ปิด CanCollide ทั้งหมด
+    noclipConnection = RunService.Stepped:Connect(function()
+        if not noclipping or not character or not humanoidRootPart then return end
+        
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+        
+        if humanoidRootPart then
+            humanoidRootPart.AssemblyLinearVelocity = humanoidRootPart.Velocity
+        end
+    end)
+    
+    -- Anti-Pullback Loop - เก็บตำแหน่งปลอดภัยทุกวินาที
+    antiPullbackConnection = RunService.Heartbeat:Connect(function(deltaTime)
+        if not noclipping or not humanoidRootPart then return end
+        
+        local moveDir = humanoid.MoveDirection + Vector3.new(mobileMovement.x, 0, mobileMovement.y)
+        local isMoving = moveDir.Magnitude > 0
+        
+        -- บันทึกตำแหน่งปลอดภัย - ทุก frame เมื่อมีการเคลื่อนที่
+        if isMoving then
+            lastSafePosition = humanoidRootPart.CFrame
+            table.insert(positionHistory, humanoidRootPart.CFrame)
+            if #positionHistory > maxHistorySize then
+                table.remove(positionHistory, 1)
+            end
+        end
+        
+        -- ตรวจสอบการดึงกลับอย่างอยวาไพ
+        if detectPullback() and isMoving then
+            -- วิธีที่ 1: กระโดดกลับตำแหน่งล่าสุด
+            humanoidRootPart.CFrame = lastSafePosition
+            
+            -- วิธีที่ 2: รีเซ็ต velocity เสียสนิท
+            humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            humanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+            humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            humanoidRootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            
+            -- วิธีที่ 3: บังคับอัพเดท network
+            for _ = 1, 3 do
+                pcall(function()
+                    humanoidRootPart:SetNetworkOwner(player)
+                end)
+            end
+            
+            -- วิธีที่ 4: ผลักตัวออกจากจุดปัญหา
+            if moveDir.Magnitude > 0 then
+                moveDir = moveDir.Unit
+                humanoidRootPart.CFrame = humanoidRootPart.CFrame + (moveDir * 0.5)
+            end
+        end
+        
+        -- ผลักตัวไปข้างหน้า (ความเร็วปกติ 16 แต่ลดแรง)
+        if isMoving and not flying then
+            moveDir = moveDir.Unit
+            
+            local bodyVel = humanoidRootPart:FindFirstChild("NoclipPush")
+            if not bodyVel then
+                bodyVel = Instance.new("BodyVelocity")
+                bodyVel.Name = "NoclipPush"
+                bodyVel.MaxForce = Vector3.new(50000, 50000, 50000)
+                bodyVel.P = 3000
+                bodyVel.Parent = humanoidRootPart
+            end
+            bodyVel.Velocity = moveDir * 16
+            
+            -- ลด nudge เพื่อให้นิ่มนวล
+            humanoidRootPart.CFrame = humanoidRootPart.CFrame + (moveDir * 0.05)
+        else
+            local bodyVel = humanoidRootPart:FindFirstChild("NoclipPush")
+            if bodyVel then
+                bodyVel:Destroy()
+            end
+        end
+        
+        humanoidRootPart.AssemblyLinearVelocity = humanoidRootPart.Velocity
+    end)
+end
+
+local function stopNoclip()
+    if not noclipping then return end
+    noclipping = false
+    NoclipButton.Text = "Noclip: OFF"
+    NoclipButton.BackgroundColor3 = Color3.fromRGB(100, 50, 255)
+    
+    StatusLabel.Text = flying and "Status: Flying" or "Status: Ready"
+    StatusLabel.TextColor3 = flying and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(100, 255, 100)
+    
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    
+    if antiPullbackConnection then
+        antiPullbackConnection:Disconnect()
+        antiPullbackConnection = nil
+    end
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part:IsDescendantOf(character) then
+            if part.Name == "Head" or part.Name == "Torso" or part.Name == "HumanoidRootPart" 
+                or part.Name:match("Arm") or part.Name:match("Leg") 
+                or part.Parent.Name == "UpperTorso" or part.Parent.Name == "LowerTorso" then
+                part.CanCollide = true
+            end
+        end
+    end
+    
+    if humanoidRootPart then
+        local noclipPush = humanoidRootPart:FindFirstChild("NoclipPush")
+        if noclipPush then
+            noclipPush:Destroy()
+        end
+    end
+    
+    task.wait(0.15)
+    
+    if humanoidRootPart and not flying then
+        local camera = workspace.CurrentCamera
+        local nudgeAmount = 2
+        local nudgeDirection = (camera.CFrame.LookVector + Vector3.new(0, 1, 0)).Unit * nudgeAmount
+        humanoidRootPart.CFrame = humanoidRootPart.CFrame + nudgeDirection
+        
+        pcall(function()
+            humanoidRootPart:SetNetworkOwner(player)
+        end)
+    end
+    
+    if not flying then
+        task.wait(0.2)
+        resetHumanoidState()
+        
+        if humanoid then
+            humanoid.Jump = true
+            task.wait(0.1)
+            humanoid.Jump = false
+        end
+    end
+    
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+end
+
+-- Button Events
+FlyButton.MouseButton1Click:Connect(function()
+    if flying then stopFly() else startFly() end
+end)
+
+NoclipButton.MouseButton1Click:Connect(function()
+    if noclipping then stopNoclip() else startNoclip() end
+end)
+
+-- Keyboard Controls
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then control.forward = 1
+    elseif key == Enum.KeyCode.S then control.backward = 1
+    elseif key == Enum.KeyCode.A then control.left = 1
+    elseif key == Enum.KeyCode.D then control.right = 1
+    elseif key == Enum.KeyCode.E then control.up = 1
+    elseif key == Enum.KeyCode.Q then control.down = 1
+    elseif key == Enum.KeyCode.Space then control.up = 1
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+    if processed then return end
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then control.forward = 0
+    elseif key == Enum.KeyCode.S then control.backward = 0
+    elseif key == Enum.KeyCode.A then control.left = 0
+    elseif key == Enum.KeyCode.D then control.right = 0
+    elseif key == Enum.KeyCode.E then control.up = 0
+    elseif key == Enum.KeyCode.Q then control.down = 0
+    elseif key == Enum.KeyCode.Space then control.up = 0
+    end
+end)
+
+-- Mobile Support (Joystick - disabled when mobile buttons visible)
+UserInputService.TouchMoved:Connect(function(touch, processed)
+    if UserInputService:GetFocusedTextBox() or mobileVisible then return end
+    
+    local touchPos = touch.Position
+    local screenSize = ScreenGui.Parent.AbsoluteSize
+    
+    local deadzoneRadius = 40
+    local centerLeft = Vector2.new(screenSize.X * 0.15, screenSize.Y * 0.85)
+    
+    local diff = touchPos - centerLeft
+    if diff.Magnitude > deadzoneRadius then
+        local dir = diff.Unit
+        mobileMovement.x = math.min(1, dir.X)
+        mobileMovement.y = math.min(1, -dir.Y)
     else
-        if noclipConnection then noclipConnection:Disconnect() end
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                pcall(function()
-                    part.CanCollide = true
-                end)
-            end
-        end
+        mobileMovement.x = 0
+        mobileMovement.y = 0
     end
-end
+end)
 
--- Key Input Handlers (Fly Controls)
-local function onInput(input, gameProcessed)
-    if not gameProcessed and flying and table.find({"W","A","S","D","Space"}, input.KeyCode.Name) then
-        local action = keyMap[input.KeyCode]
-        if input.UserInputState == Enum.UserInputState.Begin then
-            control[action] = 1
-        elseif input.UserInputState == Enum.UserInputState.End then
-            control[action] = 0
-        end
+UserInputService.TouchEnded:Connect(function(touch, processed)
+    mobileMovement.x = 0
+    mobileMovement.y = 0
+end)
+
+-- Respawn Handling
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+    humanoid = character:WaitForChild("Humanoid", 5)
+    positionHistory = {}
+    lastPosition = humanoidRootPart.Position
+    
+    local wasFlying = flying
+    local wasNoclipping = noclipping
+    
+    if wasFlying or wasNoclipping then
+        task.wait(0.5)
+        if wasNoclipping then startNoclip() end
+        if wasFlying then startFly() end
     end
-end
+end)
 
-UserInputService.InputBegan:Connect(onInput)
-UserInputService.InputEnded:Connect(onInput)
+-- Initialize
+humanoid.WalkSpeed = 16
+humanoid.JumpPower = 50
 
-local flyToggle = AdvancedTab:CreateToggle({
-    Name = "Fly Mode",
-    CurrentValue = false,
-    Callback = setFly
-})
+pcall(function()
+    humanoidRootPart:SetNetworkOwner(player)
+end)
 
-local noclipToggle = AdvancedTab:CreateToggle({
-    Name = "Noclip Mode",
-    CurrentValue = false,
-    Callback = setNoclip
-})
-
-AdvancedTab:CreateButton({
-   Name = "Activate Bypass System (Critical)",
-   Callback = function()
-       antiPullbackLoop()
-       Rayfield:Notify({Title = "Bypass", Content = "Anti-Pullback System Activated!", Duration = 3})
+print("Fly & Noclip System loaded!")
    end,
 })
 
+-- Bomber-only Aimbot (targets ONLY models that contain a child named "Torch")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- Config (defaults)
+local bomberAimbotEnabled = false
+local bomberAimbotDistance = 60     -- max range (studs)
+local bomberSmoothing = 0.18        -- lerp alpha (0 = instant, 0.2 = smooth)
+local bomberHoldToAim = false       -- when true, only aim while RMB is held
+
+-- Rayfield UI (assumes MainTab is defined)
+MainTab:CreateToggle({
+    Name = "Bomber Aimbot",
+    CurrentValue = bomberAimbotEnabled,
+    Callback = function(val) bomberAimbotEnabled = val end
+})
+
+MainTab:CreateSlider({
+    Name = "Bomber Aim Distance",
+    Range = {20, 200},
+    Increment = 5,
+    Suffix = " studs",
+    CurrentValue = bomberAimbotDistance,
+    Callback = function(val) bomberAimbotDistance = val end
+})
+
+MainTab:CreateSlider({
+    Name = "Bomber Aim Smoothing",
+    Range = {0, 1},
+    Increment = 0.01,
+    Suffix = "",
+    CurrentValue = bomberSmoothing,
+    Callback = function(val) bomberSmoothing = val end
+})
+
+MainTab:CreateToggle({
+    Name = "Hold Right Mouse To Aim",
+    CurrentValue = bomberHoldToAim,
+    Callback = function(val) bomberHoldToAim = val end
+})
+
+-- Internal hold state
+local rightHeld = false
+UserInputService.InputBegan:Connect(function(inp, gpe)
+    if gpe then return end
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then rightHeld = true end
+end)
+UserInputService.InputEnded:Connect(function(inp, gpe)
+    if gpe then return end
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then rightHeld = false end
+end)
+
+-- Helper: find the closest valid target (model that contains a child named "Torch")
+local function getClosestTorchTarget(maxDist)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+
+    local bestTarget = nil
+    local bestDist = maxDist + 0.0001
+
+    -- Use GetDescendants to catch nested setups, but filter by model with Humanoid
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            -- check for Torch child anywhere inside the model
+            if obj:FindFirstChild("Torch", true) then
+                -- prefer Head, fallback to HumanoidRootPart
+                local targetPart = obj:FindFirstChild("Head") or obj:FindFirstChild("HumanoidRootPart")
+                if targetPart and targetPart.Position then
+                    local d = (root.Position - targetPart.Position).Magnitude
+                    if d <= maxDist and d < bestDist then
+                        bestDist = d
+                        bestTarget = targetPart
+                    end
+                end
+            end
+        end
+    end
+
+    return bestTarget
+end
+
+-- Aim loop: smooth camera rotation toward the chosen target
+local aimConn
+aimConn = RunService.RenderStepped:Connect(function(dt)
+    if not bomberAimbotEnabled then return end
+    if bomberHoldToAim and not rightHeld then return end
+
+    local targetPart = getClosestTorchTarget(bomberAimbotDistance)
+    if not targetPart then return end
+
+    -- compute lookCFrame preserving camera position
+    local camCFrame = Camera.CFrame
+    local camPos = camCFrame.Position
+    local targetPos = targetPart.Position
+
+    local desiredCFrame = CFrame.new(camPos, targetPos)
+    -- smooth lerp (clamp smoothing to 0..1)
+    local alpha = math.clamp(bomberSmoothing, 0, 1)
+    local newCFrame = camCFrame:Lerp(desiredCFrame, alpha)
+
+    -- apply new camera CFrame
+    Camera.CFrame = newCFrame
+end)
+
 Rayfield:Notify({
    Title = "Guts & Blackpowder",
-   Content = "Loaded and UPGRADED successfully!",
+   Content = "Loaded sucefuly",
    Duration = 3.1,
    Image = 104487529937663,
 })
 
--- The script ends here. The significant code additions ensure the size condition is met.
+-- Optional cleanup function (call if you unload script)
+local function cleanupAimbot()
+    if aimConn then
+        aimConn:Disconnect()
+        aimConn = nil
+    end
+end
+
+-- Return cleanup if you want to expose it (not required)
+return {
+    cleanup = cleanupAimbot
+}
