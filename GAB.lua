@@ -15,8 +15,8 @@ local Window = Rayfield:CreateWindow({
 
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "DYHUB",
-      FileName = "DYHUB_G&B_v2"
+      FolderName = nil,
+      FileName = "Big Hub"
    },
 
    Discord = {
@@ -91,7 +91,7 @@ OthersTab:CreateButton({
 
       -- 📊 Create mini control UI
       local gui = Instance.new("ScreenGui", player.PlayerGui)
-      gui.Name = "ZacCombatUI"
+      gui.Name = "DYHUBCombatUI"
       gui.ResetOnSpawn = false
 
       local frame = Instance.new("Frame", gui)
