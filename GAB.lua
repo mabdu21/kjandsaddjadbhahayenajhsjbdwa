@@ -1,4 +1,4 @@
-local ver = "Version: 1.8.5"
+local ver = "Version: 1.8.7"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -155,11 +155,11 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 -- 🏷 ตัวแปรปรับแต่ง
-local ESCAPE_DISTANCE = 17
+local ESCAPE_DISTANCE = 15.5
 local ESCAPE_SPEED = 3
 local WARP_OFFSET = 6
-local ATTACK_DISTANCE = 16
-local DELAY_TIME = 0.05
+local ATTACK_DISTANCE = 15
+local DELAY_TIME = 0.025
 local killAuraEnabled2 = false
 local REQUIRED_TOOL_NAME = "Sabre"
 
