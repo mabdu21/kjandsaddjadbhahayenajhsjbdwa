@@ -1,4 +1,4 @@
--- 2asdasd
+-- asd21
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -26,7 +26,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local noclipTouchedParts = {}
-local AutoClearToggle = {Value = true}
+local AutoClearToggle = {Value = false}
 local AutoAttackToggle = {Value = false}
 local AutoSwapToggle = {Value = false}
 local AutoCollectToggle = {Value = false}
@@ -176,14 +176,14 @@ InfoTab:Section({Title = "The script is under development and may contain bugs"}
 InfoTab:Section({Title = "======================================================="})
 InfoTab:Section({Title = "✅ Support Map: School, Sewers (Only)", Icon = "map" })
 InfoTab:Section({Title = "======================================================="})
-InfoTab:Section({Title = "🤍 Version: 2.4.3 | Reword by rhy", Icon = "star" })
+InfoTab:Section({Title = "🤍 Version: 2.6.4 | Reword by rhy", Icon = "star" })
 InfoTab:Section({Title = "👑 Powered by dsc.gg/dyhub", Icon = "cpu" })
 
 MainTab:Section({Title = "Feature Farm"})
 
 MainTab:Toggle({
     Title = "Auto Farm (Fixed)",
-    Value = true,
+    Value = false,
     Callback = function(state)
         AutoClearToggle.Value = state
         if state then
@@ -275,38 +275,93 @@ MainTab:Toggle({
     end
 })
 
-MainTab:Section({Title = "Farm Setting"})
+MainTab:Section({Title = "Exit Setting"})
 
-getgenv().AutoPower = true
+-- Variables
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 getgenv().AutoRadio = true
 getgenv().AutoHeli = true
+getgenv().AutoPower = true
+getgenv().InstantInteractEnabled = true
 
-MainTab:Toggle({ Title = "Auto Radio", Default = false, Callback = function(v) getgenv().AutoRadio = v end })
-MainTab:Toggle({ Title = "Auto Helicopter", Default = false, Callback = function(v) getgenv().AutoHeli = v end })
-MainTab:Toggle({ Title = "Auto Power", Default = false, Callback = function(v) getgenv().AutoPower = v end })
+-- Save original hold durations
+local originalHoldDurations = {}
 
+-- Instant interact function
+local function enableInstantInteract(state)
+    getgenv().InstantInteractEnabled = state
+    if state then
+        task.spawn(function()
+            while getgenv().InstantInteractEnabled do
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        if originalHoldDurations[obj] == nil then
+                            originalHoldDurations[obj] = obj.HoldDuration
+                        end
+                        obj.HoldDuration = 0
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+    else
+        for obj, value in pairs(originalHoldDurations) do
+            if obj and obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = value
+            end
+        end
+        originalHoldDurations = {}
+    end
+end
+
+-- Enable instant interact
+enableInstantInteract(true)
+
+-- Function to teleport to prompt safely and trigger it
+local function activatePrompt(prompt)
+    if not prompt or not prompt.Parent then return end
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        -- Teleport close to the prompt
+        hrp.CFrame = prompt.Parent.CFrame + Vector3.new(0, 3, 0)
+        -- Fire prompt
+        fireproximityprompt(prompt)
+    end
+end
+
+-- Auto tasks
 spawn(function()
-    while true do
+    while task.wait(0.2) do
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
+
+            -- Auto Radio
             if getgenv().AutoRadio then
                 local radioPrompt = workspace:FindFirstChild("School")
                     and workspace.School:FindFirstChild("Rooms")
                     and workspace.School.Rooms:FindFirstChild("RooftopBoss")
                     and workspace.School.Rooms.RooftopBoss:FindFirstChild("RadioObjective")
                     and workspace.School.Rooms.RooftopBoss.RadioObjective:FindFirstChild("ProximityPrompt")
-                if radioPrompt then activatePrompt(radioPrompt) end
+                if radioPrompt then
+                    activatePrompt(radioPrompt)
+                end
             end
 
+            -- Auto Helicopter
             if getgenv().AutoHeli then
                 local heliPrompt = workspace:FindFirstChild("School")
                     and workspace.School:FindFirstChild("Rooms")
                     and workspace.School.Rooms:FindFirstChild("RooftopBoss")
                     and workspace.School.Rooms.RooftopBoss:FindFirstChild("HeliObjective")
                     and workspace.School.Rooms.RooftopBoss.HeliObjective:FindFirstChild("ProximityPrompt")
-                if heliPrompt then activatePrompt(heliPrompt) end
+                if heliPrompt then
+                    activatePrompt(heliPrompt)
+                end
             end
 
+            -- Auto Power Sewers
             if getgenv().AutoPower then
                 local powerPrompt = workspace:FindFirstChild("Sewers")
                     and workspace.Sewers:FindFirstChild("Rooms")
@@ -314,13 +369,15 @@ spawn(function()
                     and workspace.Sewers.Rooms.BossRoom:FindFirstChild("generator")
                     and workspace.Sewers.Rooms.BossRoom.generator:FindFirstChild("gen")
                     and workspace.Sewers.Rooms.BossRoom.generator.gen:FindFirstChild("pom")
-                if powerPrompt then activatePrompt(powerPrompt) end
+                if powerPrompt then
+                    activatePrompt(powerPrompt)
+                end
             end
         end
-        task.wait(0.2)
     end
 end)
 
+MainTab:Section({Title = "Farm Setting"})
 -- Auto Attack
 MainTab:Toggle({
     Title = "Auto Attack",
@@ -396,7 +453,7 @@ Extra:Section({Title = "Feature Auto"})
 
 Extra:Toggle({
     Title = "Auto Skills",
-    Value = true,
+    Value = false,
     Callback = function(state)
         AutoSkillsToggle.Value = state
         if state then
@@ -416,7 +473,7 @@ Extra:Toggle({
 
 Extra:Toggle({
     Title = "Auto Perk",
-    Value = true,
+    Value = false,
     Callback = function(state)
         UsePerkToggle.Value = state
 
@@ -436,7 +493,7 @@ Extra:Section({Title = "Object Auto"})
 
 Extra:Toggle({
     Title = "Auto Open Door",
-    Value = true,
+    Value = false,
     Callback = function(state)
         BringMobsToggle.Value = state
 
@@ -469,7 +526,7 @@ Extra:Toggle({
 -- Auto Replay
  Extra:Toggle({
     Title = "Auto Replay",
-    Value = true,
+    Value = false,
     Callback = function(state)
         AutoReplayToggle.Value = state
 
