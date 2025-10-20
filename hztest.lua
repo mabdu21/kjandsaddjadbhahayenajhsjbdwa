@@ -1,4 +1,4 @@
--- asd21
+-- asd2112321321
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -177,7 +177,7 @@ InfoTab:Section({Title = "The script is under development and may contain bugs"}
 InfoTab:Section({Title = "======================================================="})
 InfoTab:Section({Title = "✅ Support Map: School, Sewers (Only)", Icon = "map" })
 InfoTab:Section({Title = "======================================================="})
-InfoTab:Section({Title = "🤍 Version: 2.6.4 | Reword by rhy", Icon = "star" })
+InfoTab:Section({Title = "🤍 Version: 2.6.7 | Reword by rhy", Icon = "star" })
 InfoTab:Section({Title = "👑 Powered by dsc.gg/dyhub", Icon = "cpu" })
 
 MainTab:Section({Title = "Feature Farm"})
@@ -276,7 +276,7 @@ MainTab:Toggle({
     end
 })
 
-MainTab:Section({Title = "Exit Setting"})
+MainTab:Section({Title = "Setting Exit"})
 
 -- Variables
 local Players = game:GetService("Players")
@@ -289,9 +289,6 @@ getgenv().AutoPower = true
 getgenv().InstantInteract = true
 
 local originalHoldDurations = {}
-
--- GUI Toggles
-local MainTab = --[[ Your GUI tab reference here ]]--
 
 MainTab:Toggle({
     Title = "Auto Radio",
@@ -490,24 +487,6 @@ Extra:Toggle({
 })
 
 Extra:Toggle({
-    Title = "Auto Perk (Remote)",
-    Value = true,
-    Callback = function(state)
-        UsePerkToggle.Value = state
-
-        if state then
-            task.spawn(function()
-                local args = { buffer.fromstring("\f") }
-                while UsePerkToggle.Value do
-                    ByteNetReliable:FireServer(unpack(args))
-                    RunService.Heartbeat:Wait()
-                end
-            end)
-        end
-    end
-})
-
-Extra:Toggle({
     Title = "Auto Perk (Keybind)",
     Value = true,
     Callback = function(state)
@@ -520,6 +499,24 @@ Extra:Toggle({
                         VirtualInputManager:SendKeyEvent(true, key, false, game)
                         VirtualInputManager:SendKeyEvent(false, key, false, game)
                     end
+                    RunService.Heartbeat:Wait()
+                end
+            end)
+        end
+    end
+})
+
+Extra:Toggle({
+    Title = "Auto Perk (Remote)",
+    Value = true,
+    Callback = function(state)
+        UsePerkToggle.Value = state
+
+        if state then
+            task.spawn(function()
+                local args = { buffer.fromstring("\f") }
+                while UsePerkToggle.Value do
+                    ByteNetReliable:FireServer(unpack(args))
                     RunService.Heartbeat:Wait()
                 end
             end)
