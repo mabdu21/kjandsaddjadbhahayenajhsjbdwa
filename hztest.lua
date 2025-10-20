@@ -27,6 +27,7 @@ local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local noclipTouchedParts = {}
 local AutoClearToggle = {Value = false}
+local AutoPerkToggle = {Value = false}
 local AutoAttackToggle = {Value = false}
 local AutoSwapToggle = {Value = false}
 local AutoCollectToggle = {Value = false}
@@ -183,7 +184,7 @@ MainTab:Section({Title = "Feature Farm"})
 
 MainTab:Toggle({
     Title = "Auto Farm (Fixed)",
-    Value = false,
+    Value = true,
     Callback = function(state)
         AutoClearToggle.Value = state
         if state then
@@ -281,52 +282,79 @@ MainTab:Section({Title = "Exit Setting"})
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+-- Initial States
 getgenv().AutoRadio = true
 getgenv().AutoHeli = true
 getgenv().AutoPower = true
-getgenv().InstantInteractEnabled = true
+getgenv().InstantInteract = true
 
--- Save original hold durations
 local originalHoldDurations = {}
 
--- Instant interact function
-local function enableInstantInteract(state)
-    getgenv().InstantInteractEnabled = state
-    if state then
-        task.spawn(function()
-            while getgenv().InstantInteractEnabled do
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        if originalHoldDurations[obj] == nil then
-                            originalHoldDurations[obj] = obj.HoldDuration
-                        end
-                        obj.HoldDuration = 0
-                    end
-                end
-                task.wait(1)
-            end
-        end)
-    else
-        for obj, value in pairs(originalHoldDurations) do
-            if obj and obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = value
-            end
-        end
-        originalHoldDurations = {}
-    end
-end
+-- GUI Toggles
+local MainTab = --[[ Your GUI tab reference here ]]--
 
--- Enable instant interact
-enableInstantInteract(true)
+MainTab:Toggle({
+    Title = "Auto Radio",
+    Value = getgenv().AutoRadio,
+    Callback = function(state)
+        getgenv().AutoRadio = state
+    end
+})
+
+MainTab:Toggle({
+    Title = "Auto Helicopter",
+    Value = getgenv().AutoHeli,
+    Callback = function(state)
+        getgenv().AutoHeli = state
+    end
+})
+
+MainTab:Toggle({
+    Title = "Auto Power Sewers",
+    Value = getgenv().AutoPower,
+    Callback = function(state)
+        getgenv().AutoPower = state
+    end
+})
+
+MainTab:Toggle({
+    Title = "Instant Interact",
+    Value = getgenv().InstantInteract,
+    Callback = function(state)
+        getgenv().InstantInteract = state
+        if state then
+            -- Enable instant interact
+            task.spawn(function()
+                while getgenv().InstantInteract do
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") then
+                            if originalHoldDurations[obj] == nil then
+                                originalHoldDurations[obj] = obj.HoldDuration
+                            end
+                            obj.HoldDuration = 0
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            -- Restore original hold durations
+            for obj, value in pairs(originalHoldDurations) do
+                if obj and obj:IsA("ProximityPrompt") then
+                    obj.HoldDuration = value
+                end
+            end
+            originalHoldDurations = {}
+        end
+    end
+})
 
 -- Function to teleport to prompt safely and trigger it
 local function activatePrompt(prompt)
     if not prompt or not prompt.Parent then return end
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
-        -- Teleport close to the prompt
         hrp.CFrame = prompt.Parent.CFrame + Vector3.new(0, 3, 0)
-        -- Fire prompt
         fireproximityprompt(prompt)
     end
 end
@@ -336,32 +364,24 @@ spawn(function()
     while task.wait(0.2) do
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-
-            -- Auto Radio
             if getgenv().AutoRadio then
                 local radioPrompt = workspace:FindFirstChild("School")
                     and workspace.School:FindFirstChild("Rooms")
                     and workspace.School.Rooms:FindFirstChild("RooftopBoss")
                     and workspace.School.Rooms.RooftopBoss:FindFirstChild("RadioObjective")
                     and workspace.School.Rooms.RooftopBoss.RadioObjective:FindFirstChild("ProximityPrompt")
-                if radioPrompt then
-                    activatePrompt(radioPrompt)
-                end
+                if radioPrompt then activatePrompt(radioPrompt) end
             end
 
-            -- Auto Helicopter
             if getgenv().AutoHeli then
                 local heliPrompt = workspace:FindFirstChild("School")
                     and workspace.School:FindFirstChild("Rooms")
                     and workspace.School.Rooms:FindFirstChild("RooftopBoss")
                     and workspace.School.Rooms.RooftopBoss:FindFirstChild("HeliObjective")
                     and workspace.School.Rooms.RooftopBoss.HeliObjective:FindFirstChild("ProximityPrompt")
-                if heliPrompt then
-                    activatePrompt(heliPrompt)
-                end
+                if heliPrompt then activatePrompt(heliPrompt) end
             end
 
-            -- Auto Power Sewers
             if getgenv().AutoPower then
                 local powerPrompt = workspace:FindFirstChild("Sewers")
                     and workspace.Sewers:FindFirstChild("Rooms")
@@ -369,9 +389,7 @@ spawn(function()
                     and workspace.Sewers.Rooms.BossRoom:FindFirstChild("generator")
                     and workspace.Sewers.Rooms.BossRoom.generator:FindFirstChild("gen")
                     and workspace.Sewers.Rooms.BossRoom.generator.gen:FindFirstChild("pom")
-                if powerPrompt then
-                    activatePrompt(powerPrompt)
-                end
+                if powerPrompt then activatePrompt(powerPrompt) end
             end
         end
     end
@@ -411,7 +429,7 @@ MainTab:Toggle({
                     VirtualInputManager:SendKeyEvent(true, key, false, game)
                     VirtualInputManager:SendKeyEvent(false, key, false, game)
                     current = current == 1 and 2 or 1
-                    task.wait(2)
+                    task.wait(1)
                 end
             end)
         end
@@ -452,8 +470,8 @@ MainTab:Toggle({
 Extra:Section({Title = "Feature Auto"})
 
 Extra:Toggle({
-    Title = "Auto Skills",
-    Value = false,
+    Title = "Auto Skills (Keybind)",
+    Value = true,
     Callback = function(state)
         AutoSkillsToggle.Value = state
         if state then
@@ -472,8 +490,8 @@ Extra:Toggle({
 })
 
 Extra:Toggle({
-    Title = "Auto Perk",
-    Value = false,
+    Title = "Auto Perk (Remote)",
+    Value = true,
     Callback = function(state)
         UsePerkToggle.Value = state
 
@@ -489,10 +507,30 @@ Extra:Toggle({
     end
 })
 
+Extra:Toggle({
+    Title = "Auto Perk (Keybind)",
+    Value = true,
+    Callback = function(state)
+        AutoPerkToggle.Value = state
+        if state then
+            task.spawn(function()
+                local keys = { Enum.KeyCode.E }
+                while AutoPerkToggle.Value do
+                    for _, key in ipairs(keys) do
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    end
+                    RunService.Heartbeat:Wait()
+                end
+            end)
+        end
+    end
+})
+
 Extra:Section({Title = "Object Auto"})
 
 Extra:Toggle({
-    Title = "Auto Open Door",
+    Title = "Auto Open Door (All)",
     Value = false,
     Callback = function(state)
         BringMobsToggle.Value = state
@@ -525,7 +563,7 @@ Extra:Toggle({
 
 -- Auto Replay
  Extra:Toggle({
-    Title = "Auto Replay",
+    Title = "Auto Replay (End)",
     Value = false,
     Callback = function(state)
         AutoReplayToggle.Value = state
@@ -542,7 +580,7 @@ Extra:Toggle({
     end
 })
 
-EspTab:Section({Title = "Warning: In dev (Still Bugs)"})
+EspTab:Section({Title = "⚠ Warning: In dev (Still Bugs)"})
 EspTab:Section({Title = "Feature ESP"})
 -- ประเภท ESP
 EspTab:Dropdown({
