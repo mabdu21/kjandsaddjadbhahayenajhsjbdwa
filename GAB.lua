@@ -1,3 +1,5 @@
+local ver = "Version: 1.7.5"
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -914,7 +916,6 @@ local Button = MainTab:CreateButton({
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
 -- Local Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -933,6 +934,88 @@ if not humanoidRootPart or not humanoid then
         return
     end
 end
+
+local Lighting = game:GetService("Lighting")
+
+local fullBrightEnabled = false
+local noFogEnabled = false
+
+-- เก็บค่าเดิม
+local originalBrightness = Lighting.Brightness
+local originalClockTime = Lighting.ClockTime
+local originalAmbient = Lighting.Ambient
+
+local originalAtmosphereDensity = Lighting:FindFirstChild("Atmosphere") and Lighting.Atmosphere.Density or nil
+local originalFogStart = Lighting.FogStart
+local originalFogEnd = Lighting.FogEnd
+
+-- Full Bright Toggle
+EspTab:CreateToggle({
+    Name = "Full Bright",
+    CurrentValue = false,
+    Flag = "FullBrightToggle",
+    Callback = function(v)
+        fullBrightEnabled = v
+        if v then
+            task.spawn(function()
+                while fullBrightEnabled do
+                    if Lighting.Brightness ~= 2 then
+                        Lighting.Brightness = 2
+                    end
+                    if Lighting.ClockTime ~= 14 then
+                        Lighting.ClockTime = 14
+                    end
+                    if Lighting.Ambient ~= Color3.fromRGB(255,255,255) then
+                        Lighting.Ambient = Color3.fromRGB(255,255,255)
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        else
+            -- คืนค่าเดิม
+            Lighting.Brightness = originalBrightness
+            Lighting.ClockTime = originalClockTime
+            Lighting.Ambient = originalAmbient
+        end
+    end
+})
+
+-- No Fog Toggle (รองรับ Atmosphere + FogStart/FogEnd)
+EspTab:CreateToggle({
+    Name = "No Fog",
+    CurrentValue = false,
+    Flag = "NoFogToggle",
+    Callback = function(v)
+        noFogEnabled = v
+        if v then
+            task.spawn(function()
+                while noFogEnabled do
+                    -- สำหรับ Atmosphere
+                    if Lighting:FindFirstChild("Atmosphere") then
+                        if Lighting.Atmosphere.Density ~= 0 then
+                            Lighting.Atmosphere.Density = 0
+                        end
+                    end
+                    -- สำหรับ FogStart/FogEnd
+                    if Lighting.FogStart ~= 1e6 then
+                        Lighting.FogStart = 1e6
+                    end
+                    if Lighting.FogEnd ~= 1e6 then
+                        Lighting.FogEnd = 1e6
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        else
+            -- คืนค่าเดิม
+            if Lighting:FindFirstChild("Atmosphere") and originalAtmosphereDensity then
+                Lighting.Atmosphere.Density = originalAtmosphereDensity
+            end
+            Lighting.FogStart = originalFogStart
+            Lighting.FogEnd = originalFogEnd
+        end
+    end
+})
 
 -- Variables
 local flying = false
@@ -1691,7 +1774,7 @@ end)
 
 Rayfield:Notify({
    Title = "Guts & Blackpowder",
-   Content = "Version: 1.7.2",
+   Content = ver,
    Duration = 3.1,
    Image = 104487529937663,
 })
