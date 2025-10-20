@@ -1,4 +1,4 @@
--- kasdkasdkasdu231
+-- 2
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -393,24 +393,25 @@ spawn(function()
 end)
 
 MainTab:Section({Title = "Farm Setting"})
--- Auto Attack
--- Toggle variable
-getgenv().AutoAttack = true
 
+getgenv().AutoAttack = false
+getgenv().AutoSwap = false
+getgenv().AutoSkills = false
+getgenv().AutoPerk = false
+
+-- Auto Attack
 MainTab:Toggle({
     Title = "Auto Attack",
     Desc = "",
     Value = getgenv().AutoAttack,
     Callback = function(state)
         getgenv().AutoAttack = state
-        if state then
-            task.spawn(function()
-                while getgenv().AutoAttack do
-                    VirtualUser:Button1Down(Vector2.new(958, 466))
-                    task.wait(0.01)
-                end
-            end)
-        end
+        task.spawn(function()
+            while getgenv().AutoAttack do
+                VirtualUser:Button1Down(Vector2.new(958, 466))
+                task.wait(0.01)
+            end
+        end)
     end
 })
 
@@ -450,62 +451,56 @@ MainTab:Toggle({
     Title = "Auto Swap Weapons",
     Value = false,
     Callback = function(state)
-        AutoSwapToggle.Value = state
-        if state then
-            task.spawn(function()
-                local keys = { Enum.KeyCode.One, Enum.KeyCode.Two }
-                local current = 1
-                while AutoSwapToggle.Value do
-                    local key = keys[current]
-                    VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    current = current == 1 and 2 or 1
-                    task.wait(1)
-                end
-            end)
-        end
+        getgenv().AutoSwap = state
+        task.spawn(function()
+            local keys = { Enum.KeyCode.One, Enum.KeyCode.Two }
+            local current = 1
+            while getgenv().AutoSwap do
+                local key = keys[current]
+                VirtualInputManager:SendKeyEvent(true, key, false, game)
+                VirtualInputManager:SendKeyEvent(false, key, false, game)
+                current = current == 1 and 2 or 1
+                task.wait(0.8) -- เว้นจังหวะนิดนึง
+            end
+        end)
     end
 })
 
 Extra:Section({Title = "Feature Auto"})
 
+-- Auto Skills
 Extra:Toggle({
     Title = "Auto Skills (Keybind)",
-    Value = true,
+    Value = false,
     Callback = function(state)
-        AutoSkillsToggle.Value = state
-        if state then
-            task.spawn(function()
-                local keys = { Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.G }
-                while AutoSkillsToggle.Value do
-                    for _, key in ipairs(keys) do
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-                    RunService.Heartbeat:Wait()
+        getgenv().AutoSkills = state
+        task.spawn(function()
+            local keys = { Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.G }
+            while getgenv().AutoSkills do
+                for _, key in ipairs(keys) do
+                    VirtualInputManager:SendKeyEvent(true, key, false, game)
+                    VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    task.wait(0.15) -- เพิ่มดีเลย์แต่ละปุ่ม
                 end
-            end)
-        end
+                task.wait(0.5)
+            end
+        end)
     end
 })
 
+-- Auto Perk
 Extra:Toggle({
     Title = "Auto Perk (Keybind)",
-    Value = true,
+    Value = false,
     Callback = function(state)
-        AutoPerkToggle.Value = state
-        if state then
-            task.spawn(function()
-                local keys = { Enum.KeyCode.E }
-                while AutoPerkToggle.Value do
-                    for _, key in ipairs(keys) do
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-                    RunService.Heartbeat:Wait()
-                end
-            end)
-        end
+        getgenv().AutoPerk = state
+        task.spawn(function()
+            while getgenv().AutoPerk do
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                task.wait(1)
+            end
+        end)
     end
 })
 
