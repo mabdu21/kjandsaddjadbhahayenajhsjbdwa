@@ -406,18 +406,13 @@ MainTab:Toggle({
         if state then
             task.spawn(function()
                 while getgenv().AutoAttack do
-                    -- กดคลิกซ้ายแบบปลอดภัย
-                    pcall(function()
-                        VirtualUser:Button1Down(Vector2.new(0, 0)) -- ใช้ Vector2.zero เพื่อไม่ให้หลุดหน้าจอ
-                        VirtualUser:Button1Up(Vector2.new(0, 0))
-                    end)
-                    task.wait(0.05)
+                    VirtualUser:Button1Down(Vector2.new(958, 466))
+                    task.wait(0.01)
                 end
             end)
         end
     end
 })
-
 
 -- Auto Collect\
 MainTab:Toggle({
