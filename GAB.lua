@@ -1,4 +1,4 @@
-local ver = "Version: 1.7.7"
+local ver = "Version: 1.7.8"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -64,12 +64,14 @@ local Section = AutoTab:CreateSection("Auto Farm")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Backpack = LocalPlayer:WaitForChild("Backpack")
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
 
 local selectedWeapon = "Sabre"
 
 -- ฟังก์ชันดึงอาวุธจาก Backpack
 local function getWeaponList()
-    local list = {"NONE"}
+    local list = {"LOAD IN GAME"}
     for _, tool in ipairs(Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             table.insert(list, tool.Name)
@@ -84,15 +86,28 @@ local Section1 = MainTab:CreateSection("Auto Equip")
 local WeaponDropdown = MainTab:CreateDropdown({
     Name = "Select Weapon",
     Options = getWeaponList(),  -- โหลดครั้งแรก
-    CurrentOption = "NONE",
+    CurrentOption = "LOAD IN GAME",
     Flag = "WeaponDropdown",
     Callback = function(v)
-        if v == "NONE" then
+        if v == "LOAD IN GAME" then
             selectedWeapon = ""
             print("[DYHUB] Cleared Weapon")
         else
             selectedWeapon = v
             print("[DYHUB] Selected Weapon:", selectedWeapon)
+            
+            -- Auto equip ทันที
+            -- ตรวจสอบใน Character ก่อน
+            local tool = Character:FindFirstChild(selectedWeapon)
+            if tool and tool:IsA("Tool") then
+                Humanoid:EquipTool(tool)
+            else
+                -- ถ้าไม่มีใน Character ก็หาใน Backpack
+                tool = Backpack:FindFirstChild(selectedWeapon)
+                if tool and tool:IsA("Tool") then
+                    Humanoid:EquipTool(tool)
+                end
+            end
         end
     end
 })
