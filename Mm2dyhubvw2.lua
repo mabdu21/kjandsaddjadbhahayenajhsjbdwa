@@ -74,12 +74,6 @@ do
     )
     Window:SetToggleKey(Enum.KeyCode.K)
 
-    WindUI:Notify({
-        Title = "DYHUB | Notify",
-        Content = "Press K To Open/Close Menu!",
-        Duration = 3, 
-        Icon = "keyboard",
-     })
     Window:EditOpenButton(
         {
             Title = "DYHUB - OPEN",
