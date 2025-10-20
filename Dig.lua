@@ -151,6 +151,15 @@ local Window = WindUI:CreateWindow({
     User = { Enabled = true, Anonymous = false },
 })
 
+Window:SetToggleKey(Enum.KeyCode.K)
+
+WindUI:Notify({
+    Title = "DYHUB | Notify",
+    Content = "Press K To Open/Close Menu!",
+    Duration = 3, 
+    Icon = "keyboard",
+})
+
 pcall(function()
     Window:Tag({
         Title = version,
