@@ -1,5 +1,5 @@
 -- =========================
-local version = "5.7.2"
+local version = "5.7.3"
 -- =========================
 
 if setfpscap then
@@ -198,6 +198,15 @@ task.spawn(function()
         Color = ColorSequence.new(Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255)),
         Draggable = true,
     })
+
+    Window:SetToggleKey(Enum.KeyCode.K)
+
+    WindUI:Notify({
+        Title = "DYHUB | Notify",
+        Content = "Press K To Open/Close Menu!",
+        Duration = 3, 
+        Icon = "keyboard",
+     })
 
     -- Tabs (KEEP THESE LOCALS USED BELOW)
     local Info          = Window:Tab({ Title = "Information",  Icon = "info" })
