@@ -1,4 +1,4 @@
--- asd2112321321
+-- jkanye1
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -177,7 +177,7 @@ InfoTab:Section({Title = "The script is under development and may contain bugs"}
 InfoTab:Section({Title = "======================================================="})
 InfoTab:Section({Title = "✅ Support Map: School, Sewers (Only)", Icon = "map" })
 InfoTab:Section({Title = "======================================================="})
-InfoTab:Section({Title = "🤍 Version: 2.6.7 | Reword by rhy", Icon = "star" })
+InfoTab:Section({Title = "🤍 Version: 2.7.7 | Reword by rhy", Icon = "star" })
 InfoTab:Section({Title = "👑 Powered by dsc.gg/dyhub", Icon = "cpu" })
 
 MainTab:Section({Title = "Feature Farm"})
@@ -411,28 +411,6 @@ MainTab:Toggle({
     end
 })
 
--- Auto Swap Weapons
-MainTab:Toggle({
-    Title = "Auto Swap Weapons",
-    Value = true,
-    Callback = function(state)
-        AutoSwapToggle.Value = state
-        if state then
-            task.spawn(function()
-                local keys = { Enum.KeyCode.One, Enum.KeyCode.Two }
-                local current = 1
-                while AutoSwapToggle.Value do
-                    local key = keys[current]
-                    VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    current = current == 1 and 2 or 1
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-})
-
 -- Auto Collect\
 MainTab:Toggle({
     Title = "Auto Collect",
@@ -458,6 +436,28 @@ MainTab:Toggle({
                         end
                     end
                     task.wait(0.3)
+                end
+            end)
+        end
+    end
+})
+
+-- Auto Swap Weapons
+MainTab:Toggle({
+    Title = "Auto Swap Weapons",
+    Value = false,
+    Callback = function(state)
+        AutoSwapToggle.Value = state
+        if state then
+            task.spawn(function()
+                local keys = { Enum.KeyCode.One, Enum.KeyCode.Two }
+                local current = 1
+                while AutoSwapToggle.Value do
+                    local key = keys[current]
+                    VirtualInputManager:SendKeyEvent(true, key, false, game)
+                    VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    current = current == 1 and 2 or 1
+                    task.wait(1)
                 end
             end)
         end
@@ -528,7 +528,7 @@ Extra:Section({Title = "Object Auto"})
 
 Extra:Toggle({
     Title = "Auto Open Door (All)",
-    Value = false,
+    Value = true,
     Callback = function(state)
         BringMobsToggle.Value = state
 
@@ -561,7 +561,7 @@ Extra:Toggle({
 -- Auto Replay
  Extra:Toggle({
     Title = "Auto Replay (End)",
-    Value = false,
+    Value = true,
     Callback = function(state)
         AutoReplayToggle.Value = state
 
