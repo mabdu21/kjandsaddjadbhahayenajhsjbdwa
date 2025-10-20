@@ -1,5 +1,5 @@
 -- =========================
-local verison = "3.4.9"
+local verison = "3.5.2"
 -- =========================
 
 if setfpscap then
@@ -677,6 +677,15 @@ local Window = WindUI:CreateWindow({
         Enabled = true,
         Anonymous = false
     },
+})
+
+Window:SetToggleKey(Enum.KeyCode.K)
+
+WindUI:Notify({
+    Title = "DYHUB | Notify",
+    Content = "Press K To Open/Close Menu!",
+    Duration = 3, 
+    Icon = "keyboard",
 })
 
 pcall(function()
