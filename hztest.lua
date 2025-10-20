@@ -1,4 +1,4 @@
--- jkanye121321
+-- kasdkasdkasdu231
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -394,22 +394,30 @@ end)
 
 MainTab:Section({Title = "Farm Setting"})
 -- Auto Attack
+-- Toggle variable
+getgenv().AutoAttack = true
+
 MainTab:Toggle({
     Title = "Auto Attack",
     Desc = "",
-    Value = true,
+    Value = getgenv().AutoAttack,
     Callback = function(state)
-    AutoAttackToggle.Value = state
+        getgenv().AutoAttack = state
         if state then
             task.spawn(function()
-                while state do
-                    VirtualUser:Button1Down(Vector2.new(1000, 450))
+                while getgenv().AutoAttack do
+                    -- กดคลิกซ้ายแบบปลอดภัย
+                    pcall(function()
+                        VirtualUser:Button1Down(Vector2.new(0, 0)) -- ใช้ Vector2.zero เพื่อไม่ให้หลุดหน้าจอ
+                        VirtualUser:Button1Up(Vector2.new(0, 0))
+                    end)
                     task.wait(0.05)
                 end
             end)
         end
     end
 })
+
 
 -- Auto Collect\
 MainTab:Toggle({
