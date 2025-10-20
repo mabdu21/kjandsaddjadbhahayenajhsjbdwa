@@ -60,10 +60,10 @@ do
     local Window =
         WindUI:CreateWindow(
         {
-            Title = gradient("DYHUB - Murder Mystery 2", Color3.fromHex("#ff0000"), Color3.fromHex("#000000")),
+            Title = gradient("DYHUB", Color3.fromHex("#ff0000"), Color3.fromHex("#000000")),
             Icon = "rbxassetid://104487529937663",
-            Author = "Version: 2.8.6 | Executor",
-            Folder = "WindUI",
+            Author = "Murder Mystery 2 | Premium Version",
+            Folder = "DYHUB_MM2",
             Size = UDim2.fromOffset(500, 300),
             Transparent = true,
             Theme = "Dark",
@@ -72,6 +72,14 @@ do
             HasOutline = true
         }
     )
+    Window:SetToggleKey(Enum.KeyCode.K)
+
+    WindUI:Notify({
+        Title = "DYHUB | Notify",
+        Content = "Press K To Open/Close Menu!",
+        Duration = 3, 
+        Icon = "keyboard",
+     })
     Window:EditOpenButton(
         {
             Title = "DYHUB - OPEN",
