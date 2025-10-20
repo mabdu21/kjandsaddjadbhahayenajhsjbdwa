@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.3"
+local version = "5.3.4"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -88,13 +88,6 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:SetToggleKey(Enum.KeyCode.K)
-
-WindUI:Notify({
-    Title = "DYHUB | Notify",
-    Content = "Press K To Open/Close Menu!",
-    Duration = 3, 
-    Icon = "keyboard",
-})
 
 pcall(function()
     Window:Tag({
