@@ -1,4 +1,4 @@
-local ver = "Version: 1.8.0"
+local ver = "Version: 1.8.2"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -172,105 +172,102 @@ local function getMeleeTool()
     return nil
 end
 
--- ฟังก์ชันเช็คว่าตัวละครอยู่บนพื้นหรือไม่
-local function isOnGround(humanoid)
-    return humanoid.FloorMaterial ~= Enum.Material.Air
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local ESCAPE_DISTANCE = 15
+local ESCAPE_SPEED = 3
+local WARP_OFFSET = 6
+local ATTACK_DISTANCE = 15
+local killAuraEnabled2 = false
+
+local function getMeleeTool2()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    for _, item in pairs(char:GetChildren()) do
+        if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
+            return item
+        end
+    end
+    return nil
 end
 
--- ฟังก์ชันวาร์ปไปหา zombie
-local function warpToZombie(humanoidRoot, targetPos)
-    local offset = Vector3.new(0, 3, 0) -- ยกตัวขึ้น 3 studs ให้ไม่ติดพื้น
-    local direction = (targetPos - humanoidRoot.Position).Unit
-    local newPos = targetPos - direction * WARP_OFFSET + offset
-    humanoidRoot.CFrame = CFrame.new(newPos, targetPos)
+local function getClosestZombie()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+    if not HumanoidRootPart then return nil end
+
+    local zombiesFolder = workspace:FindFirstChild("Zombies")
+    if not zombiesFolder then return nil end
+
+    local closestZombie
+    local shortestDist = math.huge
+
+    for _, zombie in ipairs(zombiesFolder:GetChildren()) do
+        local hum = zombie:FindFirstChildOfClass("Humanoid")
+        local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+        if hum and root and hum.Health > 0 then
+            local dist = (HumanoidRootPart.Position - root.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closestZombie = root
+            end
+        end
+    end
+    return closestZombie
 end
 
--- ฟังก์ชันเคลียร์ path (optional ถ้าติดอะไรจะข้าม)
-local function canWarp(startPos, endPos)
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    local result = workspace:Raycast(startPos, endPos - startPos, raycastParams)
-    return result == nil
+-- 🔹 ฟังก์ชัน Auto Farm แบบ loop พร้อม delay
+local function autoFarmLoop()
+    spawn(function()
+        while killAuraEnabled2 do
+            local char = LocalPlayer.Character
+            if not char then break end
+            local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+            if not HumanoidRootPart then break end
+
+            local tool = getMeleeTool2()
+            local zombie = getClosestZombie()
+
+            if zombie then
+                -- วาร์ปไปข้างหน้า zombie
+                local forward = (zombie.Position - HumanoidRootPart.Position).Unit
+                HumanoidRootPart.CFrame = CFrame.new(zombie.Position - forward * WARP_OFFSET, zombie.Position)
+
+                -- ถ้า zombie ใกล้เรา → ถอยหนีเล็กน้อย
+                local dist = (HumanoidRootPart.Position - zombie.Position).Magnitude
+                if dist < ESCAPE_DISTANCE then
+                    local escapeDir = (HumanoidRootPart.Position - zombie.Position).Unit
+                    HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + escapeDir * ESCAPE_SPEED
+                end
+
+                -- ยิง Kill Aura
+                if tool and dist <= ATTACK_DISTANCE then
+                    local event = tool:FindFirstChild("RemoteEvent")
+                    if event then
+                        pcall(function()
+                            event:FireServer("Swing", "Thrust")
+                            event:FireServer("HitZombie", zombie.Parent, zombie.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
+                        end)
+                    end
+                end
+            end
+
+            wait(0.25)
+        end
+    end)
 end
 
--- Toggle Auto Farm
+-- GUI Toggle
 AutoTab:CreateToggle({
     Name = "Auto Farm (AFK)",
     CurrentValue = false,
     Callback = function(value)
-        killAuraEnabled = value
-
+        killAuraEnabled2 = value
         if value then
-            if autoFarmConnection then return end
-            autoFarmConnection = RunService.RenderStepped:Connect(function()
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    if not char then return end
-                    local humanoidRoot = char:FindFirstChild("HumanoidRootPart")
-                    local humanoid = char:FindFirstChildOfClass("Humanoid")
-                    if not humanoidRoot or not humanoid then return end
-
-                    local tool = getMeleeTool()
-                    local zombiesFolder = workspace:FindFirstChild("Zombies")
-                    if not zombiesFolder then return end
-
-                    -- หา zombie ใกล้ที่สุด
-                    local closestZombie
-                    local shortestDist = math.huge
-                    for _, zombie in ipairs(zombiesFolder:GetChildren()) do
-                        local hum = zombie:FindFirstChildOfClass("Humanoid")
-                        local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
-                        if hum and root and hum.Health > 0 then
-                            local dist = (humanoidRoot.Position - root.Position).Magnitude
-                            -- เลือก zombie ที่ใกล้ที่สุด
-                            if dist < shortestDist and canWarp(humanoidRoot.Position, root.Position) then
-                                shortestDist = dist
-                                closestZombie = root
-                            end
-                        end
-                    end
-
-                    if closestZombie then
-                        local dist = (humanoidRoot.Position - closestZombie.Position).Magnitude
-
-                        -- ถ้า zombie ใกล้เกินไป → ถอยหนี
-                        if dist < ESCAPE_DISTANCE then
-                            local escapeDir = (humanoidRoot.Position - closestZombie.Position).Unit
-                            humanoidRoot.CFrame = humanoidRoot.CFrame + escapeDir * ESCAPE_SPEED
-                        else
-                            -- วาร์ปไปหา zombie ถ้าอยู่บนพื้น
-                            if isOnGround(humanoid) then
-                                warpToZombie(humanoidRoot, closestZombie.Position)
-                            end
-                        end
-
-                        -- Kill Aura
-                        if tool and dist <= ATTACK_DISTANCE then
-                            local event = tool:FindFirstChild("RemoteEvent")
-                            if event then
-                                -- Swing tool
-                                event:FireServer("Swing", "Thrust")
-                                -- Hit zombie
-                                event:FireServer(
-                                    "HitZombie",
-                                    closestZombie.Parent,
-                                    closestZombie.Position,
-                                    true,
-                                    Vector3.new(0,15,0),
-                                    "Head",
-                                    Vector3.new(0,1,0)
-                                )
-                            end
-                        end
-                    end
-                end)
-            end)
-        else
-            if autoFarmConnection then
-                autoFarmConnection:Disconnect()
-                autoFarmConnection = nil
-            end
+            autoFarmLoop()
         end
     end
 })
