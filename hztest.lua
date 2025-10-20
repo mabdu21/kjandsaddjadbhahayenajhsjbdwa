@@ -1,4 +1,4 @@
--- 2321323213213
+-- 2asdasd
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -171,13 +171,13 @@ local MainTab = Window:Tab({Title = "Main", Icon = "star"})
 local EspTab = Window:Tab({Title = "ESP", Icon = "eye"})
 local Extra = Window:Tab({Title = "Auto", Icon = "crown"})
 
-InfoTab:Section({Title = "Please Read", Icon = "info" })
+InfoTab:Section({Title = "📌 Please Read!!" })
 InfoTab:Section({Title = "The script is under development and may contain bugs"})
-InfoTab:Section({Title = " "})
-InfoTab:Section({Title = "Support Map: School, Sewers (Only)", Icon = "map" })
-InfoTab:Section({Title = " "})
-InfoTab:Section({Title = "Version: 2.4.3 | Reword by rhy", Icon = "star" })
-InfoTab:Section({Title = "Powered by dsc.gg/dyhub", Icon = "cpu" })
+InfoTab:Section({Title = "======================================================="})
+InfoTab:Section({Title = "✅ Support Map: School, Sewers (Only)", Icon = "map" })
+InfoTab:Section({Title = "======================================================="})
+InfoTab:Section({Title = "🤍 Version: 2.4.3 | Reword by rhy", Icon = "star" })
+InfoTab:Section({Title = "👑 Powered by dsc.gg/dyhub", Icon = "cpu" })
 
 MainTab:Section({Title = "Feature Farm"})
 
@@ -281,9 +281,9 @@ getgenv().AutoPower = true
 getgenv().AutoRadio = true
 getgenv().AutoHeli = true
 
-AutoTab:Toggle({ Title = "Auto Radio", Default = false, Callback = function(v) getgenv().AutoRadio = v end })
-AutoTab:Toggle({ Title = "Auto Helicopter", Default = false, Callback = function(v) getgenv().AutoHeli = v end })
-AutoTab:Toggle({ Title = "Auto Power", Default = false, Callback = function(v) getgenv().AutoPower = v end })
+MainTab:Toggle({ Title = "Auto Radio", Default = false, Callback = function(v) getgenv().AutoRadio = v end })
+MainTab:Toggle({ Title = "Auto Helicopter", Default = false, Callback = function(v) getgenv().AutoHeli = v end })
+MainTab:Toggle({ Title = "Auto Power", Default = false, Callback = function(v) getgenv().AutoPower = v end })
 
 spawn(function()
     while true do
