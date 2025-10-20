@@ -1,4 +1,4 @@
--- jkanye1
+-- jkanye121321
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -403,8 +403,8 @@ MainTab:Toggle({
         if state then
             task.spawn(function()
                 while state do
-                    VirtualUser:Button1Down(Vector2.new(958, 466))
-                    task.wait(1)
+                    VirtualUser:Button1Down(Vector2.new(1000, 450))
+                    task.wait(0.05)
                 end
             end)
         end
