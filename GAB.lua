@@ -65,10 +65,10 @@ local LocalPlayer = Players.LocalPlayer
 local HumanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 -- 🏷 ตัวแปรปรับแต่ง
-local ESCAPE_DISTANCE = 8
-local ESCAPE_SPEED = 1
-local WARP_OFFSET = 3
-local ATTACK_DISTANCE = 16
+local ESCAPE_DISTANCE = 15
+local ESCAPE_SPEED = 3
+local WARP_OFFSET = 6
+local ATTACK_DISTANCE = 15
 local autoFarmConnection
 local killAuraEnabled2 = false
 
