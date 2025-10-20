@@ -902,7 +902,7 @@ local FreeVersion = "Free Version"
 local PremiumVersion = "Premium Version"
 
 local function checkVersion(playerName)
-    local url = "https://raw.githubusercontent.com/dyumra/Whitelist/refs/heads/main/DYHUB-PREMIUM.lua"
+    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
 
     local success, response = pcall(function()
         return game:HttpGet(url)
@@ -967,7 +967,14 @@ local Window = WindUI:CreateWindow({
     
 })
 
-Window:SetToggleKey(Enum.KeyCode.V)
+Window:SetToggleKey(Enum.KeyCode.K)
+
+WindUI:Notify({
+    Title = "DYHUB | Notify",
+    Content = "Press K To Open/Close Menu!",
+    Duration = 3, 
+    Icon = "keyboard",
+})
 
 pcall(function()
     Window:CreateTopbarButton("TransparencyToggle", "eye", function()
