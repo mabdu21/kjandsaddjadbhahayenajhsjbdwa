@@ -1,3 +1,5 @@
+-- 2321323213213
+
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
         if obj.Name == "ObjectCache" then
@@ -34,6 +36,17 @@ local BringMobsToggle = {Value = false}
 local AutoReplayToggle = {Value = false}
 local offset = Vector3.new(1, 6, 0)
 
+-- ESP Module Upgraded
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- Default Global Settings
+getgenv().ESPType = getgenv().ESPType or "Highlight"
+getgenv().ESPEnabled = getgenv().ESPEnabled or false
+getgenv().ESPShowName = getgenv().ESPShowName or true
+getgenv().ESPShowDistance = getgenv().ESPShowDistance or true
+getgenv().ESPDistance = getgenv().ESPDistance or 50
+getgenv().ESPName = getgenv().ESPName or "Zombie"
 
 player.CharacterAdded:Connect(function(newChar)
     char = newChar
@@ -154,8 +167,8 @@ local Window = Library:Window({
 
 -- Tab หลัก
 local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
-local MainDivider = Window:Divider()
 local MainTab = Window:Tab({Title = "Main", Icon = "star"})
+local EspTab = Window:Tab({Title = "ESP", Icon = "eye"})
 local Extra = Window:Tab({Title = "Auto", Icon = "crown"})
 
 MainTab:Section({Title = "Feature Farm"})
@@ -400,6 +413,7 @@ Extra:Toggle({
         end
     end
 })
+
 -- Auto Replay
  Extra:Toggle({
     Title = "Auto Replay",
@@ -418,6 +432,171 @@ Extra:Toggle({
         end
     end
 })
+
+EspTab:Section({Title = "Feature ESP"})
+-- ประเภท ESP
+EspTab:Dropdown({
+    Title = "ESP Type",
+    Values = { "Highlight", "BoxHandleAdornment" },
+    Default = getgenv().ESPType or "Highlight",
+    Multi = false,
+    Callback = function(value)
+        getgenv().ESPType = value
+    end
+})
+
+-- เปิด / ปิด ESP
+EspTab:Toggle({
+    Title = "Enable ESP",
+    Default = getgenv().ESPEnabled or false,
+    Callback = function(value)
+        getgenv().ESPEnabled = value
+    end
+})
+
+EspTab:Section({Title = "Setting ESP"})
+
+-- แสดงชื่อ NPC
+EspTab:Toggle({
+    Title = "Show Name",
+    Default = getgenv().ESPShowName or true,
+    Callback = function(value)
+        getgenv().ESPShowName = value
+    end
+})
+
+-- แสดงระยะห่าง NPC
+EspTab:Toggle({
+    Title = "Show Distance",
+    Default = getgenv().ESPShowDistance or true,
+    Callback = function(value)
+        getgenv().ESPShowDistance = value
+    end
+})
+
+-- ระยะสูงสุดที่จะแสดง ESP
+EspTab:Slider({
+    Title = "Max Distance",
+    Value = { Min = 1, Max = 100, Default = getgenv().ESPDistance or 50 },
+    Step = 1,
+    Callback = function(val)
+        getgenv().ESPDistance = val
+    end
+})
+
+-- ESP Update Function
+local function updateESP()
+    if not getgenv().ESPEnabled then return end
+    local entitiesFolder = workspace:FindFirstChild("Entities")
+    if not entitiesFolder then return end
+
+    for _, group in ipairs(entitiesFolder:GetChildren()) do
+        if group:IsA("Folder") then
+            for _, npc in ipairs(group:GetChildren()) do
+                local hrp = npc:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    -- Remove old ESP if type changed
+                    if getgenv().ESPType == "Highlight" and hrp:FindFirstChild("ESP_Box") then
+                        hrp.ESP_Box:Destroy()
+                    elseif getgenv().ESPType == "BoxHandleAdornment" and hrp:FindFirstChild("ESP_Highlight") then
+                        hrp.ESP_Highlight:Destroy()
+                    end
+
+                    -- Create Highlight / Box
+                    if getgenv().ESPType == "Highlight" and not hrp:FindFirstChild("ESP_Highlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "ESP_Highlight"
+                        highlight.Adornee = npc
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.Parent = hrp
+                    elseif getgenv().ESPType == "BoxHandleAdornment" and not hrp:FindFirstChild("ESP_Box") then
+                        local box = Instance.new("BoxHandleAdornment")
+                        box.Name = "ESP_Box"
+                        box.Adornee = hrp
+                        box.Size = hrp.Size or Vector3.new(2,2,1)
+                        box.Color3 = Color3.fromRGB(255, 0, 0)
+                        box.AlwaysOnTop = true
+                        box.ZIndex = 5
+                        box.Parent = hrp
+                    end
+
+                    -- Name + Distance
+                    if getgenv().ESPShowName then
+                        local bill = hrp:FindFirstChild("ESP_NameTag")
+                        if not bill then
+                            bill = Instance.new("BillboardGui")
+                            bill.Name = "ESP_NameTag"
+                            bill.Adornee = hrp
+                            bill.Size = UDim2.new(0, 120, 0, 50)
+                            bill.AlwaysOnTop = true
+                            bill.StudsOffset = Vector3.new(0,3,0)
+                            bill.Parent = hrp
+
+                            local text = Instance.new("TextLabel")
+                            text.Size = UDim2.new(1,0,1,0)
+                            text.BackgroundTransparency = 1
+                            text.TextColor3 = Color3.fromRGB(255,0,0)
+                            text.TextStrokeTransparency = 0
+                            text.TextScaled = true
+                            text.Text = getgenv().ESPName
+                            text.Parent = bill
+                        end
+
+                        local label = bill:FindFirstChildOfClass("TextLabel")
+                        if label and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                            if dist <= getgenv().ESPDistance then
+                                if getgenv().ESPShowDistance then
+                                    label.Text = getgenv().ESPName .. " - [" .. math.floor(dist) .. "m]"
+                                else
+                                    label.Text = getgenv().ESPName
+                                end
+                                label.Visible = true
+                            else
+                                label.Visible = false
+                            end
+                        end
+                    else
+                        if hrp:FindFirstChild("ESP_NameTag") then
+                            hrp.ESP_NameTag:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Cleanup function for removed NPCs
+local function cleanESP()
+    local entitiesFolder = workspace:FindFirstChild("Entities")
+    if not entitiesFolder then return end
+    for _, group in ipairs(entitiesFolder:GetChildren()) do
+        if group:IsA("Folder") then
+            for _, npc in ipairs(group:GetChildren()) do
+                if not npc or not npc.Parent then
+                    local hrp = npc and npc:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        for _, child in ipairs(hrp:GetChildren()) do
+                            if child.Name:find("ESP_") then
+                                child:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Connect to RenderStepped
+RunService.RenderStepped:Connect(function()
+    if getgenv().ESPEnabled then
+        updateESP()
+        cleanESP()
+    end
+end)
 
 Info = InfoTab
 
