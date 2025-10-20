@@ -1,4 +1,4 @@
-local ver = "Version: 1.8.3"
+local ver = "Version: 1.8.5"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -155,11 +155,11 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 -- 🏷 ตัวแปรปรับแต่ง
-local ESCAPE_DISTANCE = 16
+local ESCAPE_DISTANCE = 17
 local ESCAPE_SPEED = 3
 local WARP_OFFSET = 6
 local ATTACK_DISTANCE = 16
-local DELAY_TIME = 0.1
+local DELAY_TIME = 0.05
 local killAuraEnabled2 = false
 local REQUIRED_TOOL_NAME = "Sabre"
 
@@ -235,7 +235,7 @@ local function autoFarmLoop()
 
 			-- ✅ ถ้าไม่มีร่าง รอจนกว่าจะเกิดใหม่
 			while killAuraEnabled2 and (not char or not char:FindFirstChildOfClass("Humanoid")) do
-				wait(1)
+				wait(0.1)
 				char = LocalPlayer.Character
 			end
 
@@ -244,7 +244,7 @@ local function autoFarmLoop()
 			local HumanoidRootPart = char:WaitForChild("HumanoidRootPart", 5)
 			local humanoid = char:FindFirstChildOfClass("Humanoid")
 			if not HumanoidRootPart or not humanoid then
-				wait(1)
+				wait(0.1)
 				continue
 			end
 
@@ -301,6 +301,142 @@ AutoTab:CreateToggle({
 		killAuraEnabled2 = value
 		if value then
 			autoFarmLoop()
+		end
+	end
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+-- 🏷 ตัวแปรปรับแต่ง
+local WARP_OFFSET = 6
+local killAuraEnabled3 = false
+local autoFarmConnection = nil
+local SABRE_NAME = "Sabre"
+
+-- 🧰 ฟังก์ชันรอจนกว่าจะมี Character กลับมา
+local function waitForCharacter()
+	while not (LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")) do
+		task.wait(1)
+	end
+end
+
+-- ⚔️ ฟังก์ชันถือ Sabre อัตโนมัติ
+local function equipSabre1()
+	local char = LocalPlayer.Character
+	local backpack = LocalPlayer:FindFirstChild("Backpack")
+	if not char or not backpack then return end
+
+	-- ถ้ามีอยู่แล้วในมือ
+	for _, tool in pairs(char:GetChildren()) do
+		if tool:IsA("Tool") and tool.Name == SABRE_NAME then
+			return tool
+		end
+	end
+
+	-- ถือจาก Backpack
+	local sabre = backpack:FindFirstChild(SABRE_NAME)
+	if sabre then
+		LocalPlayer.Character.Humanoid:EquipTool(sabre)
+		task.wait(0.3)
+		return sabre
+	end
+
+	return nil
+end
+
+-- 🔹 ฟังก์ชันหา melee tool ที่ใช้ RemoteEvent ได้
+local function getMeleeTool3()
+	local char = LocalPlayer.Character
+	if not char then return nil end
+	for _, item in pairs(char:GetChildren()) do
+		if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
+			return item
+		end
+	end
+	return nil
+end
+
+-- 🧱 ตรวจสอบว่ามีกำแพงบังระหว่างเราและ zombie หรือไม่
+local function isPathClear(startPos, endPos)
+	local direction = (endPos - startPos)
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+	rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+	local result = Workspace:Raycast(startPos, direction, rayParams)
+	if result then
+		-- ถ้ามี object กั้น (กำแพง)
+		return false
+	else
+		return true
+	end
+end
+
+-- 🔁 ลูปหลักในการโจมตี
+local function autoFarmLoop()
+	while killAuraEnabled3 do
+		pcall(function()
+			waitForCharacter() -- ✅ รอจนกว่าตัวเราจะฟื้น
+			local char = LocalPlayer.Character
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			local hrp = char:FindFirstChild("HumanoidRootPart")
+			if not humanoid or not hrp then return end
+
+			equipSabre1()
+			local tool = getMeleeTool3()
+			if not tool then return end
+
+			local zombiesFolder = Workspace:FindFirstChild("Zombies")
+			if not zombiesFolder then return end
+
+			for _, zombie in ipairs(zombiesFolder:GetChildren()) do
+				if not killAuraEnabled3 then return end
+
+				local hum = zombie:FindFirstChildOfClass("Humanoid")
+				local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+
+				if hum and root and hum.Health > 0 then
+					-- 🔍 ตรวจว่าทะลุกำแพงไหม
+					if isPathClear(hrp.Position, root.Position) then
+						-- ✅ วาร์ปไปหา zombie แบบไม่ทะลุกำแพง
+						local forward = (root.Position - hrp.Position).Unit
+						hrp.CFrame = CFrame.new(root.Position - forward * WARP_OFFSET, root.Position)
+
+						-- 🔹 ยิง RemoteEvent โจมตี
+						local event = tool:FindFirstChild("RemoteEvent")
+						if event then
+							event:FireServer("Swing", "Thrust")
+							event:FireServer("HitZombie", zombie, root.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
+						end
+
+						task.wait(0.01)
+					else
+						-- ❌ ถ้ามีกำแพงกั้น — ข้ามตัวนี้
+						task.wait(0.02)
+					end
+				end
+			end
+		end)
+		task.wait(0.05)
+	end
+end
+
+-- 🔘 ปุ่มเปิด/ปิด Auto Farm
+AutoTab:CreateToggle({
+	Name = "Auto Farm (Kill All)",
+	CurrentValue = false,
+	Callback = function(value)
+		killAuraEnabled3 = value
+
+		if value then
+			if autoFarmConnection then return end
+			autoFarmConnection = task.spawn(autoFarmLoop)
+		else
+			killAuraEnabled3 = false
+			autoFarmConnection = nil
 		end
 	end
 })
@@ -564,6 +700,7 @@ task.spawn(function()
     while true do
         task.wait(0.01) -- ลดโหลดเครื่อง
         if killAuraEnabled then
+			equipSabre()
             local char = LocalPlayer.Character
             local tool = getMeleeTool()
             if char and tool then
