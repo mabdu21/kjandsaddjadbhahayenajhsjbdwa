@@ -149,12 +149,6 @@ local Window = WindUI:CreateWindow({
 
 Window:SetToggleKey(Enum.KeyCode.K)
 
-WindUI:Notify({
-    Title = "DYHUB | Notify",
-    Content = "Press K To Open/Close Menu!",
-    Duration = 3, 
-    Icon = "keyboard",
-})
 pcall(function() Window:Tag({ Title = version, Color = Color3.fromHex("#30ff6a") }) end)
 Window:EditOpenButton({ Title = "DYHUB - Open", Icon = "monitor", CornerRadius = UDim.new(0,6), StrokeThickness = 2, Color = ColorSequence.new(Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255)), Draggable = true })
 
