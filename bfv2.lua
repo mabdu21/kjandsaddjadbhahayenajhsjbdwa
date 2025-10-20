@@ -4,25 +4,6 @@ if not game:IsLoaded() then
     repeat task.wait() until game:IsLoaded()
 end
 
-if setfpscap then
-    setfpscap(1000000)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "FPS Unlocked!",
-        Duration = 5,
-        Button1 = "Okay"
-    })
-    warn("FPS Unlocked!")
-else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "Your exploit does not support setfpscap.",
-        Duration = 5,
-        Button1 = "Okay"
-    })
-    warn("Your exploit does not support setfpscap.")
-end
-
 local WindUI = (loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua")))();
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
@@ -43,12 +24,6 @@ local Window = WindUI:CreateWindow({
 });
 Window:SetToggleKey(Enum.KeyCode.K)
 
-WindUI:Notify({
-    Title = "DYHUB | Notify",
-    Content = "Press K To Open/Close Menu!",
-    Duration = 3, 
-    Icon = "keyboard",
-});
 Window:EditOpenButton({
     Title = "DYHUB - Open",
     Icon = "monitor",
