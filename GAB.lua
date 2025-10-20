@@ -1,4 +1,4 @@
-local ver = "Version: 1.8.2"
+local ver = "Version: 1.8.3"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -149,127 +149,160 @@ task.spawn(function()
     end
 end)
 
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local ESCAPE_DISTANCE = 15
-local ESCAPE_SPEED = 3
-local WARP_OFFSET = 6
-local ATTACK_DISTANCE = 15
-local autoFarmConnection
-local killAuraEnabled = false
-
--- ฟังก์ชันหา melee tool ของเรา
-local function getMeleeTool()
-    local char = LocalPlayer.Character
-    if not char then return nil end
-    for _, item in pairs(char:GetChildren()) do
-        if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
-            return item
-        end
-    end
-    return nil
-end
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
-local ESCAPE_DISTANCE = 15
+-- 🏷 ตัวแปรปรับแต่ง
+local ESCAPE_DISTANCE = 16
 local ESCAPE_SPEED = 3
 local WARP_OFFSET = 6
-local ATTACK_DISTANCE = 15
+local ATTACK_DISTANCE = 16
+local DELAY_TIME = 0.1
 local killAuraEnabled2 = false
+local REQUIRED_TOOL_NAME = "Sabre"
 
+-- 🔹 หาของจาก Backpack แล้วถือ
+local function equipSabre()
+	local char = LocalPlayer.Character
+	if not char then return end
+	local backpack = LocalPlayer:FindFirstChild("Backpack")
+	if not backpack then return end
+
+	-- ถ้ามีอยู่แล้วไม่ต้องถือซ้ำ
+	if char:FindFirstChild(REQUIRED_TOOL_NAME) then return end
+
+	local sabre = backpack:FindFirstChild(REQUIRED_TOOL_NAME)
+	if sabre then
+		LocalPlayer.Character.Humanoid:EquipTool(sabre)
+	end
+end
+
+-- 🔹 หาอาวุธ melee
 local function getMeleeTool2()
-    local char = LocalPlayer.Character
-    if not char then return nil end
-    for _, item in pairs(char:GetChildren()) do
-        if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
-            return item
-        end
-    end
-    return nil
+	local char = LocalPlayer.Character
+	if not char then return nil end
+	for _, item in pairs(char:GetChildren()) do
+		if item:IsA("Tool") and item:FindFirstChild("RemoteEvent") then
+			return item
+		end
+	end
+	return nil
 end
 
+-- 🔹 หา Zombie ที่ใกล้ที่สุด
 local function getClosestZombie()
-    local char = LocalPlayer.Character
-    if not char then return nil end
-    local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-    if not HumanoidRootPart then return nil end
+	local char = LocalPlayer.Character
+	if not char then return nil end
+	local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+	if not HumanoidRootPart then return nil end
 
-    local zombiesFolder = workspace:FindFirstChild("Zombies")
-    if not zombiesFolder then return nil end
+	local zombiesFolder = workspace:FindFirstChild("Zombies")
+	if not zombiesFolder then return nil end
 
-    local closestZombie
-    local shortestDist = math.huge
+	local closestZombie
+	local shortestDist = math.huge
 
-    for _, zombie in ipairs(zombiesFolder:GetChildren()) do
-        local hum = zombie:FindFirstChildOfClass("Humanoid")
-        local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
-        if hum and root and hum.Health > 0 then
-            local dist = (HumanoidRootPart.Position - root.Position).Magnitude
-            if dist < shortestDist then
-                shortestDist = dist
-                closestZombie = root
-            end
-        end
-    end
-    return closestZombie
+	for _, zombie in ipairs(zombiesFolder:GetChildren()) do
+		local hum = zombie:FindFirstChildOfClass("Humanoid")
+		local root = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+		if hum and root and hum.Health > 0 then
+			local dist = (HumanoidRootPart.Position - root.Position).Magnitude
+			if dist < shortestDist then
+				shortestDist = dist
+				closestZombie = root
+			end
+		end
+	end
+	return closestZombie
 end
 
--- 🔹 ฟังก์ชัน Auto Farm แบบ loop พร้อม delay
+-- 🔹 ตรวจสอบว่ามีสิ่งกีดขวางหรือไม่ (Raycast)
+local function isPathBlocked(fromPos, toPos)
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {LocalPlayer.Character, workspace:FindFirstChild("Zombies")}
+	rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+	local result = Workspace:Raycast(fromPos, (toPos - fromPos), rayParams)
+	return result ~= nil
+end
+
+-- 🔹 ฟังก์ชันหลัก Auto Farm
 local function autoFarmLoop()
-    spawn(function()
-        while killAuraEnabled2 do
-            local char = LocalPlayer.Character
-            if not char then break end
-            local HumanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-            if not HumanoidRootPart then break end
+	spawn(function()
+		while killAuraEnabled2 do
+			local char = LocalPlayer.Character
 
-            local tool = getMeleeTool2()
-            local zombie = getClosestZombie()
+			-- ✅ ถ้าไม่มีร่าง รอจนกว่าจะเกิดใหม่
+			while killAuraEnabled2 and (not char or not char:FindFirstChildOfClass("Humanoid")) do
+				wait(1)
+				char = LocalPlayer.Character
+			end
 
-            if zombie then
-                -- วาร์ปไปข้างหน้า zombie
-                local forward = (zombie.Position - HumanoidRootPart.Position).Unit
-                HumanoidRootPart.CFrame = CFrame.new(zombie.Position - forward * WARP_OFFSET, zombie.Position)
+			if not killAuraEnabled2 then break end
 
-                -- ถ้า zombie ใกล้เรา → ถอยหนีเล็กน้อย
-                local dist = (HumanoidRootPart.Position - zombie.Position).Magnitude
-                if dist < ESCAPE_DISTANCE then
-                    local escapeDir = (HumanoidRootPart.Position - zombie.Position).Unit
-                    HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + escapeDir * ESCAPE_SPEED
-                end
+			local HumanoidRootPart = char:WaitForChild("HumanoidRootPart", 5)
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if not HumanoidRootPart or not humanoid then
+				wait(1)
+				continue
+			end
 
-                -- ยิง Kill Aura
-                if tool and dist <= ATTACK_DISTANCE then
-                    local event = tool:FindFirstChild("RemoteEvent")
-                    if event then
-                        pcall(function()
-                            event:FireServer("Swing", "Thrust")
-                            event:FireServer("HitZombie", zombie.Parent, zombie.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
-                        end)
-                    end
-                end
-            end
+			-- ✅ ถือ Sabre อัตโนมัติ
+			equipSabre()
 
-            wait(0.25)
-        end
-    end)
+			local tool = getMeleeTool2()
+			local zombie = getClosestZombie()
+
+			if zombie then
+				-- ตรวจว่าทะลุกำแพงไหม
+				local targetPos = zombie.Position
+				local dist = (HumanoidRootPart.Position - targetPos).Magnitude
+
+				-- ✅ ตรวจสอบสิ่งกีดขวาง
+				if not isPathBlocked(HumanoidRootPart.Position, targetPos) then
+					-- 🔹 วาร์ปไปข้างหน้า Zombie
+					local forward = (zombie.Position - HumanoidRootPart.Position).Unit
+					HumanoidRootPart.CFrame = CFrame.new(zombie.Position - forward * WARP_OFFSET, zombie.Position)
+				else
+					-- ถ้ามีกำแพง → ขยับเข้าใกล้ทีละน้อย (ไม่ทะลุ)
+					local dir = (targetPos - HumanoidRootPart.Position).Unit
+					HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position + dir * 2, targetPos)
+				end
+
+				-- 🔹 ถ้า zombie ใกล้เกินไป → ถอยหนี
+				if dist < ESCAPE_DISTANCE then
+					local escapeDir = (HumanoidRootPart.Position - zombie.Position).Unit
+					HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + escapeDir * ESCAPE_SPEED
+				end
+
+				-- 🔹 โจมตี
+				if tool and dist <= ATTACK_DISTANCE then
+					local event = tool:FindFirstChild("RemoteEvent")
+					if event then
+						pcall(function()
+							event:FireServer("Swing", "Thrust")
+							event:FireServer("HitZombie", zombie.Parent, zombie.Position, true, Vector3.new(0,15,0), "Head", Vector3.new(0,1,0))
+						end)
+					end
+				end
+			end
+
+			wait(DELAY_TIME)
+		end
+	end)
 end
 
--- GUI Toggle
+-- 🧠 GUI Toggle
 AutoTab:CreateToggle({
-    Name = "Auto Farm (AFK)",
-    CurrentValue = false,
-    Callback = function(value)
-        killAuraEnabled2 = value
-        if value then
-            autoFarmLoop()
-        end
-    end
+	Name = "Auto Farm (AFK)",
+	CurrentValue = false,
+	Callback = function(value)
+		killAuraEnabled2 = value
+		if value then
+			autoFarmLoop()
+		end
+	end
 })
 
 local Button = AutoTab:CreateButton({
