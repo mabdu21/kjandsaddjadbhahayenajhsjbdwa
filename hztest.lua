@@ -1,4 +1,4 @@
--- 2
+-- 4
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -177,13 +177,14 @@ InfoTab:Section({Title = "The script is under development and may contain bugs"}
 InfoTab:Section({Title = "======================================================="})
 InfoTab:Section({Title = "✅ Support Map: School, Sewers (Only)", Icon = "map" })
 InfoTab:Section({Title = "======================================================="})
-InfoTab:Section({Title = "🤍 Version: 2.7.7 | Reword by rhy", Icon = "star" })
+InfoTab:Section({Title = "🤍 Version: 2.7.9 | Reword by rhy", Icon = "star" })
 InfoTab:Section({Title = "👑 Powered by dsc.gg/dyhub", Icon = "cpu" })
 
 MainTab:Section({Title = "Feature Farm"})
 
 MainTab:Toggle({
     Title = "Auto Farm (Fixed)",
+    Desc = "Automatically kills zombies to farm resources or experience",
     Value = true,
     Callback = function(state)
         AutoClearToggle.Value = state
@@ -292,6 +293,7 @@ local originalHoldDurations = {}
 
 MainTab:Toggle({
     Title = "Auto Radio",
+    Desc = "Automatically activates the radio in the game",
     Value = getgenv().AutoRadio,
     Callback = function(state)
         getgenv().AutoRadio = state
@@ -300,6 +302,7 @@ MainTab:Toggle({
 
 MainTab:Toggle({
     Title = "Auto Helicopter",
+    Desc = "Automatically activates the helicopter in the game",
     Value = getgenv().AutoHeli,
     Callback = function(state)
         getgenv().AutoHeli = state
@@ -308,6 +311,7 @@ MainTab:Toggle({
 
 MainTab:Toggle({
     Title = "Auto Power Sewers",
+    Desc = "Automatically activates power in the sewers",
     Value = getgenv().AutoPower,
     Callback = function(state)
         getgenv().AutoPower = state
@@ -316,6 +320,7 @@ MainTab:Toggle({
 
 MainTab:Toggle({
     Title = "Instant Interact",
+    Desc = "Instantly triggers interactions with prompts nodelay",
     Value = getgenv().InstantInteract,
     Callback = function(state)
         getgenv().InstantInteract = state
@@ -394,22 +399,33 @@ end)
 
 MainTab:Section({Title = "Farm Setting"})
 
-getgenv().AutoAttack = false
-getgenv().AutoSwap = false
-getgenv().AutoSkills = false
-getgenv().AutoPerk = false
+getgenv().AutoAttack = true
+getgenv().AutoSwap = true
+getgenv().AutoSkills = true
+getgenv().AutoPerk = true
 
--- Auto Attack
 MainTab:Toggle({
     Title = "Auto Attack",
-    Desc = "",
+    Desc = "Enables automatic clicking for attacks",
     Value = getgenv().AutoAttack,
     Callback = function(state)
         getgenv().AutoAttack = state
         task.spawn(function()
+            local player = game.Players.LocalPlayer
+            local userInputService = game:GetService("UserInputService")
+            local virtualUser = game:GetService("VirtualUser")
+
             while getgenv().AutoAttack do
-                VirtualUser:Button1Down(Vector2.new(958, 466))
-                task.wait(0.01)
+                if userInputService.TouchEnabled then
+                    -- Simulate touch input for mobile
+                    virtualUser:Button1Down(Vector2.new(800, 500)) -- Adjust coordinates as needed
+                    task.wait(0.05)
+                    virtualUser:Button1Up(Vector2.new(800, 500))
+                else
+                    -- Simulate mouse click for PC
+                    userInputService.InputBegan:Fire(Enum.UserInputType.MouseButton1, false)
+                end
+                task.wait(0.1) -- Adjust click speed
             end
         end)
     end
@@ -418,6 +434,7 @@ MainTab:Toggle({
 -- Auto Collect\
 MainTab:Toggle({
     Title = "Auto Collect",
+    Desc = "Automatically collects items in the ground",
     Value = true,
     Callback = function(state)
         AutoCollectToggle.Value = state
@@ -449,6 +466,7 @@ MainTab:Toggle({
 -- Auto Swap Weapons
 MainTab:Toggle({
     Title = "Auto Swap Weapons",
+    Desc = "Enables automatic weapon switching for combat",
     Value = false,
     Callback = function(state)
         getgenv().AutoSwap = state
@@ -471,6 +489,7 @@ Extra:Section({Title = "Feature Auto"})
 -- Auto Skills
 Extra:Toggle({
     Title = "Auto Skills (Keybind)",
+    Desc = "Automatically activates skills using assigned keybinds",
     Value = false,
     Callback = function(state)
         getgenv().AutoSkills = state
@@ -491,6 +510,7 @@ Extra:Toggle({
 -- Auto Perk
 Extra:Toggle({
     Title = "Auto Perk (Keybind)",
+    Desc = "Automatically activates Perk using assigned keybinds",
     Value = false,
     Callback = function(state)
         getgenv().AutoPerk = state
@@ -506,6 +526,7 @@ Extra:Toggle({
 
 Extra:Toggle({
     Title = "Auto Perk (Remote)",
+    Desc = "Automatically activates Perk using assigned remote",
     Value = true,
     Callback = function(state)
         UsePerkToggle.Value = state
@@ -526,6 +547,7 @@ Extra:Section({Title = "Object Auto"})
 
 Extra:Toggle({
     Title = "Auto Open Door (All)",
+    Desc = "Automatically opens all doors in the game",
     Value = true,
     Callback = function(state)
         BringMobsToggle.Value = state
@@ -559,6 +581,7 @@ Extra:Toggle({
 -- Auto Replay
  Extra:Toggle({
     Title = "Auto Replay (End)",
+    Desc = "Automatically replays the game when it ends",
     Value = true,
     Callback = function(state)
         AutoReplayToggle.Value = state
