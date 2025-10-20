@@ -1,4 +1,4 @@
-local ver = "Version: 1.7.8"
+local ver = "Version: 1.7.9"
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -64,10 +64,8 @@ local Section = AutoTab:CreateSection("Auto Farm")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Backpack = LocalPlayer:WaitForChild("Backpack")
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
 
-local selectedWeapon = "Sabre"
+local selectedWeapon = ""
 
 -- ฟังก์ชันดึงอาวุธจาก Backpack
 local function getWeaponList()
@@ -80,12 +78,38 @@ local function getWeaponList()
     return list
 end
 
-local Section1 = MainTab:CreateSection("Auto Equip")
+-- ฟังก์ชันถืออาวุธ
+local function equipWeapon(weaponName)
+    if weaponName == "" then return end
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local Humanoid = Character:WaitForChild("Humanoid")
+    
+    -- หา Tool ใน Character
+    local tool = Character:FindFirstChild(weaponName)
+    
+    -- ถ้าไม่มีใน Character หาใน Backpack
+    if not tool then
+        tool = Backpack:FindFirstChild(weaponName)
+        if tool then
+            tool.Parent = Character -- ย้ายไป Character
+        end
+    end
+    
+    -- ถ้าเจอ Tool ก็ Equip
+    if tool and tool:IsA("Tool") then
+        Humanoid:EquipTool(tool)
+        print("[DYHUB] Equipped:", weaponName)
+    else
+        print("[DYHUB] Tool not found:", weaponName)
+    end
+end
+
+local Section1 = MainTab:CreateSection("Auto Equip (Beta)")
 
 -- สร้าง Dropdown ใน Rayfield
 local WeaponDropdown = MainTab:CreateDropdown({
     Name = "Select Weapon",
-    Options = getWeaponList(),  -- โหลดครั้งแรก
+    Options = getWeaponList(),
     CurrentOption = "LOAD IN GAME",
     Flag = "WeaponDropdown",
     Callback = function(v)
@@ -95,19 +119,7 @@ local WeaponDropdown = MainTab:CreateDropdown({
         else
             selectedWeapon = v
             print("[DYHUB] Selected Weapon:", selectedWeapon)
-            
-            -- Auto equip ทันที
-            -- ตรวจสอบใน Character ก่อน
-            local tool = Character:FindFirstChild(selectedWeapon)
-            if tool and tool:IsA("Tool") then
-                Humanoid:EquipTool(tool)
-            else
-                -- ถ้าไม่มีใน Character ก็หาใน Backpack
-                tool = Backpack:FindFirstChild(selectedWeapon)
-                if tool and tool:IsA("Tool") then
-                    Humanoid:EquipTool(tool)
-                end
-            end
+            equipWeapon(selectedWeapon)
         end
     end
 })
@@ -117,7 +129,6 @@ task.spawn(function()
     local previousList = {}
     while true do
         local currentList = getWeaponList()
-        -- เช็คว่ารายการเปลี่ยนหรือไม่
         local changed = false
         if #currentList ~= #previousList then
             changed = true
@@ -134,7 +145,7 @@ task.spawn(function()
             WeaponDropdown:UpdateOptions(currentList)
             previousList = currentList
         end
-        task.wait(1) -- ตรวจสอบทุก 1 วินาที
+        task.wait(1)
     end
 end)
 
