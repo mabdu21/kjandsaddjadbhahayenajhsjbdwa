@@ -191,7 +191,14 @@ local Window = ui:CreateWindow({
     
 })
 
-Window:SetToggleKey(Enum.KeyCode.V)
+Window:SetToggleKey(Enum.KeyCode.K)
+
+ui:Notify({
+    Title = "DYHUB | Notify",
+    Content = "Press K To Open/Close Menu!",
+    Duration = 3, 
+    Icon = "keyboard",
+})
 
 pcall(function()
     Window:CreateTopbarButton("TransparencyToggle", "eye", function()
