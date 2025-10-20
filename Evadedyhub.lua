@@ -82,9 +82,18 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
     BackgroundImageTransparency = 0.8,
     HasOutline = false,
-    HideSearchBar = true,
-    ScrollBarEnabled = false,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
     User = { Enabled = true, Anonymous = false },
+})
+
+Window:SetToggleKey(Enum.KeyCode.K)
+
+WindUI:Notify({
+    Title = "DYHUB | Notify",
+    Content = "Press K To Open/Close Menu!",
+    Duration = 3, 
+    Icon = "keyboard",
 })
 
 pcall(function()
@@ -410,7 +419,7 @@ MiscTab:Toggle({
     end
 })
 
-GameTab:Section({ Title = "Auto Farm", Icon = "star" })
+GameTab:Section({ Title = "Auto Farm", Icon = "crown" })
 
 GameTab:Toggle({
     Title = "Auto Farm Win",
@@ -434,7 +443,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(0, 999, 0)
+                            securityPart.Position = Vector3.new(1111, 1111, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
@@ -494,7 +503,7 @@ GameTab:Toggle({
                         local securityPart = Instance.new("Part")
                         securityPart.Name = "SecurityPartTemp"
                         securityPart.Size = Vector3.new(10, 1, 10)
-                        securityPart.Position = Vector3.new(0, 999, 0)
+                        securityPart.Position = Vector3.new(1111, 1111, 0)
                         securityPart.Anchored = true
                         securityPart.Transparency = 1
                         securityPart.CanCollide = true
@@ -544,7 +553,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(0, 999, 0)
+                            securityPart.Position = Vector3.new(1111, 1111, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
