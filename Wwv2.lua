@@ -1,22 +1,30 @@
 -- =====================
-local Development = "DYHUB | Wizard West (V3.9.9)"
+local Development = "DYHUB | Wizard West [Premium]"
 -- =====================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = Development,
-   LoadingTitle = "Wizard West Loaded",
-   LoadingSubtitle = "Made by DYHUB™",
+   Icon = 104487529937663, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "DYHUB Loaded! - Wizard West",
+   LoadingSubtitle = "Join our at dsc.gg/dyhub",
+   ShowText = "DYHUB", -- for mobile users to unhide rayfield, change if you'd like
+   Theme = "Dark Blue", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+
+   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+
    ConfigurationSaving = {
-      Enabled = false,
-      FolderName = nil,
-      FileName = "DYHUB_Wizard_West_Config"
+      Enabled = true,
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "DYHUB_WW"
    },
-})
 
 Rayfield:Notify({
    Title = "DYHUB Loaded",
-   Content = "Enjoy your power!",
+   Content = "Version: 4.0.1 | Code by rhy",
    Duration = 5,
    Image = 104487529937663,
    Actions = {
@@ -209,7 +217,7 @@ local selectedJumpPower = 50
 -- สร้าง Slider WalkSpeed
 CharacterTab:CreateSlider({
 	Name = "Set Speed (Walk Speed)",
-	Range = {16, 150},
+	Range = {1, 150},
 	Increment = 1,
 	CurrentValue = 16,
 	Flag = "WalkSpeed",
@@ -227,13 +235,13 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local speedEnabled = false
 local speedConnection
-local tpSpeed = 16
+local tpSpeed = 1
 
 CharacterTab:CreateSlider({
     Name = "Set Speed (Tp Walk)",
-    Range = {16, 150},
+    Range = {1, 150},
     Increment = 1,
-    CurrentValue = 16,
+    CurrentValue = 1,
     Flag = "TPWalkSpeed",
     Callback = function(v)
         tpSpeed = v
