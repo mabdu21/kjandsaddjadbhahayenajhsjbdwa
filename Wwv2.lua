@@ -1,5 +1,5 @@
 -- =====================
-local Development = "DYHUB | Wizard West (V3.9.5)"
+local Development = "DYHUB | Wizard West (V3.9.8)"
 -- =====================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -208,7 +208,7 @@ local selectedJumpPower = 50
 
 -- สร้าง Slider WalkSpeed
 CharacterTab:CreateSlider({
-	Name = "Walk Speed",
+	Name = "Set Speed (Walk Speed)",
 	Range = {16, 150},
 	Increment = 1,
 	CurrentValue = 16,
@@ -220,6 +220,47 @@ CharacterTab:CreateSlider({
 		end
 	end
 })
+
+local player = game.Players.LocalPlayer
+local uis = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+local moving = false
+local speed = 16
+
+CharacterTab:CreateSlider({
+    Name = "Set Speed (Tp Walk)",
+    Range = {16, 150},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "TPWalkSpeed",
+    Callback = function(v)
+        speed = v
+    end
+})
+
+uis.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.W then
+        moving = true
+    end
+end)
+
+uis.InputEnded:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.W then
+        moving = false
+    end
+end)
+
+runService.Heartbeat:Connect(function(dt)
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp and moving then
+        hrp.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * (speed * dt))
+    end
+end)
+
 
 -- สร้าง Slider JumpPower
 CharacterTab:CreateSlider({
