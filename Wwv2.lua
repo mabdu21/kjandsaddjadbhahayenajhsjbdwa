@@ -1,5 +1,5 @@
 -- =====================
-local Development = "DYHUB | Wizard West (V3.9.2)"
+local Development = "DYHUB | Wizard West (V3.9.5)"
 -- =====================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -199,26 +199,65 @@ VisualsTab:CreateToggle({
 -- ===================================
 -- 🔹 CHARACTER
 -- ===================================
+local Players = game.Players
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local selectedWalkSpeed = 16
+local selectedJumpPower = 50
+
+-- สร้าง Slider WalkSpeed
 CharacterTab:CreateSlider({
-   Name = "Walk Speed",
-   Range = {16, 150},
-   Increment = 1,
-   CurrentValue = 16,
-   Flag = "WalkSpeed",
-   Callback = function(v) 
-      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed=v 
-   end
+	Name = "Walk Speed",
+	Range = {16, 150},
+	Increment = 1,
+	CurrentValue = 16,
+	Flag = "WalkSpeed",
+	Callback = function(v)
+		selectedWalkSpeed = v
+		if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+			player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = v
+		end
+	end
 })
+
+-- สร้าง Slider JumpPower
 CharacterTab:CreateSlider({
-   Name = "Jump Power",
-   Range = {50, 300},
-   Increment = 5,
-   CurrentValue = 50,
-   Flag = "JumpPower",
-   Callback = function(v) 
-      game.Players.LocalPlayer.Character.Humanoid.JumpPower=v 
-   end
+	Name = "Jump Power",
+	Range = {50, 300},
+	Increment = 5,
+	CurrentValue = 50,
+	Flag = "JumpPower",
+	Callback = function(v)
+		selectedJumpPower = v
+		if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+			player.Character:FindFirstChildOfClass("Humanoid").JumpPower = v
+		end
+	end
 })
+
+-- ลูปเช็คและปรับค่ากลับอัตโนมัติ
+RunService.Stepped:Connect(function()
+	if player.Character then
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			if humanoid.WalkSpeed ~= selectedWalkSpeed then
+				humanoid.WalkSpeed = selectedWalkSpeed
+			end
+			if humanoid.JumpPower ~= selectedJumpPower then
+				humanoid.JumpPower = selectedJumpPower
+			end
+		end
+	end
+end)
+
+-- เผื่อกรณีตัวละครรีเซ็ตใหม่
+player.CharacterAdded:Connect(function(char)
+	char:WaitForChild("Humanoid")
+	char:WaitForChild("Humanoid").WalkSpeed = selectedWalkSpeed
+	char:WaitForChild("Humanoid").JumpPower = selectedJumpPower
+end)
+
 
 -- Infinite Jump
 local infJumpConn
