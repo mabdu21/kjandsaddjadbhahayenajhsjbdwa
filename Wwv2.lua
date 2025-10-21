@@ -5,11 +5,8 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = Development,
-   Icon = 104487529937663,
    LoadingTitle = "DYHUB Loaded! - Wizard West",
    LoadingSubtitle = "Join our at dsc.gg/dyhub",
-   ShowText = "DYHUB",
-   Theme = "Dark Blue",
    ToggleUIKeybind = "K",
    ConfigurationSaving = {
       Enabled = false,
