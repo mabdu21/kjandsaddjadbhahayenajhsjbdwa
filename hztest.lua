@@ -1,4 +1,4 @@
--- 4
+-- 5
 
 local function destroyObjectCache(parent)
     for _, obj in pairs(parent:GetChildren()) do
@@ -293,7 +293,7 @@ local originalHoldDurations = {}
 
 MainTab:Toggle({
     Title = "Auto Radio",
-    Desc = "Automatically activates the radio in the game",
+    Desc = "Automatically activates the radio in the school",
     Value = getgenv().AutoRadio,
     Callback = function(state)
         getgenv().AutoRadio = state
@@ -302,7 +302,7 @@ MainTab:Toggle({
 
 MainTab:Toggle({
     Title = "Auto Helicopter",
-    Desc = "Automatically activates the helicopter in the game",
+    Desc = "Automatically activates the helicopter in the school",
     Value = getgenv().AutoHeli,
     Callback = function(state)
         getgenv().AutoHeli = state
@@ -486,6 +486,24 @@ MainTab:Toggle({
 
 Extra:Section({Title = "Feature Auto"})
 
+getgenv().AutoUltimate = false
+
+Extra:Toggle({
+    Title = "Auto Perk (Bugs, dont use)",
+    Desc = "Automatically activates Ultimate using assigned keybinds",
+    Value = false,
+    Callback = function(state)
+        getgenv().AutoUltimate = state
+        task.spawn(function()
+            while getgenv().AutoUltimate do
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.G, false, game)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.G, false, game)
+                task.wait(1)
+            end
+        end)
+    end
+})
+
 -- Auto Skills
 Extra:Toggle({
     Title = "Auto Skills (Keybind)",
@@ -494,7 +512,7 @@ Extra:Toggle({
     Callback = function(state)
         getgenv().AutoSkills = state
         task.spawn(function()
-            local keys = { Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.G }
+            local keys = { Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C }
             while getgenv().AutoSkills do
                 for _, key in ipairs(keys) do
                     VirtualInputManager:SendKeyEvent(true, key, false, game)
