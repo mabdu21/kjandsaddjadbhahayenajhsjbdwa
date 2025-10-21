@@ -1,11 +1,33 @@
+-- =========================
+local version = "5.6.2"
+-- =========================
+
+repeat task.wait() until game:IsLoaded()
+
+-- FPS Unlock
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
+end
+
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- ====================================================================
--- 1. DEKLARASI UI WINDOW & TABS
--- ====================================================================
-
 WindUI:AddTheme({
-    Name = "HellZone Exploit", 
+    Name = "DYHUB Exploit", 
     Accent = WindUI:Gradient({                                                  
         ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },        
         ["100"]   = { Color = Color3.fromHex("#18181b"), Transparency = 0 },    
@@ -22,41 +44,53 @@ WindUI:AddTheme({
 })
 
 local Window = WindUI:CreateWindow({
-    Title = "HellZoneExploit",
-    Icon = "slack", 
-    Author = "HellZone X Fish IT",
-    Folder = "HellZoneConfig",
-    Size = UDim2.fromOffset(530, 300),
-    MinSize = Vector2.new(320, 300),
-    MaxSize = Vector2.new(850, 560),
-    Transparent = true,
-    Theme = "Dark",
-    Resizable = true,
-    SideBarWidth = 150,
-    BackgroundImageTransparency = 0.42,
-    HideSearchBar = false,
-    ScrollBarEnabled = false,
+    Title = "DYHUB",
+    IconThemed = true,
+    Icon = "rbxassetid://104487529937663",
+    Author = "Fish It | " .. userversion,
+    Folder = "DYHUB_FIT",
+    Size = UDim2.fromOffset(500, 350),
+    Transparent = true,
+    Theme = "Dark",
+    BackgroundImageTransparency = 0.8,
+    HasOutline = false,
+    HideSearchBar = true,
+    ScrollBarEnabled = false,
+    User = { Enabled = true, Anonymous = false },
 })
 
-Window:SetToggleKey(Enum.KeyCode.G)
+Window:SetToggleKey(Enum.KeyCode.K)
 
-WindUI:Notify({
-    Title = "HellZoneLoader",
-    Content = "Press G To Open/Close Menu!",
-    Duration = 4, 
-    Icon = "slack",
+pcall(function()
+    Window:Tag({
+        Title = version,
+        Color = Color3.fromHex("#30ff6a")
+    })
+end)
+
+Window:EditOpenButton({
+    Title = "DYHUB - Open",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 6),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255)),
+    Draggable = true,
 })
 
 -- TAB VARIABLES
-local Info = Window:Tab({ Title = "Info", Icon = "info" })
+local InfoTab = Window:Tab({ Title = "information", Icon = "info" })
+local Main1Divider = Window:Divider()
+local Auto = Window:Tab({ Title = "Main", Icon = "rocket" })
 local Player = Window:Tab({ Title = "Player", Icon = "user" })
-local Auto = Window:Tab({ Title = "Main", Icon = "play" })
 local Shop = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
+local Main2Divider = Window:Divider()
 local Teleport = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
 local Quest = Window:Tab({ Title = "Quest", Icon = "loader" })
-local Setting = Window:Tab({ Title = "Settings", Icon = "settings" })
 local Enchant = Window:Tab({ Title = "Enchants", Icon = "star" })
+local MainDivider = Window:Divider()
 local Discord = Window:Tab({ Title = "Webhook", Icon = "megaphone" })
+local Setting = Window:Tab({ Title = "Settings", Icon = "settings" })
+Window:SelectTab(1)
 
 ----------- END OF TAB VARIABLES -------------
 
@@ -70,51 +104,6 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 -- ====================================================================
 -- 2. LOGIC INFOS
 -- ====================================================================
-
-local Section = Info:Section({ 
-    Title = "Have Problem / Need Help? Join Server Now",
-    Box = true,
-    TextTransparency = 0.05,
-    TextXAlignment = "Center",
-    TextSize = 17, 
-    Opened = true,
-})
-
-Info:Select()
-
-local function copyLink(link, buttonTitle, notifTitle, notifContent)
-    local Button = Info:Button({
-        Title = buttonTitle or "Copy Link",
-        Desc = "Klik untuk menyalin link",
-        Locked = false,
-        Callback = function()
-            if setclipboard then
-                setclipboard(link)
-            end
-
-            WindUI:Notify({
-                Title = notifTitle or "Copied!",
-                Content = notifContent or ("Link '" .. link .. "' berhasil dicopy ✅"),
-                Duration = 3,
-                Icon = "bell",
-            })
-
-            print("Link copied:", link) 
-        end
-    })
-
-    return Button
-end
-
-
-copyLink(
-    "https://discord.gg/77nEeYeFRp", 
-    "Copy Discord Link",              
-    "Discord Copied!",                 
-    "Link berhasil disalin ke clipboard ✅" 
-)
-
-------------- END OF TAB INFO LOGIC -------------------
 
 -- ====================================================================
 -- 3. LOGIC PLAYER
@@ -309,7 +298,7 @@ local FlyButton = Player:Button({
 
         WindUI:Notify({
             Title = "Fly",
-            Content = "Fly GUI berhasil dijalankan ✅",
+            Content = "Fly GUI by dyhub ✅",
             Duration = 3,
             Icon = "bell"
         })
@@ -1616,8 +1605,8 @@ local function WebhookLogic()
         if success and url then iconUrl = url end
 
         local payload = {
-            username = "HellZone Community",
-            avatar_url = "https://cdn.discordapp.com/attachments/1422181713114824765/1428652693907570741/38d29524-906d-49a7-893f-044124ce3668.jpg",
+            username = "DYHUB | Fish It",
+            avatar_url = "https://cdn.discordapp.com/attachments/1388623461777150023/1406681697977892884/image.png?ex=68f862ab&is=68f7112b&hm=bd1b48d1729fd73e1dcb520d88575a1a8e706ad834100d4606a6d71423364775&",
             content = content,
             embeds = {{
                 title = rarity == "SECRET" and "🚨 ULTRA RARE FISH CAUGHT! 🚨" or "🎣 New Fish Caught!",
@@ -1819,7 +1808,7 @@ local function SettingsLogic()
 
     Setting:Button({
         Title = "Apply Anti Lag",
-        Desc = "Optimalkan game untuk mengurangi lag",
+        Desc = "Optimize the game to reduce lag",
         Callback = function()
             loadstring(game:HttpGet("https://pastebin.com/raw/C7W8GSu4"))()
         end
@@ -1831,7 +1820,7 @@ local function SettingsLogic()
     local animatorRemoved = false
     
     Setting:Toggle({
-        Title = "Remove Animasi Catch Fishing",
+        Title = "Remove Animation Catch Fishing",
         Default = false,
         Callback = function(state)
             local character = workspace.Characters:FindFirstChild(playerName)
@@ -1946,3 +1935,188 @@ Discord:Button({
 pcall(WebhookLogic)
 pcall(EnchantLogic)
 pcall(SettingsLogic)
+
+Info = InfoTab
+
+if not ui then ui = {} end
+if not ui.Creator then ui.Creator = {} end
+
+-- Define the Request function that mimics ui.Creator.Request
+ui.Creator.Request = function(requestData)
+    local HttpService = game:GetService("HttpService")
+    
+    -- Try different HTTP methods
+    local success, result = pcall(function()
+        if HttpService.RequestAsync then
+            -- Method 1: Use RequestAsync if available
+            local response = HttpService:RequestAsync({
+                Url = requestData.Url,
+                Method = requestData.Method or "GET",
+                Headers = requestData.Headers or {}
+            })
+            return {
+                Body = response.Body,
+                StatusCode = response.StatusCode,
+                Success = response.Success
+            }
+        else
+            -- Method 2: Fallback to GetAsync
+            local body = HttpService:GetAsync(requestData.Url)
+            return {
+                Body = body,
+                StatusCode = 200,
+                Success = true
+            }
+        end
+    end)
+    
+    if success then
+        return result
+    else
+        error("HTTP Request failed: " .. tostring(result))
+    end
+end
+
+-- Remove this line completely: Info = InfoTab
+-- The Info variable is already correctly set above
+
+local InviteCode = "jWNDPNMmyB"
+local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+
+local function LoadDiscordInfo()
+    local success, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+            Url = DiscordAPI,
+            Method = "GET",
+            Headers = {
+                ["User-Agent"] = "RobloxBot/1.0",
+                ["Accept"] = "application/json"
+            }
+        }).Body)
+    end)
+
+    if success and result and result.guild then
+        local DiscordInfo = Info:Paragraph({
+            Title = result.guild.name,
+            Desc = ' <font color="#52525b">●</font> Member Count : ' .. tostring(result.approximate_member_count) ..
+                '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(result.approximate_presence_count),
+            Image = "https://cdn.discordapp.com/icons/" .. result.guild.id .. "/" .. result.guild.icon .. ".png?size=1024",
+            ImageSize = 42,
+        })
+
+        Info:Button({
+            Title = "Update Info",
+            Callback = function()
+                local updated, updatedResult = pcall(function()
+                    return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+                        Url = DiscordAPI,
+                        Method = "GET",
+                    }).Body)
+                end)
+
+                if updated and updatedResult and updatedResult.guild then
+                    DiscordInfo:SetDesc(
+                        ' <font color="#52525b">●</font> Member Count : ' .. tostring(updatedResult.approximate_member_count) ..
+                        '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(updatedResult.approximate_presence_count)
+                    )
+                    
+                    WindUI:Notify({
+                        Title = "Discord Info Updated",
+                        Content = "Successfully refreshed Discord statistics",
+                        Duration = 2,
+                        Icon = "refresh-cw",
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "Update Failed",
+                        Content = "Could not refresh Discord info",
+                        Duration = 3,
+                        Icon = "alert-triangle",
+                    })
+                end
+            end
+        })
+
+        Info:Button({
+            Title = "Copy Discord Invite",
+            Callback = function()
+                setclipboard("https://discord.gg/" .. InviteCode)
+                WindUI:Notify({
+                    Title = "Copied!",
+                    Content = "Discord invite copied to clipboard",
+                    Duration = 2,
+                    Icon = "clipboard-check",
+                })
+            end
+        })
+    else
+        Info:Paragraph({
+            Title = "Error fetching Discord Info",
+            Desc = "Unable to load Discord information. Check your internet connection.",
+            Image = "triangle-alert",
+            ImageSize = 26,
+            Color = "Red",
+        })
+        print("Discord API Error:", result) -- Debug print
+    end
+end
+
+LoadDiscordInfo()
+
+Info:Divider()
+Info:Section({ 
+    Title = "DYHUB Information",
+    TextXAlignment = "Center",
+    TextSize = 17,
+})
+Info:Divider()
+
+local Owner = Info:Paragraph({
+    Title = "Main Owner",
+    Desc = "@dyumraisgoodguy#8888",
+    Image = "rbxassetid://119789418015420",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+})
+
+local Social = Info:Paragraph({
+    Title = "Social",
+    Desc = "Copy link social media for follow!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://guns.lol/DYHUB")
+                print("Copied social media link to clipboard!")
+            end,
+        }
+    }
+})
+
+local Discord = Info:Paragraph({
+    Title = "Discord",
+    Desc = "Join our discord for more scripts!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://discord.gg/jWNDPNMmyB")
+                print("Copied discord link to clipboard!")
+            end,
+        }
+    }
+})
