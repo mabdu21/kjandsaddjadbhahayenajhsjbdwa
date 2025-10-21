@@ -1,5 +1,5 @@
 -- =====================
-local Development = "DYHUB | Wizard West (V3.9.8)"
+local Development = "DYHUB | Wizard West (V3.9.9)"
 -- =====================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -221,12 +221,13 @@ CharacterTab:CreateSlider({
 	end
 })
 
-local player = game.Players.LocalPlayer
-local uis = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-local moving = false
-local speed = 16
+local LocalPlayer = Players.LocalPlayer
+local speedEnabled = false
+local speedConnection
+local tpSpeed = 16
 
 CharacterTab:CreateSlider({
     Name = "Set Speed (Tp Walk)",
@@ -235,32 +236,36 @@ CharacterTab:CreateSlider({
     CurrentValue = 16,
     Flag = "TPWalkSpeed",
     Callback = function(v)
-        speed = v
+        tpSpeed = v
     end
 })
 
-uis.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.W then
-        moving = true
+CharacterTab:CreateToggle({
+    Name = "Enable (Tp Walk)",
+    CurrentValue = false,
+    Flag = "TPWalkToggle",
+    Callback = function(v)
+        speedEnabled = v
+        if speedEnabled then
+            if speedConnection then speedConnection:Disconnect() end
+            speedConnection = RunService.RenderStepped:Connect(function()
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+                    local hrp = char.HumanoidRootPart
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum.MoveDirection.Magnitude > 0 then
+                        hrp.CFrame = hrp.CFrame + (hum.MoveDirection * tpSpeed * 0.016)
+                    end
+                end
+            end)
+        else
+            if speedConnection then
+                speedConnection:Disconnect()
+                speedConnection = nil
+            end
+        end
     end
-end)
-
-uis.InputEnded:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.W then
-        moving = false
-    end
-end)
-
-runService.Heartbeat:Connect(function(dt)
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp and moving then
-        hrp.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * (speed * dt))
-    end
-end)
-
+})
 
 -- สร้าง Slider JumpPower
 CharacterTab:CreateSlider({
