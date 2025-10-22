@@ -1,3 +1,4 @@
+-- 551
 local Players = game:GetService('Players')
 local Player = Players.LocalPlayer
 local ContextActionService = game:GetService('ContextActionService')
@@ -303,26 +304,37 @@ function Auto_Parry:Get_Entity_Properties()
     }
 end
 
-local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local UserInputService = game:GetService("UserInputService")
+local isMobile = false -- เริ่มต้นเป็น false
 
+-- ตรวจจับการกดปุ่ม F เพื่อสลับสถานะ isMobile
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == Enum.KeyCode.F then
+			isMobile = not isMobile -- กด F เพื่อเปิด/ปิดโหมด "มือถือ"
+			print("isMobile =", isMobile)
+		end
+	end
+end)
 
 function Auto_Parry.Parry_Data(Parry_Type)
-    Auto_Parry.Closest_Player()
-    
-    local Events = {}
-    local Camera = workspace.CurrentCamera
-    local Vector2_Mouse_Location
-    
-    if Last_Input == Enum.UserInputType.MouseButton1 or (Enum.UserInputType.MouseButton2 or Last_Input == Enum.UserInputType.Keyboard) then
-        local Mouse_Location = UserInputService:GetMouseLocation()
-        Vector2_Mouse_Location = {Mouse_Location.X, Mouse_Location.Y}
-    else
-        Vector2_Mouse_Location = {Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2}
-    end
-    
-    if isMobile then
-        Vector2_Mouse_Location = {Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2}
-    end
+	Auto_Parry.Closest_Player()
+
+	local Events = {}
+	local Camera = workspace.CurrentCamera
+	local Vector2_Mouse_Location
+
+	if Last_Input == Enum.UserInputType.MouseButton1 or (Enum.UserInputType.MouseButton2 or Last_Input == Enum.UserInputType.Keyboard) then
+		local Mouse_Location = UserInputService:GetMouseLocation()
+		Vector2_Mouse_Location = {Mouse_Location.X, Mouse_Location.Y}
+	else
+		Vector2_Mouse_Location = {Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2}
+	end
+
+	-- บังคับใช้ตำแหน่งกลางหน้าจอถ้าเปิดโหมดมือถือ
+	if isMobile then
+		Vector2_Mouse_Location = {Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2}
+	end
     
     local Players_Screen_Positions = {}
     for _, v in pairs(workspace.Alive:GetChildren()) do
@@ -3282,6 +3294,7 @@ local VisualizeModule = MicTab:create_module({
 		end
 	end
 })
+
 
 
 
