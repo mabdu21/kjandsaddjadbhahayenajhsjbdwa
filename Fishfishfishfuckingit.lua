@@ -1,5 +1,5 @@
 -- yoyo
-local Logger       = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/utils/logger.lua"))()
+local Logger       = loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/Log.lua"))()
 
 -- FOR PRODUCTION: Uncomment this line to disable all logging
 --Logger.disableAll()
@@ -20,7 +20,7 @@ mainLogger:info("[DYHUB] Loading Helpers...")
 local Helpers = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/module/f/helpers.lua"))()
 
 mainLogger:info("[DYHUB] Loading Feature Manager...")
-local FeatureManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/module/f/featuremanager.lua"))()
+local FeatureManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/Modulefi.lua"))()
 
 -- ===========================
 -- GLOBAL SERVICES & VARIABLES
