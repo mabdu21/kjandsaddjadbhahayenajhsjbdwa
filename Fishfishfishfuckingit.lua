@@ -15,10 +15,10 @@ local Noctis = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r
 -- ===========================
 -- LOAD HELPERS & FEATURE MANAGER
 -- ===========================
-mainLogger:info("Loading Helpers...")
+mainLogger:info("[DYHUB] Loading Helpers...")
 local Helpers = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/module/f/helpers.lua"))()
 
-mainLogger:info("Loading FeatureManager...")
+mainLogger:info("[DYHUB] Loading Feature Manager...")
 local FeatureManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/module/f/featuremanager.lua"))()
 
 -- ===========================
