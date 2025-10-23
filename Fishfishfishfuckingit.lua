@@ -1,3 +1,4 @@
+-- yoyo
 local Logger       = loadstring(game:HttpGet("https://raw.githubusercontent.com/c3iv3r/a/refs/heads/main/utils/logger.lua"))()
 
 -- FOR PRODUCTION: Uncomment this line to disable all logging
@@ -67,9 +68,9 @@ local CancelFishingEvent = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.
 -- ===========================
 -- INITIALIZE FEATURE MANAGER
 -- ===========================
-mainLogger:info("Initializing features synchronously...")
+mainLogger:info("[DYHUB] Initializing features synchronously...")
 local loadedCount, totalCount = FeatureManager:InitializeAllFeatures(Noctis, featureLogger)
-mainLogger:info(string.format("Features ready: %d/%d", loadedCount, totalCount))
+mainLogger:info(string.format("[DYHUB] Features ready: %d/%d", loadedCount, totalCount))
 
 local function gradient(text, startColor, endColor)
     -- Default colors kalo ga dikasih
@@ -135,15 +136,15 @@ endColor = endColor or Color3.fromRGB(0, 200, 200)        -- Teal
 end
 
 local Window = Noctis:Window({
-	Title = "HellZone",
-	Subtitle = "Fish It | v1.0.1",
-	Size = UDim2.fromOffset(600, 300),
+	Title = "DYHUB",
+	Subtitle = "Fish It | Premium Version",
+	Size = UDim2.fromOffset(600, 400),
 	DragStyle = 1,
 	DisabledWindowControls = {},
-	OpenButtonImage = "rbxassetid://123156553209294", 
-	OpenButtonSize = UDim2.fromOffset(32, 32),
+	OpenButtonImage = "rbxassetid://104487529937663", 
+	OpenButtonSize = UDim2.fromOffset(44, 44),
 	OpenButtonPosition = UDim2.fromScale(0.45, 0.1),
-	Keybind = Enum.KeyCode.RightControl,
+	Keybind = Enum.KeyCode.K,
 	AcrylicBlur = true,
 })
 
@@ -163,10 +164,10 @@ local Setting    = Group:Tab({ Title = "Settings", Image = "settings"})
 
 --- === CHANGELOG & DISCORD LINK === ---
 local CHANGELOG = table.concat({
-    "[+] Added Auto Favorite by Mutations"
+    "[+] Added Auto Favorite by Mutations \n[+] Added Rework All Function"
 }, "\n")
 local DISCORD = table.concat({
-    "https://discord.gg/uQwTApuTSa",
+    "https://discord.com/invite/jWNDPNMmyB",
 }, "\n")
 
 --- === HOME === ---
@@ -181,9 +182,9 @@ Information:Button({
 	Callback = function()
 		if typeof(setclipboard) == "function" then
             setclipboard(DISCORD)
-            Window:Notify({ Title = "HellZone", Desc = "Discord link copied!", Duration = 2 })
+            Window:Notify({ Title = "DYHUB", Desc = "Discord link copied!", Duration = 2 })
         else
-            Window:Notify({ Title = "HellZone", Desc = "Clipboard not available", Duration = 3 })
+            Window:Notify({ Title = "DYHUB", Desc = "Clipboard not available", Duration = 3 })
         end
     end
 })
@@ -1472,7 +1473,7 @@ PositionSection:Button({
 local WebhookSection = Misc:Section({ Title = "Webhook", Opened = false })
 local currentWebhookUrl = ""
 local selectedWebhookFishTypes = {}
-local testmessage = "@everyone Webhook URL valid, All Good!"
+local testmessage = "@everyone Webhook URL valid, All Good! [DYHUB]"
 local webhookfish_in = WebhookSection:Input({
 	Name = "<b>Input Webhook URL</b>",
 	Placeholder = "e.g https://discord...",
@@ -1735,7 +1736,7 @@ end
 task.defer(function()
     task.wait(0.1)
     Window:Notify({
-        Title = "HellZone",
+        Title = "DYHUB",
         Desc = "Enjoy! Join Our Discord!",
         Duration = 3
     })
