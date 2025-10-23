@@ -164,7 +164,7 @@ local Setting    = Group:Tab({ Title = "Settings", Image = "settings"})
 
 --- === CHANGELOG & DISCORD LINK === ---
 local CHANGELOG = table.concat({
-    "[+] Added Auto Favorite by Mutations \n[+] Added Rework All Function"
+    "[DYHUB] Fish It | Version: 2.0.4 \n[+] Added Auto Favorite by Mutations \n[+] Added Rework All Function"
 }, "\n")
 local DISCORD = table.concat({
     "https://discord.com/invite/jWNDPNMmyB",
@@ -299,12 +299,12 @@ updateRarest()]]
 --- === FISHING === ---
 local FishingSection = Main:Section({ Title = "Fishing", Opened = false })
 
--- Create proxy for clean access (replaces all Get() and Init() calls)
-
-
 -- State tracking
 local currentMethod = "V1" -- default
 local isAutoFishActive = false
+
+local balatantWaitWindow = 0.6    -- Default 600ms
+local balatantSafetyTimeout = 3   -- Default 3s
 
 -- Function untuk stop semua
 local function stopAllAutoFish()
@@ -334,6 +334,12 @@ local function startAutoFish(method)
         F.AutoFishV3:Start({ mode = "Fast" })
     elseif method == "V4" and F.Balatant and F.Balatant then
         F.Balatant:Start({ mode = "Fast" })
+	elseif method == "Balatant" and F.Balatant and F.Balatant.Start then
+        F.Balatant:Start({
+            mode = "Fast",
+            waitWindow = balatantWaitWindow,
+            safetyTimeout = balatantSafetyTimeout
+        })
     end
 end
 
@@ -344,7 +350,7 @@ local autofish_dd = FishingSection:Dropdown({
     Search = true,
     Multi = false,
     Required = false,
-    Options = {"Balatant (Unstable)", "Fast", "Stable", "Normal"},
+    Options = {"Balatant (Caught)", "Fast", "Stable", "Normal"},
     Default = "Fast",
     Callback = function(v)
         -- Map dropdown value ke method
@@ -354,8 +360,8 @@ local autofish_dd = FishingSection:Dropdown({
             currentMethod = "V2"
         elseif v == "Normal" then
             currentMethod = "V3"
-        elseif v == "Balatant (Unstable)" then
-            currentMethod = "V4"
+        elseif v == "Balatant (Caught)" then
+            currentMethod = "Balatant"
         end
         
         -- Kalo lagi aktif, restart dengan method baru
@@ -380,6 +386,40 @@ local autofish_tgl = FishingSection:Toggle({
         end
     end
 }, "autofishtgl")
+
+local waitWindowInput = FishingSection:Input({
+    Name = "<b>Bait Delay</b>",
+    Placeholder = "e.g 0.6 (seconds)",
+    AcceptedCharacters = "Numbers",
+    Callback = function(v)
+        local n = tonumber(v)
+        if n and n >= 0.1 and n <= 5 then
+            balatantWaitWindow = n
+            
+            -- Update runtime kalo Balatant lagi jalan
+            if isAutoFishActive and currentMethod == "Balatant" and F.Balatant then
+                F.Balatant:SetDelays(balatantWaitWindow, nil)
+            end
+        end
+    end
+}, "balatantwaitwindow")
+
+local safetyTimeoutInput = FishingSection:Input({
+    Name = "<b>Cast Delay</b>",
+    Placeholder = "e.g 3 (seconds)",
+    AcceptedCharacters = "Numbers",
+    Callback = function(v)
+        local n = tonumber(v)
+        if n and n >= 1 and n <= 30 then
+            balatantSafetyTimeout = n
+            
+            -- Update runtime kalo Balatant lagi jalan
+            if isAutoFishActive and currentMethod == "Balatant" and F.Balatant then
+                F.Balatant:SetDelays(nil, balatantSafetyTimeout)
+            end
+        end
+    end
+}, "balatantsafetytimeout")
 
 local noanim_tgl = FishingSection:Toggle({
 	Title = "<b>No Animation</b>",
