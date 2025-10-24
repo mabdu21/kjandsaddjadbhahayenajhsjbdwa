@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.4"
+local version = "5.3.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -436,7 +436,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(1111, 1111, 0)
+                            securityPart.Position = Vector3.new(2000, 1250, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
@@ -496,7 +496,7 @@ GameTab:Toggle({
                         local securityPart = Instance.new("Part")
                         securityPart.Name = "SecurityPartTemp"
                         securityPart.Size = Vector3.new(10, 1, 10)
-                        securityPart.Position = Vector3.new(1111, 1111, 0)
+                        securityPart.Position = Vector3.new(2000, 1250, 0)
                         securityPart.Anchored = true
                         securityPart.Transparency = 1
                         securityPart.CanCollide = true
@@ -531,7 +531,7 @@ GameTab:Toggle({
                         if character and rootPart then
                             if character:GetAttribute("Downed") then
                                 ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
-                                print("[DYHUB] Revived for Summer Event!")
+                                print("[DYHUB] Revived for Halloween Event!")
                                 task.wait(0.5)
                             end
 
@@ -546,7 +546,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(1111, 1111, 0)
+                            securityPart.Position = Vector3.new(2000, 1250, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
@@ -554,13 +554,13 @@ GameTab:Toggle({
                             rootPart.CFrame = securityPart.CFrame + Vector3.new(0, 3, 0)
                         end
                     else
-                        print("[DYHUB] ⚠️ Tickets not found for Summer Event!")
+                        print("[DYHUB] ⚠️ Tickets not found for Halloween Event!")
                     end
                     task.wait(1)
                 end
             end)
         else
-            print("[DYHUB] Auto Farm Summer Event Disabled!")
+            print("[DYHUB] Auto Farm Halloween Event Disabled!")
         end
     end
 })
