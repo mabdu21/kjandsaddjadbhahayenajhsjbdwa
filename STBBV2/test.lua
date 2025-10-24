@@ -1,5 +1,5 @@
 -- =========================
-local verison = "3.5.2"
+local verison = "3.5.5"
 -- =========================
 
 if setfpscap then
@@ -1574,7 +1574,7 @@ local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
-local Items = {"Clock Spider", "Transmitter", "FlashDrive", "Astro Samples"}
+local Items = {"Clock Spider", "Transmitter", "Flash Drive", "Astro Samples (Bugs)", "X-18"}
 local ItemsValue = {"Clock Spider"}
 local autoCollectEnabled = false
 local itemNotifyEnabled = false
