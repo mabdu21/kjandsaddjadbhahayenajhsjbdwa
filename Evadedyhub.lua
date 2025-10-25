@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.6"
+local version = "5.3.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -482,7 +482,7 @@ GameTab:Toggle({
                                     rootPart.CFrame = v.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                                     ReplicatedStorage.Events.Character.Interact:FireServer("Revive", true, v)
                                     print("[DYHUB] Reviving player for Farm Money!")
-                                    task.wait(0.5)
+                                    task.wait(1)
                                     downedPlayerFound = true
                                     break
                                 end
@@ -538,8 +538,8 @@ GameTab:Toggle({
                             for _, ticket in ipairs(tickets:GetChildren()) do
                                 local ticketPart = ticket:FindFirstChild("HumanoidRootPart") or ticket.PrimaryPart
                                 if ticketPart and rootPart then
-                                    rootPart.CFrame = ticketPart.CFrame + Vector3.new(0, 2, 0)
-                                    task.wait(0.2)
+                                    rootPart.CFrame = ticketPart.CFrame + Vector3.new(0, 2.3, 0)
+                                    task.wait(1.25)
                                 end
                             end
 
