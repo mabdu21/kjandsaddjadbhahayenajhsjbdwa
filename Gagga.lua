@@ -1,11 +1,33 @@
--- V543
+-- V545
 
 repeat task.wait() until game:IsLoaded()
 
-game:GetService("Players").LocalPlayer.PlayerGui.Interface.FishingCatchFrame.TimingBar.SuccessArea:GetPropertyChangedSignal("Size"):Connect(function()
-    game:GetService("Players").LocalPlayer.PlayerGui.Interface.FishingCatchFrame.TimingBar.SuccessArea.Position = UDim2.new(0.5,0,0,0)
-    game:GetService("Players").LocalPlayer.PlayerGui.Interface.FishingCatchFrame.TimingBar.SuccessArea.Size = UDim2.new(1,0,1,0)
-end)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local successArea
+
+repeat
+    task.wait(1.5)
+    pcall(function()
+        successArea = player
+            .PlayerGui
+            .Interface
+            .FishingCatchFrame
+            .TimingBar
+            .SuccessArea
+    end)
+until successArea
+
+if successArea then
+    print("[DYHUB] SuccessArea found!")
+
+    successArea:GetPropertyChangedSignal("Size"):Connect(function()
+        successArea.Position = UDim2.new(0.5, 0, 0, 0)
+        successArea.Size = UDim2.new(1, 0, 1, 0)
+    end)
+else
+    print("[DYHUB] SuccessArea not found.")
+end
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
