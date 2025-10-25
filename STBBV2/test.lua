@@ -1,5 +1,5 @@
 -- =========================
-local verison = "3.5.5"
+local verison = "3.5.9"
 -- =========================
 
 if setfpscap then
@@ -273,7 +273,7 @@ local function findNextNPCWithFlushProximity(maxDistance, referencePart)
         if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
             if not Players:GetPlayerFromCharacter(npc) and not isVisited(npc) then
                 for _, prompt in pairs(npc:GetDescendants()) do
-                    if prompt:IsA("ProximityPrompt") and prompt.ActionText == "Flush" then
+                    if prompt:IsA("ProximityPrompt") and (prompt.ActionText == "Flush" or prompt.ActionText == "Dragon Flash") then
                         if (pressCount[npc] or 0) < 3 then
                             local dist = (prompt.Parent.Position - referencePart.Position).Magnitude
                             if dist < lastDist then
