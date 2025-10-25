@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.8"
+local version = "5.3.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -436,7 +436,7 @@ GameTab:Toggle({
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(2000, 1250, 0)
+                            securityPart.Position = Vector3.new(3000, 1500, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
@@ -496,7 +496,7 @@ GameTab:Toggle({
                         local securityPart = Instance.new("Part")
                         securityPart.Name = "SecurityPartTemp"
                         securityPart.Size = Vector3.new(10, 1, 10)
-                        securityPart.Position = Vector3.new(2000, 1250, 0)
+                        securityPart.Position = Vector3.new(3000, 1500, 0)
                         securityPart.Anchored = true
                         securityPart.Transparency = 1
                         securityPart.CanCollide = true
@@ -516,7 +516,7 @@ GameTab:Toggle({
 })
 
 GameTab:Toggle({
-    Title = "Auto Farm Ticket",
+    Title = "Auto Farm Ticket (Halloween)",
     Callback = function(state)
         AutoFarmSummerEvent = state
         if AutoFarmSummerEvent then
@@ -538,15 +538,15 @@ GameTab:Toggle({
                             for _, ticket in ipairs(tickets:GetChildren()) do
                                 local ticketPart = ticket:FindFirstChild("HumanoidRootPart") or ticket.PrimaryPart
                                 if ticketPart and rootPart then
-                                    rootPart.CFrame = ticketPart.CFrame + Vector3.new(0, 2.3, 0)
-                                    task.wait(1.25)
+                                    rootPart.CFrame = ticketPart.CFrame + Vector3.new(0, 2.35, 0)
+                                    task.wait(1.05)
                                 end
                             end
 
                             local securityPart = Instance.new("Part")
                             securityPart.Name = "SecurityPartTemp"
                             securityPart.Size = Vector3.new(10, 1, 10)
-                            securityPart.Position = Vector3.new(2000, 1250, 0)
+                            securityPart.Position = Vector3.new(3000, 1500, 0)
                             securityPart.Anchored = true
                             securityPart.Transparency = 1
                             securityPart.CanCollide = true
