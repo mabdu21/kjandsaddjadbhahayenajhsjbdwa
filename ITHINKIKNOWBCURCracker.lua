@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.6"
+local version = "5.1.7"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -586,7 +586,7 @@ local shootCooldown = 2.5 -- ค่าดีฟอลต์ 0.5 วิ (ยิ�
 
 -- ตั้งระยะการยิง
 SurTab:Input({
-    Title = "Set Range Auto Shoot",
+    Title = "Set Range Auto Shoot (Legit)",
     Default = tostring(auraRange),
     Placeholder = "Range (Ex: 25)",
     Callback = function(text)
@@ -616,7 +616,7 @@ SurTab:Input({
 
 -- ตัวหลัก: Auto Shoot
 SurTab:Toggle({
-    Title = "Auto Shoot (Beta)",
+    Title = "Auto Shoot (Legit)",
     Value = false,
     Callback = function(v)
         autoshoot = v
