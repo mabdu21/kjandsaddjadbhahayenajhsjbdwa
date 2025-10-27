@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.1.2"
+local version = "3.1.3"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -180,12 +180,39 @@ Tabs.GameTab:Toggle({
     end
 })
 
-Tabs.GameTab:Button({
+getgenv().hold = false
+
+Tabs.GameTab:Toggle({
     Title = "Steal (No Hold)",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/DYHUB-Universal-Game/refs/heads/main/nodelay.lua"))()
+    Default = getgenv().hold,
+    Callback = function(v)
+        getgenv().hold = v
+
+        -- ฟังก์ชันปรับ HoldDuration ของทุก ProximityPrompt
+        local function modifyProximityPrompts()
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    obj.HoldDuration = 0
+                end
+            end
+        end
+
+        -- เรียกใช้ทันทีตอน toggle
+        modifyProximityPrompts()
+
+        -- ถ้า toggle เปิด ให้ loop ทุก 5 วิ
+        if getgenv().hold then
+            spawn(function()
+                while getgenv().hold do
+                    modifyProximityPrompts()
+                    task.wait(5)
+                end
+            end)
+        end
     end
 })
+
+
 
 -- ======= PlayerTab (Speed, Jump, Fly, Noclip) =======
 getgenv().speedEnabled = false
