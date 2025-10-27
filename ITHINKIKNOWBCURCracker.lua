@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.4"
+local version = "5.1.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -580,6 +580,156 @@ MainTab:Toggle({
 -- ====================== AUTO GENERATOR ======================
 SurTab:Section({ Title = "Feature Survivor", Icon = "user" })
 
+local autoshoot = false
+local auraRange = 25
+local shootCooldown = 2.5 -- ค่าดีฟอลต์ 0.5 วิ (ยิง 2 ครั้งต่อวินาที)
+
+-- ตั้งระยะการยิง
+SurTab:Input({
+    Title = "Set Range Auto Shoot",
+    Default = tostring(auraRange),
+    Placeholder = "Range (Ex: 25)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            auraRange = num
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+-- ตั้งคูลดาวน์ (Legit)
+SurTab:Input({
+    Title = "Set Cooldown Auto Shoot (Legit)",
+    Default = tostring(shootCooldown),
+    Placeholder = "Cooldown (Ex: 2.5)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            shootCooldown = num
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+-- ตัวหลัก: Auto Shoot
+SurTab:Toggle({
+    Title = "Auto Shoot (Beta)",
+    Value = false,
+    Callback = function(v)
+        autoshoot = v
+        if autoshoot then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+                local remote = ReplicatedStorage
+                    :WaitForChild("Remotes")
+                    :WaitForChild("Items")
+                    :WaitForChild("Twist of Fate")
+                    :WaitForChild("Fire")
+
+                while autoshoot do
+                    local char = LocalPlayer.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local gun = char and char:FindFirstChild("Twist of Fate")
+                        and char["Twist of Fate"]:FindFirstChild("Right Arm")
+                        and char["Twist of Fate"]["Right Arm"]:FindFirstChild("gun")
+
+                    if not (root and gun) then
+                        task.wait(0.1)
+                        continue
+                    end
+
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= LocalPlayer and plr.Character then
+                            local targetChar = plr.Character
+                            local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+
+                            if targetChar:FindFirstChild("Weapon") and targetRoot then
+                                local distance = (targetRoot.Position - root.Position).Magnitude
+                                if distance <= auraRange then
+                                    local direction = (targetRoot.Position - gun.Position).Unit
+
+                                    local args = {
+                                        gun,
+                                        direction
+                                    }
+
+                                    remote:FireServer(unpack(args))
+                                    task.wait(shootCooldown) -- ✅ ใช้คูลดาวน์จริงก่อนยิงครั้งต่อไป
+                                    break -- หยุดยิงคนอื่นในรอบนี้
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(0.05) -- ตรวจสอบรอบใหม่
+                end
+            end)
+        end
+    end
+})
+
+local autoshootf = false
+
+SurTab:Toggle({
+    Title = "Auto Shoot (Everywhere)",
+    Value = false,
+    Callback = function(v)
+        autoshootf = v
+        if autoshootf then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+                local remote = ReplicatedStorage
+                    :WaitForChild("Remotes")
+                    :WaitForChild("Items")
+                    :WaitForChild("Twist of Fate")
+                    :WaitForChild("Fire")
+
+                while autoshootf do
+                    task.wait(0.2) -- ยิงทุก 0.2 วินาที (ปรับได้)
+
+                    local char = LocalPlayer.Character
+                    local gun = char and char:FindFirstChild("Twist of Fate")
+                        and char["Twist of Fate"]:FindFirstChild("Right Arm")
+                        and char["Twist of Fate"]["Right Arm"]:FindFirstChild("gun")
+
+                    if not gun then
+                        continue
+                    end
+
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= LocalPlayer and plr.Character then
+                            local targetChar = plr.Character
+                            local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+
+                            if targetChar:FindFirstChild("Weapon") and targetRoot then
+                                -- ยิงไปที่ผู้เล่นคนนั้น
+                                local targetPos = targetRoot.Position
+                                local direction = (targetPos - gun.Position).Unit
+
+                                local args = {
+                                    gun,
+                                    direction
+                                }
+
+                                remote:FireServer(unpack(args))
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+})
+
 local autoparry = false
 
 SurTab:Toggle({
@@ -619,10 +769,12 @@ SurTab:Toggle({
     end
 })
 
+SurTab:Section({ Title = "Feature Object", Icon = "zap" })
+
 local autoGeneratorEnabled = false
 
 SurTab:Toggle({
-    Title = "Auto Generator (No Puzzle)",
+    Title = "Auto SkillCheck (Perfect)",
     Value = false,
     Callback = function(v)
         autoGeneratorEnabled = v
@@ -667,6 +819,67 @@ SurTab:Toggle({
                                 local point = closestGen:FindFirstChild("GeneratorPoint" .. i)
                                 if point then
                                     local args = {"success", 1, closestGen, point}
+                                    remote:FireServer(unpack(args))
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
+
+local autoGeneratorEnabled = false
+
+SurTab:Toggle({
+    Title = "Auto SkillCheck (Not Perfect)",
+    Value = false,
+    Callback = function(v)
+        autoGeneratorEnabled = v
+        if autoGeneratorEnabled then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+
+                while autoGeneratorEnabled do
+                    -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
+                    local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                    if gui and gui:FindFirstChild("Check") then
+                        gui.Check.Visible = false
+                    end
+
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        local folders = getMapFolders()
+                        local closestGen, closestDist = nil, 10
+
+                        for _, folder in ipairs(folders) do
+                            for _, gen in ipairs(folder:GetChildren()) do
+                                if gen.Name == "Generator" and gen:IsA("Model") then
+                                    local primary = gen:FindFirstChild("PrimaryPart") or gen:FindFirstChildWhichIsA("BasePart")
+                                    if primary then
+                                        local dist = (root.Position - primary.Position).Magnitude
+                                        if dist <= closestDist then
+                                            closestDist = dist
+                                            closestGen = gen
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if closestGen then
+                            for i = 1, 4 do
+                                local point = closestGen:FindFirstChild("GeneratorPoint" .. i)
+                                if point then
+                                    local args = {"success", 0, closestGen, point}
                                     remote:FireServer(unpack(args))
                                 end
                             end
@@ -842,7 +1055,7 @@ SurTab:Toggle({
                 local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
 
                 while NoFallEnabled do
-                    local args = { -9e9 }
+                    local args = { 0 }
                     pcall(function()
                         FallRemote:FireServer(unpack(args))
                     end)
