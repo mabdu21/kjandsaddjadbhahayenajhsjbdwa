@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.1.3"
+local version = "3.2.0"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -8,7 +8,7 @@ repeat task.wait() until game:IsLoaded()
 if setfpscap then
     setfpscap(1000000)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
+        Title = "DYHUB",
         Text = "FPS Unlocked!",
         Duration = 2,
         Button1 = "Okay"
@@ -16,7 +16,7 @@ if setfpscap then
     warn("FPS Unlocked!")
 else
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
+        Title = "DYHUB",
         Text = "Your exploit does not support setfpscap.",
         Duration = 2,
         Button1 = "Okay"
@@ -30,10 +30,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- โหลด WindUI
-local WindUI = nil
+-- โหลด WindUI อย่างปลอดภัย
+local WindUI
 local success, errorMessage = pcall(function()
     local scriptContent = game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua")
     if scriptContent and scriptContent ~= "" then
@@ -59,7 +60,7 @@ local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "Steal A Baddie | " .. userversion,
+    Author = "Steal A Baddie | v"..version,
     Size = UDim2.fromOffset(500, 320),
     Transparent = true,
     Theme = "Dark",
@@ -100,15 +101,8 @@ local Tabs = {
 }
 Window:SelectTab(1)
 
--- ======= GameTab (Steal) =======
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-
-local fakeClone = nil
-local isInvisible = false
-local originalCameraSubject = nil
-local originalFakePos = nil
+-- ========================= GameTab =========================
+local fakeClone, isInvisible, originalCameraSubject, originalFakePos
 
 Tabs.GameTab:Toggle({
     Title = "Invisible (Clone)",
@@ -121,58 +115,42 @@ Tabs.GameTab:Toggle({
 
         if state and not isInvisible then
             isInvisible = true
-
-            -- บันทึกตำแหน่งปัจจุบันก่อนย้ายขึ้น
             originalFakePos = rootPart.CFrame
-
-            -- ย้ายตัวจริงให้ลอยขึ้น
             rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 50, 0)
 
-            -- Clone ตัวปลอม
             fakeClone = character:Clone()
             fakeClone.Name = "FakeClone"
             fakeClone.Parent = Workspace
 
-            -- ลบ scripts ใน clone
             for _, desc in pairs(fakeClone:GetDescendants()) do
                 if desc:IsA("Script") or desc:IsA("LocalScript") then
                     desc:Destroy()
                 end
             end
 
-            -- ยึดตำแหน่งตัวปลอมให้อยู่กับที่
             local fakeHRP = fakeClone:FindFirstChild("HumanoidRootPart")
             local fakeHumanoid = fakeClone:FindFirstChildOfClass("Humanoid")
-            if fakeHRP then
-                fakeHRP.Anchored = true
-            end
+            if fakeHRP then fakeHRP.Anchored = true end
             if fakeHumanoid then
                 fakeHumanoid.DisplayName = "[Clone]"
                 fakeHumanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
                 fakeHumanoid.NameDisplayDistance = 0
             end
 
-            -- กล้องตามร่างปลอม
             originalCameraSubject = Workspace.CurrentCamera.CameraSubject
             Workspace.CurrentCamera.CameraSubject = fakeHumanoid
-
         elseif not state and isInvisible then
             isInvisible = false
-
-            -- เอาตัวจริงกลับมาตำแหน่งร่างปลอม
             if fakeClone and fakeClone:FindFirstChild("HumanoidRootPart") then
-                local targetCFrame = fakeClone.HumanoidRootPart.CFrame
-                rootPart.CFrame = targetCFrame + Vector3.new(0, 2, 0) -- ยืนเหนือร่างปลอมเล็กน้อย
+                rootPart.CFrame = fakeClone.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
             elseif originalFakePos then
-                rootPart.CFrame = originalFakePos -- fallback
+                rootPart.CFrame = originalFakePos
             end
 
-            -- กล้องกลับมาหาตัวจริง
             if originalCameraSubject then
                 Workspace.CurrentCamera.CameraSubject = originalCameraSubject
             end
 
-            -- ลบร่างปลอม
             if fakeClone and fakeClone.Parent then
                 fakeClone:Destroy()
             end
@@ -180,15 +158,13 @@ Tabs.GameTab:Toggle({
     end
 })
 
+-- Steal No Hold
 getgenv().hold = false
-
 Tabs.GameTab:Toggle({
     Title = "Steal (No Hold)",
     Default = getgenv().hold,
     Callback = function(v)
         getgenv().hold = v
-
-        -- ฟังก์ชันปรับ HoldDuration ของทุก ProximityPrompt
         local function modifyProximityPrompts()
             for _, obj in pairs(workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") then
@@ -197,10 +173,7 @@ Tabs.GameTab:Toggle({
             end
         end
 
-        -- เรียกใช้ทันทีตอน toggle
         modifyProximityPrompts()
-
-        -- ถ้า toggle เปิด ให้ loop ทุก 5 วิ
         if getgenv().hold then
             spawn(function()
                 while getgenv().hold do
@@ -212,11 +185,8 @@ Tabs.GameTab:Toggle({
     end
 })
 
-
-
--- ======= PlayerTab (Speed, Jump, Fly, Noclip) =======
-getgenv().speedEnabled = false
-getgenv().speedValue = 20
+-- ========================= PlayerTab =========================
+getgenv().speedEnabled, getgenv().speedValue = false, 20
 Tabs.PlayerTab:Toggle({
     Title = "Enable Speed",
     Default = false,
@@ -240,8 +210,7 @@ Tabs.PlayerTab:Slider({
     end
 })
 
-getgenv().jumpEnabled = false
-getgenv().jumpValue = 50
+getgenv().jumpEnabled, getgenv().jumpValue = false, 50
 Tabs.PlayerTab:Toggle({
     Title = "Enable JumpPower",
     Default = false,
@@ -284,39 +253,30 @@ Tabs.PlayerTab:Toggle({
                 local char = LocalPlayer.Character
                 if char and _G.Noclip then
                     for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = false end
                     end
                 end
             end)
         else
-            if noclipConnection then
-                noclipConnection:Disconnect()
-                noclipConnection = nil
-            end
+            if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
             local char = LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
+                    if part:IsA("BasePart") then part.CanCollide = true end
                 end
             end
         end
     end
 })
 
--- ======= FarmTab (Auto Collect Money) =======
+-- ========================= FarmTab =========================
 _G.AutoCollectMoney = false
 Tabs.FarmTab:Toggle({
     Title = "Auto Collect (Money)",
     Default = false,
     Callback = function(state)
-        local RS = ReplicatedStorage
-        local ClaimCash = RS:WaitForChild("src"):WaitForChild("Modules"):WaitForChild("KnitClient")
+        local ClaimCash = ReplicatedStorage:WaitForChild("src"):WaitForChild("Modules"):WaitForChild("KnitClient")
             :WaitForChild("Services"):WaitForChild("BaseService"):WaitForChild("RE"):WaitForChild("ClaimCash")
-
         _G.AutoCollectMoney = state
         if state then
             task.spawn(function()
@@ -333,8 +293,7 @@ Tabs.FarmTab:Toggle({
     end
 })
 
--- ======= ESP Tab =======
-local ESPEnabled = false
+-- ========================= ESP Tab =========================
 local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESPFolder"
 ESPFolder.Parent = CoreGui
@@ -345,21 +304,21 @@ local function createESP(player)
 
     local highlight = Instance.new("Highlight")
     highlight.Name = player.Name
-    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
-    highlight.OutlineColor = Color3.new(0, 0, 0)
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.new(0,0,0)
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 
     local billboard = Instance.new("BillboardGui")
     billboard.Name = player.Name .. "_ESPLabel"
     billboard.Size = UDim2.new(0, 100, 0, 30)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.StudsOffset = Vector3.new(0,3,0)
     billboard.AlwaysOnTop = true
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1,0,1,0)
     label.BackgroundTransparency = 1
     label.Text = player.Name
-    label.TextColor3 = Color3.new(1, 1, 1) -- สีขาว
+    label.TextColor3 = Color3.new(1,1,1)
     label.TextStrokeTransparency = 0
     label.Font = Enum.Font.SourceSansBold
     label.TextScaled = true
@@ -389,35 +348,22 @@ local function removeESP(player)
     if b then b:Destroy() end
 end
 
-local function enableESP()
-    for _, player in pairs(Players:GetPlayers()) do
-        createESP(player)
-    end
-    Players.PlayerAdded:Connect(createESP)
-    Players.PlayerRemoving:Connect(removeESP)
-end
-
-local function disableESP()
-    ESPFolder:ClearAllChildren()
-end
-
 Tabs.ESPTab:Toggle({
     Title = "Player ESP",
     Default = false,
     Callback = function(state)
-        ESPEnabled = state
         if state then
-            enableESP()
+            for _, p in pairs(Players:GetPlayers()) do createESP(p) end
+            Players.PlayerAdded:Connect(createESP)
+            Players.PlayerRemoving:Connect(removeESP)
         else
-            disableESP()
+            ESPFolder:ClearAllChildren()
         end
     end
 })
 
--- ======= Teleport Tab =======
-local savedCFrame = nil
-
--- เซฟตำแหน่งจุดแรก หลังโหลดเสร็จ
+-- ========================= Teleport Tab =========================
+local savedCFrame
 task.delay(2, function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         savedCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
@@ -438,6 +384,7 @@ Tabs.TeleportTab:Button({
         end
     end
 })
+
 
 Info = Tabs.InfoTab
 
