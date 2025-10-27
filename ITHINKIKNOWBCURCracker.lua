@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.2"
+local version = "5.1.4"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -681,50 +681,105 @@ SurTab:Toggle({
 })
 
 local autoLeverEnabled = false
+local notifiedMove = false -- ป้องกัน spam notify
 
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Exit"):WaitForChild("LeverEvent")
+
+-- ✅ ฟังก์ชันแจ้งเตือนเมื่อพยายามเดิน
+local function notifyMovementAttempt()
+	if not notifiedMove then
+		notifiedMove = true
+		WindUI:Notify({
+			Title = "Auto Lever",
+			Content = "Please turn off Auto Lever before moving!",
+			Duration = 3,
+			Icon = "alert-triangle"
+		})
+		task.delay(3, function()
+			notifiedMove = false
+		end)
+	end
+end
+
+-- ✅ ตรวจจับปุ่มเดิน (สำหรับคอม)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if autoLeverEnabled and (
+		input.KeyCode == Enum.KeyCode.W or
+		input.KeyCode == Enum.KeyCode.A or
+		input.KeyCode == Enum.KeyCode.S or
+		input.KeyCode == Enum.KeyCode.D
+	) then
+		notifyMovementAttempt()
+	end
+end)
+
+-- ✅ ตรวจจับการเคลื่อนไหว (สำหรับมือถือ)
+RunService.Heartbeat:Connect(function()
+	if autoLeverEnabled then
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.MoveDirection.Magnitude > 0 then
+			notifyMovementAttempt()
+		end
+	end
+end)
+
+-- ✅ Toggle หลัก
 SurTab:Toggle({
-    Title = "Auto Lever (No Hold)",
-    Value = false,
-    Callback = function(v)
-        autoLeverEnabled = v
-        if autoLeverEnabled then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Exit"):WaitForChild("LeverEvent")
-                local player = Players.LocalPlayer
+	Title = "Auto Lever (No Hold)",
+	Value = false,
+	Callback = function(v)
+		autoLeverEnabled = v
 
-                while autoLeverEnabled do
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        local folders = getMapFolders()
-                        for _, folder in ipairs(folders) do
-                            local gate = folder:FindFirstChild("Gate")
-                            if gate and gate:FindFirstChild("ExitLever") then
-                                local main = gate.ExitLever:FindFirstChild("Main")
-                                if main then
-                                    local dist = (root.Position - main.Position).Magnitude
-                                    if dist <= 10 then
-                                        remote:FireServer(main, true)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    task.wait(2)
-                end
-            end)
-        end
-    end
+		if autoLeverEnabled then
+			task.spawn(function()
+				while autoLeverEnabled do
+					local char = player.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					if root then
+						local nearestLever
+						local nearestDist = math.huge
+
+						for _, folder in ipairs(getMapFolders()) do
+							local gate = folder:FindFirstChild("Gate")
+							if gate and gate:FindFirstChild("ExitLever") then
+								local main = gate.ExitLever:FindFirstChild("Main")
+								if main and main:IsA("BasePart") then
+									local dist = (root.Position - main.Position).Magnitude
+									if dist < nearestDist then
+										nearestDist = dist
+										nearestLever = main
+									end
+								end
+							end
+						end
+
+						if nearestLever and nearestDist <= 10 then
+							remote:FireServer(nearestLever, true)
+						end
+					end
+					task.wait(2)
+				end
+			end)
+		end
+	end
 })
+
+
 
 SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto Heal (No Puzzle)",
+    Title = "Auto Heal (Under Fixing)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -1074,7 +1129,7 @@ killerTab:Toggle({
     end
 })
 
-killerTab:Toggle({Title="Anti Parry (Soon)", Value=false, Callback=function(v) noFlashlightEnabled=v end})
+killerTab:Toggle({Title="Anti Parry (In development)", Value=false, Callback=function(v) noFlashlightEnabled=v end})
 
 killerTab:Section({ Title = "Feature No-Cooldown", Icon = "crown" })
 
