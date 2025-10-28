@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.9"
+local version = "5.2.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -581,15 +581,12 @@ MainTab:Toggle({
 SurTab:Section({ Title = "Feature Survivor", Icon = "user" })
 
 local autoshoot = false
+local autoshootf = false
 local auraRange = 25
 local shootCooldown = 2.5
+local shootCooldownF = 0.2 -- ค่าดีฟอลต์ของ Everywhere
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-
--- UI Input
+-- ตั้งระยะการยิง
 SurTab:Input({
     Title = "Set Range Auto Shoot (Legit)",
     Default = tostring(auraRange),
@@ -604,6 +601,7 @@ SurTab:Input({
     end
 })
 
+-- ตั้งคูลดาวน์ Legit
 SurTab:Input({
     Title = "Set Cooldown Auto Shoot (Legit)",
     Default = tostring(shootCooldown),
@@ -618,7 +616,7 @@ SurTab:Input({
     end
 })
 
--- ✅ Auto Aim + Shoot
+-- 🔫 Auto Shoot (Legit)
 SurTab:Toggle({
     Title = "Auto Shoot (Legit)",
     Value = false,
@@ -626,6 +624,10 @@ SurTab:Toggle({
         autoshoot = v
         if autoshoot then
             task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
                 local remote = ReplicatedStorage
                     :WaitForChild("Remotes")
                     :WaitForChild("Items")
@@ -635,8 +637,7 @@ SurTab:Toggle({
                 while autoshoot do
                     local char = LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    local gun = char
-                        and char:FindFirstChild("Twist of Fate")
+                    local gun = char and char:FindFirstChild("Twist of Fate")
                         and char["Twist of Fate"]:FindFirstChild("Right Arm")
                         and char["Twist of Fate"]["Right Arm"]:FindFirstChild("gun")
 
@@ -645,43 +646,99 @@ SurTab:Toggle({
                         continue
                     end
 
-                    -- ค้นหาผู้เล่นที่ใกล้ที่สุดที่มี Weapon
-                    local nearest, nearestDist = nil, auraRange
                     for _, plr in ipairs(Players:GetPlayers()) do
                         if plr ~= LocalPlayer and plr.Character then
                             local targetChar = plr.Character
                             local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
-                            if targetRoot and targetChar:FindFirstChild("Weapon") then
-                                local dist = (targetRoot.Position - root.Position).Magnitude
-                                if dist <= nearestDist then
-                                    nearest = targetRoot
-                                    nearestDist = dist
+
+                            if targetChar:FindFirstChild("Weapon") and targetRoot then
+                                local distance = (targetRoot.Position - root.Position).Magnitude
+                                if distance <= auraRange then
+                                    local dir = (targetRoot.Position - gun.Position).Unit
+                                    local args = {
+                                        gun,
+                                        vector.create(dir.X, dir.Y, dir.Z)
+                                    }
+                                    remote:FireServer(unpack(args))
+                                    task.wait(shootCooldown)
+                                    break
                                 end
                             end
                         end
                     end
 
-                    -- ถ้ามีเป้าหมายที่ใกล้สุด
-                    if nearest then
-                        -- หมุนตัวละครไปทางเป้าหมาย
-                        local lookAt = CFrame.lookAt(root.Position, nearest.Position)
-                        root.CFrame = CFrame.new(root.Position, nearest.Position)
-
-                        -- ยิงไปในทิศทางนั้น
-                        local direction = (nearest.Position - gun.Position).Unit
-                        local args = {gun, direction}
-                        remote:FireServer(unpack(args))
-
-                        task.wait(shootCooldown)
-                    else
-                        task.wait(0.1)
-                    end
+                    task.wait(0.05)
                 end
             end)
         end
     end
 })
 
+-- ตั้งคูลดาวน์ Everywhere
+SurTab:Input({
+    Title = "Set Cooldown Auto Shoot (Everywhere)",
+    Default = tostring(shootCooldownF),
+    Placeholder = "Cooldown (Ex: 0.2)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            shootCooldownF = num
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+-- 💥 Auto Shoot (Everywhere)
+SurTab:Toggle({
+    Title = "Auto Shoot (Everywhere)",
+    Value = false,
+    Callback = function(v)
+        autoshootf = v
+        if autoshootf then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+                local remote = ReplicatedStorage
+                    :WaitForChild("Remotes")
+                    :WaitForChild("Items")
+                    :WaitForChild("Twist of Fate")
+                    :WaitForChild("Fire")
+
+                while autoshootf do
+                    local char = LocalPlayer.Character
+                    local gun = char and char:FindFirstChild("Twist of Fate")
+                        and char["Twist of Fate"]:FindFirstChild("Right Arm")
+                        and char["Twist of Fate"]["Right Arm"]:FindFirstChild("gun")
+
+                    if gun then
+                        for _, plr in ipairs(Players:GetPlayers()) do
+                            if plr ~= LocalPlayer and plr.Character then
+                                local targetChar = plr.Character
+                                local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+
+                                -- ✅ ยิงทุกคนที่มี Weapon ใน Character (ไม่สนระยะ)
+                                if targetChar:FindFirstChild("Weapon") and targetRoot then
+                                    local dir = (targetRoot.Position - gun.Position).Unit
+                                    local args = {
+                                        gun,
+                                        vector.create(dir.X, dir.Y, dir.Z)
+                                    }
+
+                                    remote:FireServer(unpack(args))
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(shootCooldownF)
+                end
+            end)
+        end
+    end
+})
 
 local autoparry = false
 
