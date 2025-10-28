@@ -28,7 +28,7 @@ local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(
         FrameCounter = 0;
     end;
 
-    Library:SetWatermark(('DYHUB V6.2.2 | %s fps | %s ms | Game: ' .. info.Name .. ''):format(
+    Library:SetWatermark(('DYHUB V6.3.1 | %s fps | %s ms | Game: ' .. info.Name .. ''):format(
         math.floor(FPS),
         math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
     ));
@@ -311,6 +311,7 @@ local AutoShakeGroup = Tabs.Main:AddLeftGroupbox('Auto Shake')
 local AutoReelGroup = Tabs.Main:AddLeftGroupbox('Auto Reel')
 local AutoCastGroup = Tabs.Main:AddLeftGroupbox('Auto Cast')
 local FishUtilitiesGroup = Tabs.Main:AddRightGroupbox('Fish Utilities')
+local DUPE = Tabs.Main:AddRightGroupbox('Dupe Utilities')
 --local EventGroup = Tabs.Main:AddRightGroupbox('Event')
 local ZoneCastGroup = Tabs.Main:AddRightGroupbox('Zone Cast')
 local CollarPlayerGroup = Tabs.Main:AddRightGroupbox('Collar Player')
@@ -508,6 +509,55 @@ local Selltoggle = FishUtilitiesGroup:AddToggle('Sell ALL fish (Auto)', {
                 task.wait(2)
             end
         end)
+    end
+})
+
+dupefish = false
+
+DUPE:AddToggle('Dupe (Spear Fishing)', {
+    Text = 'Enabled',
+    Default = false,
+    Tooltip = 'Dupe fish at Spear fishing Zone',
+    Callback = function(Value)
+        dupefish = Value
+        local CollectionService = game:GetService("CollectionService")
+        local Remote = game:GetService("ReplicatedStorage").packages.Net["RE/SpearFishing/Minigame"]
+        local player = game.Players.LocalPlayer
+
+        if dupefish then
+            -- วาร์ปไปแค่ครั้งเดียวตอนเปิด
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(-2585, 145, -1940)
+            end
+
+            task.spawn(function()
+                while dupefish do
+                    task.wait()
+                    for _, v in next, CollectionService:GetTagged("SpearfishingZone") do
+                        local Zone = v:FindFirstChild("ZoneFish")
+                        if Zone then
+                            for _, Fish in next, Zone:GetChildren() do
+                                local UID = Fish:GetAttribute("UID")
+                                if UID then
+                                    task.spawn(function()
+                                        Remote:FireServer(UID)
+                                        task.wait()
+                                        Remote:FireServer(UID, true)
+                                    end)
+                                    task.wait()
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+
+            warn("✅ Spear Fishing Dupe Started!")
+
+        else
+            warn("❌ Spear Fishing Dupe Stopped!")
+        end
     end
 })
 
@@ -905,7 +955,7 @@ ThemeManager:ApplyToTab(Tabs.Settings)
 
 SaveManager:LoadAutoloadConfig()
 
-local Version = "5.9.6"
+local Version = "5.9.8"
 
 task.spawn(function()
     local success, LatestVer = pcall(function()
@@ -920,6 +970,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 
 
