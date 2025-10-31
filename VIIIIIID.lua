@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.2"
+local version = "5.1.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -39,10 +39,6 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- WindUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
--- ====================== ESP SETTINGS ======================
-
-
 
 -- ====================== WINDOW ======================
 local Players = game:GetService("Players")
@@ -85,7 +81,7 @@ local Window = WindUI:CreateWindow({
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
     Author = "Violence District | " .. userversion,
-    Folder = "DYHUB_VD",
+    Folder = "DYHUB_VD_config",
     Size = UDim2.fromOffset(500, 400),
     Transparent = true,
     Theme = "Dark",
@@ -134,6 +130,7 @@ local ESPGENERATOR = false
 local ESPGATE      = false
 local ESPPALLET    = false
 local ESPWINDOW    = false
+local ESPPUMKIN    = false
 local ESPHOOK      = false
 
 -- Color config
@@ -143,6 +140,7 @@ local COLOR_GENERATOR      = Color3.fromRGB(255,255,255)
 local COLOR_GENERATOR_DONE = Color3.fromRGB(0,255,0)
 local COLOR_GATE           = Color3.fromRGB(255,255,255)
 local COLOR_PALLET         = Color3.fromRGB(255,255,0)
+local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
 local COLOR_OUTLINE        = Color3.fromRGB(0,0,0)
 local COLOR_WINDOW         = Color3.fromRGB(255,165,0)
 local COLOR_HOOK           = Color3.fromRGB(255,0,0)
@@ -156,6 +154,7 @@ local espGate = false
 local espHook = false
 local espPallet = false
 local espWindowEnabled = false
+local espPumkin = false
 
 -- Label toggles
 local ShowName = true
@@ -282,6 +281,41 @@ local function updateWindowESP()
                     createESP(windowModel, COLOR_WINDOW)
                 else
                     removeESP(windowModel)
+                end
+            end
+        end
+    end
+end
+
+local function getPumkinFolders()
+    local folders = {}
+    -- ค้นหา Map และ Rooftop
+    local mainMap = workspace:FindFirstChild("Map")
+    local rooftop = workspace:FindFirstChild("Rooftop")
+
+    -- ถ้ามี Map และในนั้นมีโฟลเดอร์ชื่อ Pumkin
+    if mainMap and mainMap:FindFirstChild("Pumkin") then
+        table.insert(folders, mainMap.Pumkin)
+    end
+
+    -- ถ้ามี Rooftop และในนั้นมีโฟลเดอร์ชื่อ Pumkin
+    if rooftop and rooftop:FindFirstChild("Pumkin") then
+        table.insert(folders, rooftop.Pumkin)
+    end
+
+    return folders
+end
+
+local function updatePumkinESP()
+    if not espEnabled then return end
+    for _, folder in pairs(getPumkinFolders()) do
+        for _, pumkin in pairs(folder:GetChildren()) do
+            -- ตรวจชื่อ Pumkin1, Pumkin2, Pumkin3, ...
+            if pumkin:IsA("Model") and pumkin.Name:match("^Pumkin%d+$") then
+                if espPumkin then
+                    createESP(pumkin, COLOR_PUMKIN)
+                else
+                    removeESP(pumkin)
                 end
             end
         end
@@ -483,6 +517,12 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
     updateWindowESP()
 end})
 
+EspTab:Section({ Title = "Esp Event", Icon = "candy" })
+EspTab:Toggle({Title="ESP Pumkin", Value=false, Callback=function(v)
+    espPumkin=v
+    updatePumkinESP()
+end})
+
 EspTab:Section({ Title = "Esp Settings", Icon = "settings" })
 EspTab:Toggle({Title="Show Name", Value=ShowName, Callback=function(v) ShowName=v end})
 EspTab:Toggle({Title="Show Distance", Value=ShowDistance, Callback=function(v) ShowDistance=v end})
@@ -619,10 +659,13 @@ SurTab:Toggle({
     end
 })
 
+SurTab:Section({ Title = "Feature Object", Icon = "zap" })
+
 local autoGeneratorEnabled = false
+local autoGeneratorEnablednotperfect = false
 
 SurTab:Toggle({
-    Title = "Auto Generator (No Puzzle)",
+    Title = "Auto SkillCheck (Perfect)",
     Value = false,
     Callback = function(v)
         autoGeneratorEnabled = v
@@ -635,6 +678,65 @@ SurTab:Toggle({
                 local playerGui = player:WaitForChild("PlayerGui")
 
                 while autoGeneratorEnabled do
+                    -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
+                    local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                    if gui and gui:FindFirstChild("Check") then
+                        gui.Check.Visible = false
+                    end
+
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        local folders = getMapFolders()
+                        local closestGen, closestDist = nil, 10
+
+                        for _, folder in ipairs(folders) do
+                            for _, gen in ipairs(folder:GetChildren()) do
+                                if gen.Name == "Generator" and gen:IsA("Model") then
+                                    local primary = gen:FindFirstChild("PrimaryPart") or gen:FindFirstChildWhichIsA("BasePart")
+                                    if primary then
+                                        local dist = (root.Position - primary.Position).Magnitude
+                                        if dist <= closestDist then
+                                            closestDist = dist
+                                            closestGen = gen
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if closestGen then
+                            for i = 1, 4 do
+                                local point = closestGen:FindFirstChild("GeneratorPoint" .. i)
+                                if point then
+                                    local args = {"success", 1, closestGen, point}
+                                    remote:FireServer(unpack(args))
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
+
+SurTab:Toggle({
+    Title = "Auto SkillCheck (Not Perfect)",
+    Value = false,
+    Callback = function(v)
+        autoGeneratorEnablednotperfect = v
+        if autoGeneratorEnablednotperfect then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+
+                while autoGeneratorEnablednotperfect do
                     -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
                     local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                     if gui and gui:FindFirstChild("Check") then
@@ -724,7 +826,7 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto Heal (No Puzzle)",
+    Title = "Auto Heal (Under Fixing)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -787,7 +889,7 @@ SurTab:Toggle({
                 local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
 
                 while NoFallEnabled do
-                    local args = { -9e9 }
+                    local args = { -100 }
                     pcall(function()
                         FallRemote:FireServer(unpack(args))
                     end)
