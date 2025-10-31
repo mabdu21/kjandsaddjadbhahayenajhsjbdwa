@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.1"
+local version = "5.2.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -295,12 +295,12 @@ local function getPumkinFolders()
 
     -- ถ้ามี Map และในนั้นมีโฟลเดอร์ชื่อ Pumkin
     if mainMap and mainMap:FindFirstChild("Pumpkins") then
-        table.insert(folders, mainMap.Pumkin)
+        table.insert(folders, mainMap.Pumpkins)
     end
 
     -- ถ้ามี Rooftop และในนั้นมีโฟลเดอร์ชื่อ Pumkin
     if rooftop and rooftop:FindFirstChild("Pumpkins") then
-        table.insert(folders, rooftop.Pumkin)
+        table.insert(folders, rooftop.Pumpkins)
     end
 
     return folders
