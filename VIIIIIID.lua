@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.1.9"
+local version = "5.2.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -294,12 +294,12 @@ local function getPumkinFolders()
     local rooftop = workspace:FindFirstChild("Rooftop")
 
     -- ถ้ามี Map และในนั้นมีโฟลเดอร์ชื่อ Pumkin
-    if mainMap and mainMap:FindFirstChild("Pumkin") then
+    if mainMap and mainMap:FindFirstChild("Pumpkins") then
         table.insert(folders, mainMap.Pumkin)
     end
 
     -- ถ้ามี Rooftop และในนั้นมีโฟลเดอร์ชื่อ Pumkin
-    if rooftop and rooftop:FindFirstChild("Pumkin") then
+    if rooftop and rooftop:FindFirstChild("Pumpkins") then
         table.insert(folders, rooftop.Pumkin)
     end
 
@@ -311,7 +311,7 @@ local function updatePumkinESP()
     for _, folder in pairs(getPumkinFolders()) do
         for _, pumkin in pairs(folder:GetChildren()) do
             -- ตรวจชื่อ Pumkin1, Pumkin2, Pumkin3, ...
-            if pumkin:IsA("Model") and pumkin.Name:match("^Pumkin%d+$") then
+            if pumkin:IsA("Model") and pumkin.Name:match("^Pumpkin%d+$") then
                 if espPumkin then
                     createESP(pumkin, COLOR_PUMKIN)
                 else
