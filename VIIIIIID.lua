@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.2"
+local version = "5.2.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -142,7 +142,7 @@ local COLOR_GATE           = Color3.fromRGB(255,255,255)
 local COLOR_PALLET         = Color3.fromRGB(255,255,0)
 local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
 local COLOR_OUTLINE        = Color3.fromRGB(0,0,0)
-local COLOR_WINDOW         = Color3.fromRGB(255,165,0)
+local COLOR_WINDOW         = Color3.fromRGB(175, 215, 230)
 local COLOR_HOOK           = Color3.fromRGB(255,0,0)
 
 -- State flags
@@ -498,6 +498,7 @@ EspTab:Toggle({Title="Enable ESP", Value=false, Callback=function(v)
     else
         updateESP(0)
         updateWindowESP()
+        updatePumkinESP()
     end
 end})
 
