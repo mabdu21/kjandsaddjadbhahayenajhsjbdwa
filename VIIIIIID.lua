@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.3.1"
+local version = "5.3.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -609,7 +609,7 @@ local function setGateState(enabled)
 end
 
 -- ===============================
--- 🎃 Auto-Collect Pumpkin v2.6 (No GUI Counter)
+-- 🎃 Auto-Collect Pumpkin v2.7 (Click Version)
 -- ===============================
 
 local Players = game:GetService("Players")
@@ -623,8 +623,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 -- ⚙️ CONFIG
 -- ===============================
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.2 -- ระยะเวลาระหว่าง Pumpkin
-local PC_KEYS = {"Space", "F", "E"}
+local ACTION_DELAY = 1.2 -- Delay between pumpkin collection
 local CPumkin = false
 
 -- ===============================
@@ -674,13 +673,20 @@ local function teleportTo(target)
 	end
 end
 
-local function pressKeys()
-	for _, key in ipairs(PC_KEYS) do
-		VirtualInputManager:SendKeyEvent(true, key, false, game)
-		task.wait(0.05)
-		VirtualInputManager:SendKeyEvent(false, key, false, game)
-		task.wait(0.05)
-	end
+-- ===============================
+-- 🖱️ Simulate Left Click (PC + Mobile)
+-- ===============================
+local function simulateClick()
+	local viewportSize = Workspace.CurrentCamera.ViewportSize
+	local centerX = viewportSize.X / 2
+	local centerY = viewportSize.Y / 2
+
+	-- Press down
+	VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+	task.wait(0.05)
+	-- Release
+	VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+	task.wait(0.05)
 end
 
 -- ===============================
@@ -728,7 +734,7 @@ local function autoCollectPumpkins()
 			end
 
 			if #newPumpkins == 0 then
-				print("[✅] ไม่มี Pumpkin เหลือแล้ว หยุดการเก็บอัตโนมัติ")
+				print("[✅] No pumpkins left to collect. Auto-collect stopped.")
 				teleportTo(safeZone)
 				CPumkin = false
 				break
@@ -741,13 +747,13 @@ local function autoCollectPumpkins()
 				if pumpkinPart then
 					teleportTo(pumpkinPart)
 					task.wait(0.3)
-					pressKeys()
+					simulateClick() -- simulate left click instead of key press
 					collected[pumpkin] = true
 					task.wait(ACTION_DELAY)
 				end
 			end
 
-			task.wait(0.4) -- หน่วงรอบใหญ่เพื่อไม่ให้เกมค้าง
+			task.wait(0.4) -- small delay to avoid freezing
 		end
 
 		collecting = false
@@ -759,20 +765,21 @@ end
 -- ===============================
 MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
 MainTab:Toggle({
-	Title = "Auto Collect Pumpkin (Beta)",
+	Title = "Auto Collect Pumpkin (Click Version)",
 	Value = false,
 	Callback = function(v)
 		CPumkin = v
 		if v then
-			print("[🎃] เริ่มเก็บ Pumpkin อัตโนมัติ...")
+			print("[🎃] Starting auto pumpkin collection...")
 			collected = {}
 			autoCollectPumpkins()
 		else
-			print("[🛑] หยุด Auto Collect แล้ว")
+			print("[🛑] Auto collect stopped.")
 			teleportTo(safeZone)
 		end
 	end
 })
+
 
 MainTab:Section({ Title = "Feature Bypass", Icon = "lock-open" })
 MainTab:Toggle({
