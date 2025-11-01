@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.1.2"
+local version = "3.1.7"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -56,7 +56,7 @@ local BuyIndex, EquipIndex, SelectedCount = 1, 1, 1
 local SpinCounts = {1,3,10}
 
 local FoodList = {"Strawberry","Blueberry","Watermelon","Apple","Orange","Corn","Banana","Grape","Pear","PineApple","Dargon Fruit","Gold Mango","Bloodstone Cycad","Colossal Pinecone","Volt Ginkgo","Deepsea Pearl Fruit","Durian"}
-local eggTypes = {"BasicEgg","RareEgg","SuperRareEgg","EpicEgg","LegendEgg","HyperEgg","BowserEgg","VoidEgg","CornEgg","BoneDragonEgg","DemonEgg","PrismaticEgg","DarkGoatyEgg","LionfishEgg","OctopusEgg","UltraEgg","UnicornEgg","UnicornProEgg","AnglerfishEgg","RhinoRockEgg","SaberCubEgg","SeaweedEgg","SharkEgg","SnowbunnyEgg","GeneralKongEgg","SailfishEgg","SeaDragonEgg","PegasusEgg","ClownfishEgg","AncientEgg","DinoEgg","FlyEgg","OceanEgg"}
+local eggTypes = {"BasicEgg","RareEgg","SuperRareEgg","EpicEgg","LegendEgg","HyperEgg","BowserEgg","VoidEgg","CornEgg","BoneDragonEgg","DemonEgg","PrismaticEgg","DarkGoatyEgg","LionfishEgg","OctopusEgg","UltraEgg","UnicornEgg","UnicornProEgg","AnglerfishEgg","RhinoRockEgg","SaberCubEgg","SeaweedEgg","SharkEgg","SnowbunnyEgg","GeneralKongEgg","SailfishEgg","SeaDragonEgg","PegasusEgg","ClownfishEgg","AncientEgg","DinoEgg","FlyEgg","OceanEgg","MetroGiraffeEgg","GodzillaEgg","CapyEgg","HalloweenEgg"}
 local PotionList = {"Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
 local BaitList = {"FishingBait1","FishingBait2","FishingBait3"}
 local CodeList = {"CFJXEH4M8K5","DelayGift","60KCCU919","50KCCU0912","SeasonOne","ZooFish829","FIXERROR819","MagicFruit","WeekendEvent89","BugFixes","U2CA518SC5","X2CA821BA3","55PA21N8y2"}
@@ -70,7 +70,7 @@ local Window = WindUI:CreateWindow({
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
     Author = "Build a Zoo | Premium Version",
-    Folder = "DYHUB_BAZ_ESP",
+    Folder = "DYHUB_BAZ",
     Size = UDim2.fromOffset(550,380),
     Transparent = true,
     Theme = "Dark",
@@ -111,7 +111,7 @@ local myConfig = ConfigManager:CreateConfig("dyhub_settings")
 -- ====================== AUTO BUY & EQUIP ======================
 -- Buy Conveyor
 Auto:Section({Title="Buy Conveyor", Icon="package"})
-local BuyConveyorDropdown = Auto:Dropdown({Title="Select Conveyor to Buy (1-9)", Values={"1","2","3","4","5","6","7","8","9"}, Multi=false, Callback=function(value) BuyIndex=tonumber(value); myConfig:Save() end})
+local BuyConveyorDropdown = Auto:Dropdown({Title="Select Conveyor to Buy (1-9)", Values={"1","2","3","4","5","6","7","8","9","10"}, Multi=false, Callback=function(value) BuyIndex=tonumber(value); myConfig:Save() end})
 myConfig:Register("BuyIndex", BuyConveyorDropdown)
 local BuyConveyorToggle = Auto:Toggle({Title="Buy Conveyor", Value=false, Callback=function(state) AutoBuyConveyor=state
     if state then task.spawn(function()
@@ -127,7 +127,7 @@ myConfig:Register("AutoBuyConveyor", BuyConveyorToggle)
 
 -- Equip Conveyor
 Auto:Section({Title="Equip Conveyor", Icon="layout-grid"})
-local EquipConveyorDropdown = Auto:Dropdown({Title="Select Conveyor to Equip (1-9)", Values={"1","2","3","4","5","6","7","8","9"}, Multi=false, Callback=function(value) EquipIndex=tonumber(value); myConfig:Save() end})
+local EquipConveyorDropdown = Auto:Dropdown({Title="Select Conveyor to Equip (1-9)", Values={"1","2","3","4","5","6","7","8","9","10"}, Multi=false, Callback=function(value) EquipIndex=tonumber(value); myConfig:Save() end})
 myConfig:Register("EquipIndex", EquipConveyorDropdown)
 local EquipConveyorToggle = Auto:Toggle({Title="Equip Conveyor", Value=false, Callback=function(state) AutoEquip=state
     if state then task.spawn(function()
@@ -315,10 +315,10 @@ end})
 myConfig:Register("autoHatch", HatchToggle)
 
 -- ====================== EVENT ======================
-Event:Section({Title="Event: Snow", Icon="trophy"})
-local QuestDropdown = Event:Dropdown({Title="Select Dino Quest", Values=QuestList, Multi=false, Callback=function(value) SelectedQuest=value; myConfig:Save() end})
+Event:Section({Title="Event: Halloween", Icon="candy"})
+local QuestDropdown = Event:Dropdown({Title="Select Halloween Quest", Values=QuestList, Multi=false, Callback=function(value) SelectedQuest=value; myConfig:Save() end})
 myConfig:Register("SelectedQuest", QuestDropdown)
-local QuestToggle = Event:Toggle({Title="Auto Claim Dino Quest", Value=false, Callback=function(state)
+local QuestToggle = Event:Toggle({Title="Auto Claim Halloween Quest", Value=false, Callback=function(state)
     AutoDinoEnabled=state
     task.spawn(function()
         while AutoDinoEnabled do
@@ -336,7 +336,7 @@ local QuestToggle = Event:Toggle({Title="Auto Claim Dino Quest", Value=false, Ca
 end})
 myConfig:Register("AutoDinoEnabled", QuestToggle)
 
-local CollectDinoToggle = Event:Toggle({Title="Auto Collect Dino", Value=false, Callback=function(state)
+local CollectDinoToggle = Event:Toggle({Title="Auto Collect Halloween", Value=false, Callback=function(state)
     autoCollectDino=state
     if state then task.spawn(function()
         while autoCollectDino do
