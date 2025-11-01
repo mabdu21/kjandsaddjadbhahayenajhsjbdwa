@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.9"
+local version = "5.3.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -609,7 +609,7 @@ local function setGateState(enabled)
 end
 
 -- ===============================
--- Auto-Collect Pumpkin (Optimized & Safe)
+-- 🎃 Auto-Collect Pumpkin v2.6 (No GUI Counter)
 -- ===============================
 
 local Players = game:GetService("Players")
@@ -619,9 +619,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- ตั้งค่า
+-- ===============================
+-- ⚙️ CONFIG
+-- ===============================
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.5
+local ACTION_DELAY = 1.2 -- ระยะเวลาระหว่าง Pumpkin
 local PC_KEYS = {"Space", "F", "E"}
 local CPumkin = false
 
@@ -629,112 +631,127 @@ local CPumkin = false
 -- 🧱 Safe Zone Setup
 -- ===============================
 local function createSafeZone()
-    local part = Instance.new("Part")
-    part.Name = "SafeZone"
-    part.Anchored = true
-    part.CanCollide = true
-    part.Size = Vector3.new(10, 1, 10)
-    part.Position = Vector3.new(0, SAFEZONE_HEIGHT, 0)
-    part.Transparency = 0.5
-    part.Color = Color3.fromRGB(0, 0, 255)
-    part.Parent = Workspace
-    return part
+	local part = Instance.new("Part")
+	part.Name = "SafeZone"
+	part.Anchored = true
+	part.CanCollide = true
+	part.Size = Vector3.new(10, 1, 10)
+	part.Position = Vector3.new(0, SAFEZONE_HEIGHT, 0)
+	part.Transparency = 0.5
+	part.Color = Color3.fromRGB(0, 0, 255)
+	part.Parent = Workspace
+	return part
 end
 
 local safeZone = Workspace:FindFirstChild("SafeZone") or createSafeZone()
 
 -- ===============================
--- 🚀 Teleport & Press Keys
+-- 🧭 Helper Functions
 -- ===============================
-local function teleportTo(target)
-    local character = LocalPlayer.Character
-    if not character or not target then return end
-    local root = character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+local function getRoot()
+	local character = LocalPlayer.Character
+	if not character then return nil end
+	return character:FindFirstChild("HumanoidRootPart")
+end
 
-    local cf = target:IsA("Model") and target.PrimaryPart and target.PrimaryPart.CFrame or target.CFrame
-    if cf then
-        root.CFrame = cf + Vector3.new(0, 3, 0)
-    end
+local function getPumpkinPart(pumpkin)
+	if not pumpkin then return nil end
+	if pumpkin:IsA("BasePart") then return pumpkin end
+	if pumpkin:IsA("Model") then
+		if pumpkin.PrimaryPart then
+			return pumpkin.PrimaryPart
+		end
+		return pumpkin:FindFirstChildWhichIsA("BasePart")
+	end
+	return nil
+end
+
+local function teleportTo(target)
+	local root = getRoot()
+	local targetPart = getPumpkinPart(target)
+	if root and targetPart then
+		root.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+	end
 end
 
 local function pressKeys()
-    for _, key in ipairs(PC_KEYS) do
-        VirtualInputManager:SendKeyEvent(true, key, false, game)
-        task.wait(0.05)
-        VirtualInputManager:SendKeyEvent(false, key, false, game)
-        task.wait(0.05)
-    end
+	for _, key in ipairs(PC_KEYS) do
+		VirtualInputManager:SendKeyEvent(true, key, false, game)
+		task.wait(0.05)
+		VirtualInputManager:SendKeyEvent(false, key, false, game)
+		task.wait(0.05)
+	end
 end
 
 -- ===============================
 -- 🎃 Pumpkin Finder
 -- ===============================
 local function getPumpkins()
-    local pumpkins = {}
-    local paths = {
-        Workspace:FindFirstChild("Map"),
-        Workspace:FindFirstChild("Rooftop"),
-    }
+	local pumpkins = {}
+	local paths = {
+		Workspace:FindFirstChild("Map"),
+		Workspace:FindFirstChild("Rooftop"),
+	}
 
-    for _, area in ipairs(paths) do
-        if area and area:FindFirstChild("Pumpkins") then
-            for _, p in ipairs(area.Pumpkins:GetChildren()) do
-                if p:IsA("Model") and p:FindFirstChild("PrimaryPart") and p.Name:match("^Pumpkin%d+$") then
-                    table.insert(pumpkins, p)
-                end
-            end
-        end
-    end
+	for _, area in ipairs(paths) do
+		if area and area:FindFirstChild("Pumpkins") then
+			for _, p in ipairs(area.Pumpkins:GetChildren()) do
+				if (p:IsA("Model") or p:IsA("BasePart")) and p.Name:match("^Pumpkin%d+$") then
+					table.insert(pumpkins, p)
+				end
+			end
+		end
+	end
 
-    return pumpkins
+	return pumpkins
 end
 
 -- ===============================
--- 🌀 Auto Collect Loop
+-- 🔁 Auto Collect Loop
 -- ===============================
 local collecting = false
 local collected = {}
 
 local function autoCollectPumpkins()
-    if collecting then return end
-    collecting = true
+	if collecting then return end
+	collecting = true
 
-    task.spawn(function()
-        while CPumkin do
-            local pumpkins = getPumpkins()
+	task.spawn(function()
+		while CPumkin do
+			local pumpkins = getPumpkins()
+			local newPumpkins = {}
 
-            -- กรองเอาเฉพาะ Pumpkin ที่ยังไม่เคยเก็บ
-            local newPumpkins = {}
-            for _, p in ipairs(pumpkins) do
-                if not collected[p] then
-                    table.insert(newPumpkins, p)
-                end
-            end
+			for _, p in ipairs(pumpkins) do
+				if not collected[p] then
+					table.insert(newPumpkins, p)
+				end
+			end
 
-            if #newPumpkins == 0 then
-                teleportTo(safeZone)
-                print("[✅] ไม่มี Pumpkin เหลือแล้ว หยุด Auto Collect")
-                CPumkin = false
-                break
-            end
+			if #newPumpkins == 0 then
+				print("[✅] ไม่มี Pumpkin เหลือแล้ว หยุดการเก็บอัตโนมัติ")
+				teleportTo(safeZone)
+				CPumkin = false
+				break
+			end
 
-            for _, pumpkin in ipairs(newPumpkins) do
-                if not CPumkin then break end
-                if pumpkin and pumpkin.PrimaryPart then
-                    teleportTo(pumpkin)
-                    pressKeys()
-                    collected[pumpkin] = true
-                    task.wait(ACTION_DELAY)
-                end
-            end
+			for _, pumpkin in ipairs(newPumpkins) do
+				if not CPumkin then break end
 
-            -- หน่วงรอบใหญ่ ป้องกันลูปหนัก
-            task.wait(0.3)
-        end
+				local pumpkinPart = getPumpkinPart(pumpkin)
+				if pumpkinPart then
+					teleportTo(pumpkinPart)
+					task.wait(0.3)
+					pressKeys()
+					collected[pumpkin] = true
+					task.wait(ACTION_DELAY)
+				end
+			end
 
-        collecting = false
-    end)
+			task.wait(0.4) -- หน่วงรอบใหญ่เพื่อไม่ให้เกมค้าง
+		end
+
+		collecting = false
+	end)
 end
 
 -- ===============================
@@ -742,17 +759,19 @@ end
 -- ===============================
 MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
 MainTab:Toggle({
-    Title = "Auto Collect Pumpkin (Optimized)",
-    Value = false,
-    Callback = function(v)
-        CPumkin = v
-        if v then
-            print("[🎃] เริ่มเก็บ Pumpkin อัตโนมัติ...")
-            autoCollectPumpkins()
-        else
-            print("[🛑] หยุด Auto Collect แล้ว")
-        end
-    end
+	Title = "Auto Collect Pumpkin (Beta)",
+	Value = false,
+	Callback = function(v)
+		CPumkin = v
+		if v then
+			print("[🎃] เริ่มเก็บ Pumpkin อัตโนมัติ...")
+			collected = {}
+			autoCollectPumpkins()
+		else
+			print("[🛑] หยุด Auto Collect แล้ว")
+			teleportTo(safeZone)
+		end
+	end
 })
 
 MainTab:Section({ Title = "Feature Bypass", Icon = "lock-open" })
