@@ -765,7 +765,7 @@ end
 -- ===============================
 MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
 MainTab:Toggle({
-	Title = "Auto Collect Pumpkin (Click Version)",
+	Title = "Auto Collect Pumpkin (Beta)",
 	Value = false,
 	Callback = function(v)
 		CPumkin = v
