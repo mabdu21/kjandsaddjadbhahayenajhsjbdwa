@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.4"
+local version = "5.2.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -404,6 +404,7 @@ local function updateESP(dt)
     end
 
     updateWindowESP()
+    updatePumkinESP()
 
     -- Update labels
     for obj, data in pairs(espObjects) do
@@ -662,11 +663,161 @@ SurTab:Toggle({
 
 SurTab:Section({ Title = "Feature Object", Icon = "zap" })
 
-local autoGeneratorEnabled = false
-local autoGeneratorEnablednotperfect = false
+local function getFolderGenerator()
+    local folders = {}
+    local map = workspace:FindFirstChild("Map")
+    if not map then return folders end
+
+    -- Map.Generator
+    for _, child in ipairs(map:GetChildren()) do
+        if child.Name == "Generator" and child:IsA("Model") then
+            table.insert(folders, child)
+        end
+    end
+
+    -- Map.Model.Generator
+    local model = map:FindFirstChild("Model")
+    if model then
+        for _, child in ipairs(model:GetChildren()) do
+            if child.Name == "Generator" and child:IsA("Model") then
+                table.insert(folders, child)
+            end
+        end
+    end
+
+    -- Rooftop.Generator
+    local rooftop = map:FindFirstChild("Rooftop")
+    if rooftop then
+        for _, child in ipairs(rooftop:GetChildren()) do
+            if child.Name == "Generator" and child:IsA("Model") then
+                table.insert(folders, child)
+            end
+        end
+
+        -- Rooftop.Model.Generator
+        local rooftopModel = rooftop:FindFirstChild("Model")
+        if rooftopModel then
+            for _, child in ipairs(rooftopModel:GetChildren()) do
+                if child.Name == "Generator" and child:IsA("Model") then
+                    table.insert(folders, child)
+                end
+            end
+        end
+    end
+
+    return folders
+end
+
+local autoGeneratorEnabledtest = false
 
 SurTab:Toggle({
     Title = "Auto SkillCheck (Perfect)",
+    Value = false,
+    Callback = function(v)
+        autoGeneratorEnabledtest = v
+        if autoGeneratorEnabledtest then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
+                local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+
+                local lastPosition = nil
+                local stationaryThreshold = 2
+                local cancelCooldown = 1
+                local repairCooldown = 2
+
+                local repairing = false
+                local lastGenPoint = nil
+
+                while autoGeneratorEnabledtest do
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+
+                    if root then
+                        -- หา generator ที่ใกล้ที่สุด
+                        local generators = getFolderGenerator()
+                        local closestGen, closestPoint, closestDist = nil, nil, 10
+
+                        for _, gen in ipairs(generators) do
+                            for i = 1, 4 do
+                                local point = gen:FindFirstChild("GeneratorPoint" .. i)
+                                if point then
+                                    local dist = (root.Position - point.Position).Magnitude
+                                    if dist < closestDist then
+                                        closestDist = dist
+                                        closestGen = gen
+                                        closestPoint = point
+                                    end
+                                end
+                            end
+                        end
+
+                        -- 🧍 ตรวจจับการขยับ
+                        if lastPosition then
+                            local moved = (root.Position - lastPosition).Magnitude
+                            if moved > stationaryThreshold then
+                                if repairing then
+                                    repairing = false
+                                    lastGenPoint = closestPoint
+                                    task.wait(cancelCooldown)
+                                    if lastGenPoint then
+                                        local args = {lastGenPoint, false}
+                                        repairRemote:FireServer(unpack(args))
+                                    end
+                                end
+                            else
+                                if not repairing and lastGenPoint and closestPoint == lastGenPoint then
+                                    repairing = true
+                                    task.wait(repairCooldown)
+                                    local args = {lastGenPoint, true}
+                                    repairRemote:FireServer(unpack(args))
+                                end
+                            end
+                        else
+                            repairing = true
+                        end
+                        lastPosition = root.Position
+
+                        -- 🎯 รอจนกว่า GUI SkillCheckPromptGui.Check จะปรากฏ
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+                            if not check then
+                                -- loop รอ GUI โผล่ขึ้น
+                                local timeout = 0
+                                while autoGeneratorEnabledtest and timeout < 5 do
+                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                                    check = gui and gui:FindFirstChild("Check")
+                                    if check and check.Visible then break end
+                                    timeout += 0.05
+                                    task.wait(0.05)
+                                end
+                            end
+
+                            -- ถ้า GUI Check โผล่ขึ้นแล้ว -> ยิง remote
+                            if check and check.Visible and closestGen and closestPoint then
+                                local args = {"success", 1, closestGen, closestPoint}
+                                remote:FireServer(unpack(args))
+
+                                -- ซ่อน GUI ทันที
+                                check.Visible = false
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
+
+local autoGeneratorEnabled = false
+
+SurTab:Toggle({
+    Title = "Auto SkillCheck (Not Perfect)",
     Value = false,
     Callback = function(v)
         autoGeneratorEnabled = v
@@ -675,107 +826,93 @@ SurTab:Toggle({
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
+
+                local lastPosition = nil
+                local stationaryThreshold = 2
+                local cancelCooldown = 1
+                local repairCooldown = 2
+
+                local repairing = false
+                local lastGenPoint = nil
 
                 while autoGeneratorEnabled do
-                    -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
-                    local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                    if gui and gui:FindFirstChild("Check") then
-                        gui.Check.Visible = false
-                    end
-
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        local folders = getMapFolders()
-                        local closestGen, closestDist = nil, 10
 
-                        for _, folder in ipairs(folders) do
-                            for _, gen in ipairs(folder:GetChildren()) do
-                                if gen.Name == "Generator" and gen:IsA("Model") then
-                                    local primary = gen:FindFirstChild("PrimaryPart") or gen:FindFirstChildWhichIsA("BasePart")
-                                    if primary then
-                                        local dist = (root.Position - primary.Position).Magnitude
-                                        if dist <= closestDist then
-                                            closestDist = dist
-                                            closestGen = gen
-                                        end
+                    if root then
+                        -- หา generator ที่ใกล้ที่สุด
+                        local generators = getFolderGenerator()
+                        local closestGen, closestPoint, closestDist = nil, nil, 10
+
+                        for _, gen in ipairs(generators) do
+                            for i = 1, 4 do
+                                local point = gen:FindFirstChild("GeneratorPoint" .. i)
+                                if point then
+                                    local dist = (root.Position - point.Position).Magnitude
+                                    if dist < closestDist then
+                                        closestDist = dist
+                                        closestGen = gen
+                                        closestPoint = point
                                     end
                                 end
                             end
                         end
 
-                        if closestGen then
-                            for i = 1, 4 do
-                                local point = closestGen:FindFirstChild("GeneratorPoint" .. i)
-                                if point then
-                                    local args = {"success", 1, closestGen, point}
-                                    remote:FireServer(unpack(args))
-                                end
-                            end
-                        end
-                    end
-
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-SurTab:Toggle({
-    Title = "Auto SkillCheck (Not Perfect)",
-    Value = false,
-    Callback = function(v)
-        autoGeneratorEnablednotperfect = v
-        if autoGeneratorEnablednotperfect then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
-                local player = Players.LocalPlayer
-                local playerGui = player:WaitForChild("PlayerGui")
-
-                while autoGeneratorEnablednotperfect do
-                    -- ✅ ซ่อน GUI SkillCheckPromptGui.Check ถ้ามีขึ้น
-                    local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                    if gui and gui:FindFirstChild("Check") then
-                        gui.Check.Visible = false
-                    end
-
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        local folders = getMapFolders()
-                        local closestGen, closestDist = nil, 10
-
-                        for _, folder in ipairs(folders) do
-                            for _, gen in ipairs(folder:GetChildren()) do
-                                if gen.Name == "Generator" and gen:IsA("Model") then
-                                    local primary = gen:FindFirstChild("PrimaryPart") or gen:FindFirstChildWhichIsA("BasePart")
-                                    if primary then
-                                        local dist = (root.Position - primary.Position).Magnitude
-                                        if dist <= closestDist then
-                                            closestDist = dist
-                                            closestGen = gen
-                                        end
+                        -- 🧍 ตรวจจับการขยับ
+                        if lastPosition then
+                            local moved = (root.Position - lastPosition).Magnitude
+                            if moved > stationaryThreshold then
+                                if repairing then
+                                    repairing = false
+                                    lastGenPoint = closestPoint
+                                    task.wait(cancelCooldown)
+                                    if lastGenPoint then
+                                        local args = {lastGenPoint, false}
+                                        repairRemote:FireServer(unpack(args))
                                     end
                                 end
-                            end
-                        end
-
-                        if closestGen then
-                            for i = 1, 4 do
-                                local point = closestGen:FindFirstChild("GeneratorPoint" .. i)
-                                if point then
-                                    local args = {"success", 1, closestGen, point}
-                                    remote:FireServer(unpack(args))
+                            else
+                                if not repairing and lastGenPoint and closestPoint == lastGenPoint then
+                                    repairing = true
+                                    task.wait(repairCooldown)
+                                    local args = {lastGenPoint, true}
+                                    repairRemote:FireServer(unpack(args))
                                 end
+                            end
+                        else
+                            repairing = true
+                        end
+                        lastPosition = root.Position
+
+                        -- 🎯 รอจนกว่า GUI SkillCheckPromptGui.Check จะปรากฏ
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+                            if not check then
+                                -- loop รอ GUI โผล่ขึ้น
+                                local timeout = 0
+                                while autoGeneratorEnabled and timeout < 5 do
+                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                                    check = gui and gui:FindFirstChild("Check")
+                                    if check and check.Visible then break end
+                                    timeout += 0.05
+                                    task.wait(0.05)
+                                end
+                            end
+
+                            -- ถ้า GUI Check โผล่ขึ้นแล้ว -> ยิง remote
+                            if check and check.Visible and closestGen and closestPoint then
+                                local args = {"success", 1, closestGen, closestPoint}
+                                remote:FireServer(unpack(args))
+
+                                -- ซ่อน GUI ทันที
+                                check.Visible = false
                             end
                         end
                     end
-
                     task.wait(0.5)
                 end
             end)
@@ -875,31 +1012,6 @@ SurTab:Toggle({
 })
 
 SurTab:Section({ Title = "Feature Cheat", Icon = "bug" })
-
-local NoFallEnabled = false
-
-SurTab:Toggle({
-    Title = "No Fall (Beta)",
-    Value = false,
-    Callback = function(v)
-        NoFallEnabled = v
-
-        if NoFallEnabled then
-            task.spawn(function()
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
-
-                while NoFallEnabled do
-                    local args = { -100 }
-                    pcall(function()
-                        FallRemote:FireServer(unpack(args))
-                    end)
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-})
 
 SurTab:Button({ 
     Title = "Fling Killer (Spam if killer doesn't fling)",  
@@ -1361,7 +1473,7 @@ local speedEnabled, flyNoclipSpeed = false, 3
 local speedConnection, noclipConnection
 
 PlayerTab:Section({ Title = "Feature Player", Icon = "rabbit" })
-PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=50,Default=4}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
+PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=100,Default=4}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
 
 PlayerTab:Toggle({ Title = "Enable Speed", Value=false, Callback=function(v)
     speedEnabled=v
@@ -1370,7 +1482,7 @@ PlayerTab:Toggle({ Title = "Enable Speed", Value=false, Callback=function(v)
         speedConnection=RunService.RenderStepped:Connect(function()
             local char=LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char.Humanoid.MoveDirection.Magnitude>0 then
-                char.HumanoidRootPart.CFrame=char.HumanoidRootPart.CFrame+char.Humanoid.MoveDirection*flyNoclipSpeed*0.016
+                char.HumanoidRootPart.CFrame=char.HumanoidRootPart.CFrame+char.Humanoid.MoveDirection*flyNoclipSpeed*0.004
             end
         end)
     else
@@ -1399,6 +1511,31 @@ PlayerTab:Toggle({ Title = "No Clip", Value=false, Callback=function(state)
         end
     end
 end })
+
+local NoFallEnabled = false
+
+PlayerTab:Toggle({
+    Title = "No Fall (Beta)",
+    Value = false,
+    Callback = function(v)
+        NoFallEnabled = v
+
+        if NoFallEnabled then
+            task.spawn(function()
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
+
+                while NoFallEnabled do
+                    local args = { -100 }
+                    pcall(function()
+                        FallRemote:FireServer(unpack(args))
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
 
 Info = InfoTab
 
@@ -1583,159 +1720,4 @@ local Discord = Info:Paragraph({
             end,
         }
     }
-})
-
-
--- 🔍 ฟังก์ชันหาทุกโฟลเดอร์ที่มี Generator ครอบคลุมทุกตำแหน่ง
-local function getFolderGenerator()
-    local folders = {}
-    local map = workspace:FindFirstChild("Map")
-    if not map then return folders end
-
-    -- Map.Generator
-    for _, child in ipairs(map:GetChildren()) do
-        if child.Name == "Generator" and child:IsA("Model") then
-            table.insert(folders, child)
-        end
-    end
-
-    -- Map.Model.Generator
-    local model = map:FindFirstChild("Model")
-    if model then
-        for _, child in ipairs(model:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-    end
-
-    -- Rooftop.Generator
-    local rooftop = map:FindFirstChild("Rooftop")
-    if rooftop then
-        for _, child in ipairs(rooftop:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-
-        -- Rooftop.Model.Generator
-        local rooftopModel = rooftop:FindFirstChild("Model")
-        if rooftopModel then
-            for _, child in ipairs(rooftopModel:GetChildren()) do
-                if child.Name == "Generator" and child:IsA("Model") then
-                    table.insert(folders, child)
-                end
-            end
-        end
-    end
-
-    return folders
-end
-
-
--- 🧠 ระบบ Auto SkillCheck (Perfect)
-local autoGeneratorEnabledtest = false
-
-SurTab:Toggle({
-    Title = "Auto SkillCheck (Test)",
-    Value = false,
-    Callback = function(v)
-        autoGeneratorEnabledtest = v
-        if autoGeneratorEnabledtest then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
-                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
-                local player = Players.LocalPlayer
-                local playerGui = player:WaitForChild("PlayerGui")
-
-                local lastPosition = nil
-                local stationaryThreshold = 2
-                local cancelCooldown = 1
-                local repairCooldown = 2
-
-                local repairing = false
-                local lastGenPoint = nil
-
-                while autoGeneratorEnabledtest do
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-
-                    if root then
-                        -- หา generator ที่ใกล้ที่สุด
-                        local generators = getFolderGenerator()
-                        local closestGen, closestPoint, closestDist = nil, nil, 10
-
-                        for _, gen in ipairs(generators) do
-                            for i = 1, 4 do
-                                local point = gen:FindFirstChild("GeneratorPoint" .. i)
-                                if point then
-                                    local dist = (root.Position - point.Position).Magnitude
-                                    if dist < closestDist then
-                                        closestDist = dist
-                                        closestGen = gen
-                                        closestPoint = point
-                                    end
-                                end
-                            end
-                        end
-
-                        -- 🧍 ตรวจจับการขยับ
-                        if lastPosition then
-                            local moved = (root.Position - lastPosition).Magnitude
-                            if moved > stationaryThreshold then
-                                if repairing then
-                                    repairing = false
-                                    lastGenPoint = closestPoint
-                                    task.wait(cancelCooldown)
-                                    if lastGenPoint then
-                                        local args = {lastGenPoint, false}
-                                        repairRemote:FireServer(unpack(args))
-                                    end
-                                end
-                            else
-                                if not repairing and lastGenPoint and closestPoint == lastGenPoint then
-                                    repairing = true
-                                    task.wait(repairCooldown)
-                                    local args = {lastGenPoint, true}
-                                    repairRemote:FireServer(unpack(args))
-                                end
-                            end
-                        else
-                            repairing = true
-                        end
-                        lastPosition = root.Position
-
-                        -- 🎯 รอจนกว่า GUI SkillCheckPromptGui.Check จะปรากฏ
-                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                        if gui then
-                            local check = gui:FindFirstChild("Check")
-                            if not check then
-                                -- loop รอ GUI โผล่ขึ้น
-                                local timeout = 0
-                                while autoGeneratorEnabled and timeout < 5 do
-                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                    check = gui and gui:FindFirstChild("Check")
-                                    if check and check.Visible then break end
-                                    timeout += 0.05
-                                    task.wait(0.05)
-                                end
-                            end
-
-                            -- ถ้า GUI Check โผล่ขึ้นแล้ว -> ยิง remote
-                            if check and check.Visible and closestGen and closestPoint then
-                                local args = {"success", 1, closestGen, closestPoint}
-                                remote:FireServer(unpack(args))
-
-                                -- ซ่อน GUI ทันที
-                                check.Visible = false
-                            end
-                        end
-                    end
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
 })
