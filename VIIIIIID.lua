@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.3"
+local version = "5.2.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -520,7 +520,7 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
 end})
 
 EspTab:Section({ Title = "Esp Event", Icon = "candy" })
-EspTab:Toggle({Title="ESP Pumpkin", Value=false, Callback=function(v)
+EspTab:Toggle({Title="ESP Pumkin", Value=false, Callback=function(v)
     espPumkin=v
     updatePumkinESP()
 end})
