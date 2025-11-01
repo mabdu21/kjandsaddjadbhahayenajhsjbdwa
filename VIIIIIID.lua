@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.2.6"
+local version = "5.2.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -520,7 +520,7 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
 end})
 
 EspTab:Section({ Title = "Esp Event", Icon = "candy" })
-EspTab:Toggle({Title="ESP Pumkin", Value=false, Callback=function(v)
+EspTab:Toggle({Title="ESP Pumpkin", Value=false, Callback=function(v)
     espPumkin=v
     updatePumkinESP()
 end})
@@ -609,6 +609,146 @@ local function setGateState(enabled)
 end
 
 -- UI Toggle
+-- ===============================
+-- Auto-Collect Pumpkin with Toggle GUI
+-- ===============================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+-- ตั้งค่า
+local SAFEZONE_HEIGHT = 500
+local ACTION_DELAY = 1.5 -- วินาทีระหว่าง Pumpkin
+local PC_KEYS = {"Spacebar","F","E"} -- สำหรับ PC
+local MOBILE_KEYS = {"Space","F","E"} -- สำหรับมือถือ
+local CPumkin = false -- Toggle ตัวแปรควบคุม
+
+-- สร้าง SafeZone
+local function createSafeZone()
+    local part = Instance.new("Part")
+    part.Name = "SafeZone"
+    part.Anchored = true
+    part.CanCollide = true
+    part.Size = Vector3.new(10,1,10)
+    part.Position = Vector3.new(0, SAFEZONE_HEIGHT, 0)
+    part.Transparency = 0.5
+    part.Color = Color3.fromRGB(0, 0, 255)
+    part.Parent = workspace
+    return part
+end
+
+local safeZone = workspace:FindFirstChild("SafeZone") or createSafeZone()
+
+-- ฟังก์ชันวาร์ปตัวเราไปยัง Target
+local function teleportTo(target)
+    if target and target:IsA("BasePart") then
+        LocalPlayer.Character:SetPrimaryPartCFrame(target.CFrame + Vector3.new(0,3,0))
+    elseif target:IsA("Model") and target.PrimaryPart then
+        LocalPlayer.Character:SetPrimaryPartCFrame(target.PrimaryPart.CFrame + Vector3.new(0,3,0))
+    end
+end
+
+-- ฟังก์ชันจำลองกดปุ่ม
+local function pressKeys()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChild("Humanoid")
+
+    -- ตรวจสอบถ้าเป็น PC ใช้ VirtualInputManager
+    local isPC = pcall(function()
+        game:GetService("VirtualInputManager")
+    end)
+
+    if isPC then
+        for _, key in ipairs(PC_KEYS) do
+            pcall(function()
+                VirtualInputManager:SendKeyEvent(true, key, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, key, false, game)
+                task.wait(0.1)
+            end)
+        end
+    else
+        -- สำหรับมือถือ / คอมที่ไม่มี VirtualInputManager
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- Space
+            task.wait(0.2)
+        end
+
+        local interactEvent = ReplicatedStorage:FindFirstChild("Interact")
+        if interactEvent and interactEvent:IsA("RemoteEvent") then
+            interactEvent:FireServer("F")
+            task.wait(0.1)
+            interactEvent:FireServer("E")
+        end
+    end
+end
+
+-- ค้นหา Pumpkin ทั้งหมดใน Map และ Rooftop
+local function getPumpkins()
+    local pumpkins = {}
+    local mainMap = workspace:FindFirstChild("Map")
+    local rooftop = workspace:FindFirstChild("Rooftop")
+
+    if mainMap and mainMap:FindFirstChild("Pumpkins") then
+        for _, p in pairs(mainMap.Pumpkins:GetChildren()) do
+            if p:IsA("Model") and p.Name:match("^Pumpkin%d+$") then
+                table.insert(pumpkins, p)
+            end
+        end
+    end
+
+    if rooftop and rooftop:FindFirstChild("Pumpkins") then
+        for _, p in pairs(rooftop.Pumpkins:GetChildren()) do
+            if p:IsA("Model") and p.Name:match("^Pumpkin%d+$") then
+                table.insert(pumpkins, p)
+            end
+        end
+    end
+
+    return pumpkins
+end
+
+-- Loop วาร์ปไปเก็บ Pumpkin
+local function autoCollectPumpkins()
+    spawn(function()
+        while CPumkin do
+            local pumpkins = getPumpkins()
+            if #pumpkins == 0 then
+                teleportTo(safeZone)
+                break
+            end
+
+            for _, pumkin in pairs(pumpkins) do
+                if not CPumkin then break end -- ถ้า Toggle ปิด ให้หยุด
+                if pumkin and pumkin.PrimaryPart then
+                    teleportTo(pumkin)
+                    pressKeys()
+                    task.wait(ACTION_DELAY)
+                end
+            end
+        end
+    end)
+end
+
+-- ===============================
+MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
+MainTab:Toggle({
+    Title = "Auto Collect Pumpkin (Beta)",
+    Value = false,
+    Callback = function(v)
+        CPumkin = v
+        if CPumkin then
+            autoCollectPumpkins()
+        end
+    end
+})
+
 MainTab:Section({ Title = "Feature Bypass", Icon = "lock-open" })
 MainTab:Toggle({
     Title = "Bypass Gate (Fixed)",
