@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.3.6"
+local version = "Pre-5.3.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -412,7 +412,7 @@ local function updateESP(dt)
     end
 
     -- Object loop
-    for _, folder in pairs(getFolderGenerator()) do
+    for _, folder in pairs(getMapFolders()) do
         for _, obj in pairs(folder:GetChildren()) do
             if obj.Name == "Generator" then
                 if espGenerator then
