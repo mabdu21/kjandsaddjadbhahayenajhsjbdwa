@@ -1,3 +1,5 @@
+-- v61
+
 repeat task.wait() until game:IsLoaded()
 
 -- FPS Unlock
@@ -124,23 +126,23 @@ local Window = Rayfield:CreateWindow({
         FolderName = "DYHUB_AUT",
         FileName = "Config"
     },
-    Theme = "DarkBlue",
+    Theme = "Dark Blue",
     ToggleUIKeybind = "K"
 })
 
 -- Create tabs
 local MainTab = Window:CreateTab("Main", "home")
 local CombatTab = Window:CreateTab("Combat", "sword")
-local ItemTab = Window:CreateTab("Vật Phẩm", "package")
+local ItemTab = Window:CreateTab("Items", "package")
 local QuestTab = Window:CreateTab("Quest", "map")
 local TraitTab = Window:CreateTab("Trait & Stats", "star")
 local SettingsTab = Window:CreateTab("Settings", "settings")
 
 -- === MAIN TAB ===
-MainTab:CreateSection("Load Script")
+MainTab:CreateSection("Load Asset for Some Feature")
 
 local LoadAllButton = MainTab:CreateButton({
-    Name = "Load All Script",
+    Name = "Load All Asset",
     Callback = function()
         local loaded = 0
         local total = 0
