@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "5.3.3"
+local version = "5.3.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -258,6 +258,62 @@ local function createESP(obj, baseColor)
     }
 end
 
+-- Get generator all location
+local function getFolderGenerator()
+    local folders = {}
+    local map = workspace:FindFirstChild("Map")
+    if not map then return folders end
+
+    -- Map.Generator
+    for _, child in ipairs(map:GetChildren()) do
+        if child.Name == "Generator" and child:IsA("Model") then
+            table.insert(folders, child)
+        end
+    end
+
+    -- Map.Model.Generator
+    local model = map:FindFirstChild("Model")
+    if model then
+        for _, child in ipairs(model:GetChildren()) do
+            if child.Name == "Generator" and child:IsA("Model") then
+                table.insert(folders, child)
+            end
+        end
+    end
+
+    -- Map.Maze2.Generator
+    local Maze2 = map:FindFirstChild("Generator")
+    if Maze2 then
+        for _, child in ipairs(model:GetChildren()) do
+            if child.Name == "Generator" and child:IsA("Model") then
+                table.insert(folders, child)
+            end
+        end
+	end
+
+    -- Rooftop.Generator
+    local rooftop = map:FindFirstChild("Rooftop")
+    if rooftop then
+        for _, child in ipairs(rooftop:GetChildren()) do
+            if child.Name == "Generator" and child:IsA("Model") then
+                table.insert(folders, child)
+            end
+        end
+
+        -- Rooftop.Model.Generator
+        local rooftopModel = rooftop:FindFirstChild("Model")
+        if rooftopModel then
+            for _, child in ipairs(rooftopModel:GetChildren()) do
+                if child.Name == "Generator" and child:IsA("Model") then
+                    table.insert(folders, child)
+                end
+            end
+        end
+    end
+
+    return folders
+end
+
 -- Get map folders
 local function getMapFolders()
     local folders = {}
@@ -356,7 +412,7 @@ local function updateESP(dt)
     end
 
     -- Object loop
-    for _, folder in pairs(getMapFolders()) do
+    for _, folder in pairs(getFolderGenerator()) do
         for _, obj in pairs(folder:GetChildren()) do
             if obj.Name == "Generator" then
                 if espGenerator then
@@ -835,51 +891,6 @@ SurTab:Toggle({
 
 SurTab:Section({ Title = "Feature Object", Icon = "zap" })
 
-local function getFolderGenerator()
-    local folders = {}
-    local map = workspace:FindFirstChild("Map")
-    if not map then return folders end
-
-    -- Map.Generator
-    for _, child in ipairs(map:GetChildren()) do
-        if child.Name == "Generator" and child:IsA("Model") then
-            table.insert(folders, child)
-        end
-    end
-
-    -- Map.Model.Generator
-    local model = map:FindFirstChild("Model")
-    if model then
-        for _, child in ipairs(model:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-    end
-
-    -- Rooftop.Generator
-    local rooftop = map:FindFirstChild("Rooftop")
-    if rooftop then
-        for _, child in ipairs(rooftop:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-
-        -- Rooftop.Model.Generator
-        local rooftopModel = rooftop:FindFirstChild("Model")
-        if rooftopModel then
-            for _, child in ipairs(rooftopModel:GetChildren()) do
-                if child.Name == "Generator" and child:IsA("Model") then
-                    table.insert(folders, child)
-                end
-            end
-        end
-    end
-
-    return folders
-end
-
 local autoGeneratorEnabledtest = false
 
 SurTab:Toggle({
@@ -1135,18 +1146,19 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 
 -- Auto Heal
 local autoHealEnabled = false
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SkillCheckEvent = ReplicatedStorage.Remotes.Healing.SkillCheckEvent -- RemoteEvent
+
 SurTab:Toggle({
-    Title = "Auto Heal (Under Fixing)",
+    Title = "Auto SkillCheck (In development)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
         if autoHealEnabled then
             task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
                 local player = Players.LocalPlayer
-
                 while autoHealEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -1154,6 +1166,7 @@ SurTab:Toggle({
                         local closestTarget = nil
                         local closestDist = 10
 
+                        -- หา player ที่อยู่ใกล้ที่สุดในระยะ 10 studs
                         for _, plr in ipairs(Players:GetPlayers()) do
                             if plr ~= player and plr.Character then
                                 local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
@@ -1167,13 +1180,9 @@ SurTab:Toggle({
                             end
                         end
 
+                        -- ถ้ามีเป้าหมายอยู่ใกล้
                         if closestTarget then
-                            local args = {
-                                "success",
-                                1,
-                                closestTarget.Character
-                            }
-                            remote:FireServer(unpack(args))
+                            firesignal(SkillCheckEvent.OnClientEvent, closestTarget.Name)
                         end
                     end
                     task.wait(0.5)
@@ -1368,14 +1377,81 @@ SurTab:Button({
 })
 
 SurTab:Button({
-    Title = "Invisible (Skid by me)",
+    Title = "Invisible (Not Visual)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/INV.lua"))()
     end
 })
 
+SurTab:Button({
+    Title = "Self UnHook (Not 100%)",
+    Callback = function()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local SelfUnHookEvent = ReplicatedStorage.Remotes.Carry.SelfUnHookEvent -- RemoteEvent
+
+        SelfUnHookEvent:FireServer()
+    end
+})
+
 -- ====================== KILLER ======================
 killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
+
+local Killer = {
+    TheMasked = {
+        Mask = {
+            "Richard",
+            "Tony",
+            "Brandon",
+            "Jake",
+            "Richter",
+            "Graham",
+            "Alex"
+        }
+    }
+}
+
+local selectedMasks = {}
+
+killerTab:Dropdown({
+    Title = "Select Mask",
+    Values = Killer.TheMasked.Mask,
+    Multi = false,
+    Callback = function(values)
+        selectedMasks = values
+    end
+})
+
+killerTab:Button({ 
+    Title = "Choose Mask (Selected)",  
+    Callback = function()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local ActivatePower = ReplicatedStorage.Remotes.Killers.Masked.Activatepower -- RemoteEvent
+
+        ActivatePower:FireServer(selectedMasks)
+    end
+})
+
+killerTab:Button({ 
+    Title = "Random Mask (Legit Mode)",  
+    Callback = function()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local ActivatePower = ReplicatedStorage.Remotes.Killers.Masked.Activatepower -- RemoteEvent
+
+        local masks = {
+            "Richard",
+            "Tony",
+            "Brandon",
+            "Jake",
+            "Richter",
+            "Graham",
+            "Alex"
+        }
+
+        local randomMask = masks[math.random(1, #masks)]
+
+        ActivatePower:FireServer(randomMask)
+    end
+})
 
 local killallEnabled = false
 
@@ -1461,7 +1537,7 @@ killerTab:Toggle({
     end
 })
 
-killerTab:Toggle({Title="Anti Parry (Soon)", Value=false, Callback=function(v) noFlashlightEnabled=v end})
+killerTab:Toggle({Title="Anti Parry (In development)", Value=false, Callback=function(v) noFlashlightEnabled=v end})
 
 killerTab:Section({ Title = "Feature No-Cooldown", Icon = "crown" })
 
