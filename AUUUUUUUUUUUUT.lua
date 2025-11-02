@@ -1,23 +1,4 @@
--- v551
-
-if setfpscap then
-    setfpscap(1000000)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "FPS Unlocked!",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("FPS Unlocked!")
-else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "Your exploit does not support setfpscap.",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("Your exploit does not support setfpscap.")
-end
+-- v54
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -115,7 +96,6 @@ end
 -- Create main GUI
 local Window = Rayfield:CreateWindow({
     Name = "DYHUB | A Universal Time",
-    Icon = 104487529937663,
     LoadingTitle = "DYHUB Loaded! - AUT",
     LoadingSubtitle = "by DYHUB™",
     ConfigurationSaving = {
@@ -209,7 +189,7 @@ local availableSkills = {
 }
 
 local CombatSkillsDropdown = CombatTab:CreateDropdown({
-    Name = "Skills Combat (Select)",
+    Name = "Skill Combat (Select)",
     Options = availableSkills,
     CurrentOption = {"B"},
     MultipleOptions = true,
@@ -657,7 +637,7 @@ local BannerToggle = SettingsTab:CreateToggle({
     end
 })
 
-SettingsTab:CreateSection("level fram")
+SettingsTab:CreateSection("Level Farm")
 
 local SpecialLevelFarmToggle = SettingsTab:CreateToggle({
     Name = "Special Leveling",
@@ -676,7 +656,7 @@ SettingsTab:CreateParagraph({
     Content = "• Automatically max item bank for Hamon Base.\n• Requirement: DONE Joseph's Informant's QUEST and be at Hamon Base!"
 })
 
-SettingsTab:CreateSection("Thông Tin")
+SettingsTab:CreateSection("Information")
 
 SettingsTab:CreateParagraph({
     Title = "DYHUB",
