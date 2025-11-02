@@ -1,4 +1,4 @@
-repeat task.wait() until game:IsLoaded()
+-- v551
 
 if setfpscap then
     setfpscap(1000000)
@@ -123,7 +123,6 @@ local Window = Rayfield:CreateWindow({
         FolderName = "DYHUB_AUT",
         FileName = "Config"
     },
-    ShowText = "DYHUB",
     Theme = "DarkBlue",
     ToggleUIKeybind = "K"
 })
