@@ -1,3 +1,25 @@
+repeat task.wait() until game:IsLoaded()
+
+-- FPS Unlock
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
+end
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Services
@@ -93,12 +115,13 @@ end
 
 -- Create main GUI
 local Window = Rayfield:CreateWindow({
-    Name = "AUT Multi-Tool Hub",
-    LoadingTitle = "AUT Hub Loading",
-    LoadingSubtitle = "by Baolong",
+    Name = "DYHUB | A Universal Time",
+    Icon = 104487529937663,
+    LoadingTitle = "DYHUB Loaded! - AUT",
+    LoadingSubtitle = "by DYHUB",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "AUTHub",
+        FolderName = "DYHUB_AUT",
         FileName = "Config"
     },
     Theme = "DarkBlue",
@@ -106,18 +129,18 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Create tabs
-local MainTab = Window:CreateTab("Chính", "home")
+local MainTab = Window:CreateTab("Main", "home")
 local CombatTab = Window:CreateTab("Combat", "sword")
 local ItemTab = Window:CreateTab("Vật Phẩm", "package")
 local QuestTab = Window:CreateTab("Quest", "map")
 local TraitTab = Window:CreateTab("Trait & Stats", "star")
-local SettingsTab = Window:CreateTab("Cài Đặt", "settings")
+local SettingsTab = Window:CreateTab("Settings", "settings")
 
 -- === MAIN TAB ===
-MainTab:CreateSection("Tải Script")
+MainTab:CreateSection("Load Script")
 
 local LoadAllButton = MainTab:CreateButton({
-    Name = "Tải Tất Cả Script",
+    Name = "Load All Script",
     Callback = function()
         local loaded = 0
         local total = 0
@@ -128,8 +151,8 @@ local LoadAllButton = MainTab:CreateButton({
             end
         end
         Rayfield:Notify({
-            Title = "Hoàn tất",
-            Content = "Đã tải " .. loaded .. "/" .. total .. " scripts",
+            Title = "Completed",
+            Content = "Loaded " .. loaded .. "/" .. total .. " Asset",
             Duration = 3,
             Image = "download"
         })
@@ -155,7 +178,7 @@ local CombatToggle = CombatTab:CreateToggle({
 })
 
 local CombatTypeDropdown = CombatTab:CreateDropdown({
-    Name = "Loại Quái",
+    Name = "Monster Type",
     Options = {"cultists", "cursed", "hooligans", "prisoners", "thugs", "pirates", "guardian"},
     CurrentOption = {"cultists"},
     Flag = "CombatType",
@@ -168,7 +191,7 @@ local CombatTypeDropdown = CombatTab:CreateDropdown({
 })
 
 local EscapeHeightSlider = CombatTab:CreateSlider({
-    Name = "Độ Cao Thoát (Studs)",
+    Name = "Anti Hit (Studs)",
     Range = {10, 100},
     Increment = 5,
     CurrentValue = 30,
@@ -187,7 +210,7 @@ local availableSkills = {
 }
 
 local CombatSkillsDropdown = CombatTab:CreateDropdown({
-    Name = "Chọn Skills Combat",
+    Name = "Select Skills Combat",
     Options = availableSkills,
     CurrentOption = {"B"},
     MultipleOptions = true,
@@ -198,14 +221,14 @@ local CombatSkillsDropdown = CombatTab:CreateDropdown({
 })
 
 CombatTab:CreateParagraph({
-    Title = "Hướng Dẫn Skills",
-    Content = "• Skills thường: B, Q, E, R...\n• Skills nâng cao: B+, Q+, E+, R+...\n• M2: MOUSEBUTTON2\n• Có thể chọn nhiều skills cùng lúc"
+    Title = "Skills Guide",
+    Content = "• Normal skills: B, Q, E, R...\n• Advanced skills: B+, Q+, E+, R+...\n• M2: MOUSEBUTTON2\n• Can select multiple skills at the same time"
 })
 
-CombatTab:CreateSection("Auto Stand On/Off")
+CombatTab:CreateSection("Auto Stand")
 
 local StandAutoToggle = CombatTab:CreateToggle({
-    Name = "Auto Stand (Bật/Tắt)",
+    Name = "Auto Stand (On/Off)",
     CurrentValue = getgenv().AutoStandEnabled or false,
     Flag = "AutoStandEnabled",
     Callback = function(Value)
@@ -224,7 +247,7 @@ local StandAutoToggle = CombatTab:CreateToggle({
 })
 
 local StandStateDropdown = CombatTab:CreateDropdown({
-    Name = "Chế độ Stand",
+    Name = "Stand Mode",
     Options = {"on", "off"},
     CurrentOption = {"on"},
     Flag = "StandStateMode",
@@ -242,7 +265,7 @@ local StandStateDropdown = CombatTab:CreateDropdown({
 })
 
 local SlayerQuestToggle = CombatTab:CreateToggle({
-    Name = "Ưu Tiên Slayer Boss",
+    Name = "Prioritize Slayer Boss",
     CurrentValue = false,
     Flag = "SlayerPriority",
     Callback = function(Value)
@@ -253,7 +276,7 @@ local SlayerQuestToggle = CombatTab:CreateToggle({
 CombatTab:CreateSection("Auto One Shot")
 
 local OneShotSlider = CombatTab:CreateSlider({
-    Name = "Ngưỡng HP One Shot (%)",
+    Name = "Threshold HP One Shot (%)",
     Range = {1, 100},
     Increment = 1,
     CurrentValue = 50,
@@ -264,7 +287,7 @@ local OneShotSlider = CombatTab:CreateSlider({
 })
 
 local OneShotToggle = CombatTab:CreateToggle({
-    Name = "Auto One Shot (HP dưới ngưỡng)",
+    Name = "Auto One Shot (HP below the threshold)",
     CurrentValue = false,
     Flag = "OneShotEnabled",
     Callback = function(Value)
@@ -276,7 +299,7 @@ local OneShotToggle = CombatTab:CreateToggle({
 })
 
 local HakiToggle = CombatTab:CreateToggle({
-    Name = "Auto Bật Busoshoku Haki",
+    Name = "Auto Busoshoku Haki",
     CurrentValue = false,
     Flag = "AutoHakiEnabled",
     Callback = function(Value)
@@ -303,7 +326,7 @@ local AutoSaveToggle = ItemTab:CreateToggle({
 })
 
 local AutoSaveItemsDropdown = ItemTab:CreateDropdown({
-    Name = "Chọn Items Cần Save",
+    Name = "Select Items Needed Save",
     Options = _G.AvailableItems,
     CurrentOption = {},
     MultipleOptions = true,
@@ -314,7 +337,7 @@ local AutoSaveItemsDropdown = ItemTab:CreateDropdown({
 })
 
 local AutoSaveManualButton = ItemTab:CreateButton({
-    Name = "Save Item Thủ Công",
+    Name = "Save Item Handmade",
     Callback = function()
         if not _G.LoadedScripts.autosave then
             loadScript("autosave", SCRIPTS.autosave)
@@ -340,7 +363,7 @@ local AutoSellToggle = ItemTab:CreateToggle({
 })
 
 local AutoSellExcludeDropdown = ItemTab:CreateDropdown({
-    Name = "Chọn Items KHÔNG Bán",
+    Name = "Select Items NOT for Sale",
     Options = _G.AvailableItems,
     CurrentOption = {},
     MultipleOptions = true,
@@ -351,7 +374,7 @@ local AutoSellExcludeDropdown = ItemTab:CreateDropdown({
 })
 
 local SellDelaySlider = ItemTab:CreateSlider({
-    Name = "Sell Delay (giây)",
+    Name = "Sell Delay (Sec)",
     Range = {5, 120},
     Increment = 5,
     CurrentValue = 30,
@@ -425,7 +448,7 @@ local SlayerToggle = QuestTab:CreateToggle({
 })
 
 local SlayerQuestDropdown = QuestTab:CreateDropdown({
-    Name = "Slayer Quest Ưu Tiên",
+    Name = "Slayer Quest Prioritize",
     Options = {"Finger Bearer", "Gojo", "Xeno", "Bur", "Dragon knight", "Oni"},
     CurrentOption = {"Finger Bearer"},
     MultipleOptions = true,
@@ -477,7 +500,7 @@ local TraitToggle = TraitTab:CreateToggle({
 })
 
 local LegendaryTraitsDropdown = TraitTab:CreateDropdown({
-    Name = "Legendary Traits Ưu Tiên",
+    Name = "Legendary Traits Prioritize",
     Options = {"Prime", "Angelic", "Solar", "Cursed", "Vampiric", "Gluttonous", "Voided", "Gambler", "Overflowing", "Deferred", "True", "Cultivation", "Economic", "Frostbite"},
     CurrentOption = {"Prime"},
     MultipleOptions = true,
@@ -499,7 +522,7 @@ local LegendaryHexedTraitsDropdown = TraitTab:CreateDropdown({
 })
 
 local MythicTraitsDropdown = TraitTab:CreateDropdown({
-    Name = "Mythic Traits Ưu Tiên",
+    Name = "Mythic Traits Prioritize",
     Options = {"Godly", "Temporal", "RCT", "Spiritual", "Ryoiki", "Adaptation"},
     CurrentOption = {"Godly"},
     MultipleOptions = true,
@@ -521,22 +544,22 @@ local MythicHexedTraitsDropdown = TraitTab:CreateDropdown({
 })
 
 local TraitHistoryButton = TraitTab:CreateButton({
-    Name = "Xem 5 Trait Đã Discard",
+    Name = "View 5 Discarded Traits",
     Callback = function()
         if _G.TraitDiscardHistory and #_G.TraitDiscardHistory > 0 then
-            local historyText = "Trait đã discard:\n"
+            local historyText = "Trait has been discarded:\n"
             for i, traits in ipairs(_G.TraitDiscardHistory) do
                 historyText = historyText .. i .. ". " .. traits .. "\n"
             end
             Rayfield:Notify({
-                Title = "Lịch Sử Trait",
+                Title = "Trait History",
                 Content = historyText,
                 Duration = 8
             })
         else
             Rayfield:Notify({
-                Title = "Không Có Lịch Sử",
-                Content = "Chưa discard trait nào",
+                Title = "No History",
+                Content = "No traits discarded yet",
                 Duration = 3
             })
         end
@@ -558,7 +581,7 @@ local StatsToggle = TraitTab:CreateToggle({
 })
 
 local StatsTypeDropdown = TraitTab:CreateDropdown({
-    Name = "Loại Stats",
+    Name = "Type Stats",
     Options = {"Attack", "Defense", "Health", "Special"},
     CurrentOption = {"Attack"},
     Flag = "StatsType",
@@ -568,7 +591,7 @@ local StatsTypeDropdown = TraitTab:CreateDropdown({
 })
 
 local StatsAmountSlider = TraitTab:CreateSlider({
-    Name = "Số Điểm Mỗi Lần",
+    Name = "Points Per Time",
     Range = {1, 50},
     Increment = 1,
     CurrentValue = 1,
@@ -582,7 +605,7 @@ local StatsAmountSlider = TraitTab:CreateSlider({
 TraitTab:CreateSection("Auto Stats Reset")
 
 local StatsResetToggle = TraitTab:CreateToggle({
-    Name = "ucoin burner",
+    Name = "Ucoin burner",
     CurrentValue = false,
     Flag = "StatsResetEnabled",
     Callback = function(Value)
@@ -635,10 +658,10 @@ local BannerToggle = SettingsTab:CreateToggle({
     end
 })
 
-SettingsTab:CreateSection("level fram")
+SettingsTab:CreateSection("Level Farm")
 
 local SpecialLevelFarmToggle = SettingsTab:CreateToggle({
-    Name = "special leveling",
+    Name = "Special Leveling",
     CurrentValue = false,
     Flag = "SpecialLevelFarmEnabled",
     Callback = function(Value)
@@ -650,19 +673,19 @@ local SpecialLevelFarmToggle = SettingsTab:CreateToggle({
 })
 
 SettingsTab:CreateParagraph({
-    Title = "Ghi chú Max Item Bank",
-    Content = "• Tự động nâng max item bank cho Hamon Base.\n• Yêu cầu: ĐÃ LÀM QUEST của Joseph's Informant và đang ở Hamon Base!"
+    Title = "Max Item Bank Notes",
+    Content = "• Automatically max item bank for Hamon Base.\n• Requirement: DONE Joseph's Informant's QUEST and be at Hamon Base!"
 })
 
-SettingsTab:CreateSection("Thông Tin")
+SettingsTab:CreateSection("Information")
 
 SettingsTab:CreateParagraph({
-    Title = "AUT Multi-Tool Hub",
-    Content = "• Tất cả script được load từ GitHub\n• Tự động đồng bộ cài đặt\n• Pause logic giữa các script\n• Phím tắt: K để ẩn/hiện GUI"
+    Title = "DYHUB: Information",
+    Content = "• All scripts loaded from DYHUB\n• Automatically sync settings\n• Pause logic between scripts\n• Shortcut: K to hide/show GUI"
 })
 
 local ReloadAllButton = SettingsTab:CreateButton({
-    Name = "Reload Tất Cả Script",
+    Name = "Reload All Scripts",
     Callback = function()
         _G.LoadedScripts = {}
         local loaded = 0
@@ -674,8 +697,8 @@ local ReloadAllButton = SettingsTab:CreateButton({
             end
         end
         Rayfield:Notify({
-            Title = "Reload Hoàn Tất",
-            Content = "Đã reload " .. loaded .. "/" .. total .. " scripts",
+            Title = "Reload Complete",
+            Content = "Reloaded " .. loaded .. "/" .. total .. " scripts",
             Duration = 3,
             Image = "refresh-cw"
         })
@@ -683,8 +706,8 @@ local ReloadAllButton = SettingsTab:CreateButton({
 })
 
 Rayfield:Notify({
-    Title = "AUT Hub Loaded",
-    Content = "Hub đã sẵn sàng sử dụng!",
+    Title = "DYHUB Loaded",
+    Content = "Premium is ready to use!",
     Duration = 5,
     Image = "check"
 })
