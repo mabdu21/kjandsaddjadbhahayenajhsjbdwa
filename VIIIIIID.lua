@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "Pre-5.3.6"
+local version = "Pre-5.3.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -118,6 +118,7 @@ local killerTab = Window:Tab({ Title = "Killer", Icon = "swords" })
 local Main2Divider = Window:Divider()
 local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
 local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
+local Hitbox = Window:Tab({ Title = "Hitbox", Icon = "package" })
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 
 Window:SelectTab(1)
@@ -1781,6 +1782,88 @@ PlayerTab:Toggle({
                     task.wait(1)
                 end
             end)
+        end
+    end
+})
+
+-- 🔧 ตั้งค่าพื้นฐาน
+local transparency = 0.5
+local hitboxSize = 10
+local hitboxEnabled = false
+local hitboxConnection
+
+Hitbox:Section({ Title = "Feature Hitbox", Icon = "package" })
+
+-- ⚙️ Input สำหรับ Transparency
+Hitbox:Input({
+    Title = "Set Transparency (Visible)",
+    Value = tostring(transparency),
+    Placeholder = "Transparency (Ex: 0.5)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            transparency = math.clamp(num, 0, 1)
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+-- ⚙️ Input สำหรับขนาด Hitbox
+Hitbox:Input({
+    Title = "Set Hitbox (Size)",
+    Value = tostring(hitboxSize),
+    Placeholder = "Range (Ex: 10)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            hitboxSize = num
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+-- 🟢 Toggle เปิด/ปิด Hitbox
+Hitbox:Toggle({
+    Title = "Enable Hitbox",
+    Value = false,
+    Callback = function(v)
+        hitboxEnabled = v
+
+        -- ถ้ามีการเชื่อมต่ออยู่แล้ว ให้หยุดก่อน
+        if hitboxConnection then
+            hitboxConnection:Disconnect()
+            hitboxConnection = nil
+        end
+
+        if hitboxEnabled then
+            hitboxConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+                    if player ~= game:GetService("Players").LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local part = player.Character.HumanoidRootPart
+                        pcall(function()
+                            part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+                            part.Transparency = transparency
+                            part.BrickColor = BrickColor.new("Really red") -- 🔴 เปลี่ยนสีเป็นแดง
+                            part.Material = Enum.Material.Neon
+                            part.CanCollide = false
+                        end)
+                    end
+                end
+            end)
+        else
+            -- ปิด Hitbox คืนค่าปกติ
+            for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local part = player.Character.HumanoidRootPart
+                    pcall(function()
+                        part.Size = Vector3.new(2, 2, 1)
+                        part.Transparency = 1
+                        part.Material = Enum.Material.Plastic
+                    end)
+                end
+            end
         end
     end
 })
