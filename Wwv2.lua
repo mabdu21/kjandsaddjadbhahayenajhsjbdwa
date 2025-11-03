@@ -17,7 +17,7 @@ local Window = Rayfield:CreateWindow({
 
 Rayfield:Notify({
    Title = "DYHUB Loaded",
-   Content = "Version: 4.0.3 | Code by rhy",
+   Content = "Version: 4.0.7 | Code by rhy",
    Duration = 5,
    Image = 104487529937663,
    Actions = {
@@ -95,6 +95,131 @@ task.spawn(function()
          end
       end
    end
+end)
+
+MainTab:CreateSlider({
+   Name = "Set Distance to Dash (Q Rework)",
+   Range = {1, 150},
+   Increment = 5,
+   CurrentValue = 25,
+   Flag = "DTWQRework",
+   Callback = function(v) _G.DTWQRework = v end
+})
+
+MainTab:CreateSlider({
+   Name = "Set Cooldown Dash (Q Rework)",
+   Range = {0, 10},
+   Increment = 1,
+   CurrentValue = 1,
+   Flag = "CDQRework",
+   Callback = function(v) _G.CDQRework = v end
+})
+
+MainTab:CreateToggle({
+   Name = "Hide Effect",
+   CurrentValue = false,
+   Flag = "EHRework",
+   Callback = function(v) _G.EHRework = v end
+})
+
+MainTab:CreateToggle({
+   Name = "Enable Dash (Q Rework)",
+   CurrentValue = false,
+   Flag = "ECDQRework",
+   Callback = function(v) _G.ECDQRework = v end
+})
+
+--===== CORE SCRIPT =====--
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+local MOVE_TWEEN_TIME = 0.08
+local lastUsed = 0
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+	hrp = char:WaitForChild("HumanoidRootPart")
+	humanoid = char:WaitForChild("Humanoid")
+end)
+
+local function getDirectionVector()
+	local forward, right = 0, 0
+	if UserInputService:IsKeyDown(Enum.KeyCode.W) then forward += 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.S) then forward -= 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.D) then right += 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.A) then right -= 1 end
+	
+	if forward == 0 and right == 0 then
+		return hrp.CFrame.LookVector.Unit
+	end
+	
+	local dir = (hrp.CFrame.LookVector * forward) + (hrp.CFrame.RightVector * right)
+	return dir.Magnitude == 0 and hrp.CFrame.LookVector.Unit or dir.Unit
+end
+
+local function createEffect(position)
+	if _G.EHRework then return end
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.Material = Enum.Material.Neon
+	part.Color = Color3.fromRGB(0, 255, 255)
+	part.Shape = Enum.PartType.Ball
+	part.Size = Vector3.new(1, 1, 1)
+	part.CFrame = CFrame.new(position)
+	part.Parent = workspace
+
+	local tween = TweenService:Create(part, TweenInfo.new(0.3), {
+		Transparency = 1, Size = Vector3.new(3, 3, 3)
+	})
+	tween:Play()
+	game:GetService("Debris"):AddItem(part, 0.4)
+end
+
+local function safeTeleport(targetPosition)
+	local targetCFrame = CFrame.new(targetPosition, targetPosition + hrp.CFrame.LookVector)
+	TweenService:Create(hrp, TweenInfo.new(MOVE_TWEEN_TIME, Enum.EasingStyle.Linear), {CFrame = targetCFrame}):Play()
+	createEffect(targetPosition)
+end
+
+local function tryWarp()
+	if not _G.ECDQRework then return end
+
+	local now = tick()
+	local cooldown = _G.CDQRework or 1
+	local warpDistance = _G.DTWQRework or 6
+
+	if now - lastUsed < cooldown then return end
+	lastUsed = now
+	if not hrp or not humanoid or humanoid.Health <= 0 then return end
+
+	local dir = getDirectionVector()
+	local targetPos = hrp.Position + dir * warpDistance
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {character}
+	rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+	rayParams.IgnoreWater = true
+
+	local rayResult = workspace:Raycast(hrp.Position, (targetPos - hrp.Position), rayParams)
+	if rayResult then
+		safeTeleport(rayResult.Position - (dir * 0.5))
+	else
+		safeTeleport(targetPos)
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Q then
+		tryWarp()
+	end
 end)
 
 -- ===================================
