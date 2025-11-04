@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "Pre-5.3.9"
+local version = "4.0.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -1791,6 +1791,14 @@ local transparency = 0.5
 local hitboxSize = 10
 local hitboxEnabled = false
 local hitboxConnection
+
+Hitbox:Paragraph({
+    Title = "Hitbox System",
+    Desc = "• Universal Killer Support\n• Precision Slash Modules\n• Optimized Range Handler",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 45,
+    Locked = false
+})
 
 Hitbox:Section({ Title = "Feature Hitbox", Icon = "package" })
 
