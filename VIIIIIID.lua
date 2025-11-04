@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "4.0.1"
+local version = "4.0.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -283,14 +283,14 @@ local function getFolderGenerator()
     end
 
     -- Map.Maze2.Generator
-    local Maze2 = map:FindFirstChild("Generator")
+    local Maze2 = map:FindFirstChild("Maze2")
     if Maze2 then
-        for _, child in ipairs(model:GetChildren()) do
+        for _, child in ipairs(Maze2:GetChildren()) do
             if child.Name == "Generator" and child:IsA("Model") then
                 table.insert(folders, child)
             end
         end
-	end
+    end
 
     -- Rooftop.Generator
     local rooftop = map:FindFirstChild("Rooftop")
@@ -319,12 +319,35 @@ end
 local function getMapFolders()
     local folders = {}
     local mainMap = workspace:FindFirstChild("Map")
-    if mainMap then
-        table.insert(folders, mainMap)
-        if mainMap:FindFirstChild("Rooftop") then
-            table.insert(folders, mainMap.Rooftop)
+    if not mainMap then return folders end
+
+    -- Map (หลัก)
+    table.insert(folders, mainMap)
+
+    -- Map.Rooftop
+    local rooftop = mainMap:FindFirstChild("Rooftop")
+    if rooftop then
+        table.insert(folders, rooftop)
+
+        -- Rooftop.Model
+        local rooftopModel = rooftop:FindFirstChild("Model")
+        if rooftopModel then
+            table.insert(folders, rooftopModel)
         end
     end
+
+    -- Map.Maze2
+    local maze2 = mainMap:FindFirstChild("Maze2")
+    if maze2 then
+        table.insert(folders, maze2)
+    end
+
+    -- Map.Model (ถ้ามี)
+    local model = mainMap:FindFirstChild("Model")
+    if model then
+        table.insert(folders, model)
+    end
+
     return folders
 end
 
