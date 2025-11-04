@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.5.3"
+local version = "3.5.5"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -179,82 +179,76 @@ local FoodToggle = Auto:Toggle({Title="Buy Food", Value=false, Callback=function
 end})
 myConfig:Register("AutoFoodEnabled", FoodToggle)
 
--- ====================== AUTO COLLECT COINS ======================
 -- =========================
--- 🪙 Auto Collect Coin + Home Detection v3.2
+-- 🪙 Auto Teleport to Closest Pet v4.0
 -- =========================
 
 Main:Section({ Title = "Collect Coin", Icon = "egg" })
 
-local function getClosestIsland()
-    local art = workspace:FindFirstChild("Art")
-    if not art then return nil end
+local function getClosestPet()
+    local petsFolder = workspace:FindFirstChild("Pets")
+    if not petsFolder then return nil end
 
     local player = game.Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local root = character:WaitForChild("HumanoidRootPart", 3)
     if not root then return nil end
 
-    local closestIsland = nil
+    local closestPet = nil
     local shortestDistance = math.huge
 
-    for _, island in ipairs(art:GetChildren()) do
-        if island:IsA("Model") and island.Name:match("^Island_%d+$") then
-            local env = island:FindFirstChild("ENV")
-            if env and env:IsA("Model") then
-                local primaryPart = env:FindFirstChild("PrimaryPart") or env:FindFirstChild("Main") or env:FindFirstChildWhichIsA("BasePart")
-                if primaryPart then
-                    local distance = (root.Position - primaryPart.Position).Magnitude
-                    if distance < shortestDistance then
-                        shortestDistance = distance
-                        closestIsland = island
-                    end
-                end
+    for _, pet in ipairs(petsFolder:GetChildren()) do
+        local petRoot = pet:FindFirstChild("RootPart")
+        if petRoot then
+            local distance = (root.Position - petRoot.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestPet = pet
             end
         end
     end
 
-    return closestIsland
+    return closestPet
 end
 
 local CollectCoinToggle = Main:Toggle({
-    Title = "Auto Collect Coin (Fixed)",
+    Title = "Auto Teleport to Closest Pet",
     Value = false,
     Callback = function(state)
         AutoCollectEnabled_Coin = state
 
         if state then
             task.spawn(function()
+                local player = game.Players.LocalPlayer
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local PetsFolder = workspace:WaitForChild("Pets")
 
                 while AutoCollectEnabled_Coin do
                     task.wait(0.25)
 
-                    -- 🔍 ตรวจสอบว่าเราอยู่เกาะไหน
-                    local island = getClosestIsland()
-                    if not island then
-                        warn("[Auto Collect] ❌ ไม่พบเกาะใกล้เคียง")
-                        task.wait(2)
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    local root = character:FindFirstChild("HumanoidRootPart")
+                    if not root then continue end
+
+                    -- 🔍 หาสัตว์เลี้ยงที่ใกล้ที่สุด
+                    local closestPet = getClosestPet()
+                    if not closestPet then
+                        warn("[Auto Collect] ❌ ไม่พบสัตว์เลี้ยงใกล้ตัว")
+                        task.wait(1)
                         continue
                     end
 
-                    -- 🏡 แสดงชื่อเกาะปัจจุบัน (บ้านของเรา)
-                    local homeName = island.Name
-                    print("[Auto Collect] 🏝️ บ้านของคุณคือ:", homeName)
+                    local petRoot = closestPet:FindFirstChild("RootPart")
+                    if petRoot then
+                        -- 🏃‍♂️ วาร์ปตัวผู้เล่นไปหาสัตว์เลี้ยงที่ใกล้ที่สุด
+                        root.CFrame = petRoot.CFrame + Vector3.new(0, 3, 0) -- เพิ่มระยะขึ้นนิดหน่อยกันชน
+                        print("[Auto Collect] 🪙 วาร์ปไปหาสัตว์:", closestPet.Name)
 
-                    -- 🔁 ลูปสัตว์เลี้ยงทั้งหมด
-                    for _, pet in pairs(PetsFolder:GetChildren()) do
-                        local root = pet:FindFirstChild("RootPart")
-                        local re = root and root:FindFirstChild("RE")
-
-                        if root and re then
-                            -- ✅ ตรวจสอบว่าสัตว์เลี้ยงอยู่ในเกาะเดียวกับเราไหม
-                            if pet:IsDescendantOf(island) or (root.Position - island:GetModelCFrame().Position).Magnitude < 300 then
-                                pcall(function()
-                                    re:FireServer("Claim")
-                                end)
-                            end
+                        -- 🔁 พยายามเก็บเหรียญของสัตว์นั้นถ้ามี RE
+                        local re = petRoot:FindFirstChild("RE")
+                        if re then
+                            pcall(function()
+                                re:FireServer("Claim")
+                            end)
                         end
                     end
                 end
@@ -288,9 +282,6 @@ end})
 myConfig:Register("AutoSpinEnabled", SpinToggle)
 
 -- ====================== AUTO BUY & HATCH EGG ======================
--- =========================
--- 🥚 Auto Buy & Hatch Eggs v3.2
--- =========================
 
 Egg:Section({ Title = "Buy Eggs", Icon = "egg" })
 
