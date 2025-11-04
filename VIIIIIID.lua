@@ -1816,7 +1816,7 @@ local hitboxEnabled = false
 local hitboxConnection
 
 Hitbox:Paragraph({
-    Title = "Hitbox System",
+    Title = "Hitbox System (Killer Only)",
     Desc = "• Universal Killer Support\n• Precision Slash Modules\n• Optimized Range Handler",
     Image = "rbxassetid://104487529937663",
     ImageSize = 45,
