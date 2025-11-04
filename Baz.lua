@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.5.7"
+local version = "3.5.9"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -46,6 +46,8 @@ local AutoBaitEnabled = false
 local AutoFoodEnabled = false
 local AutoFishEnabled = false
 local AutoSpinEnabled = false
+local AutoSpinEnabled2 = false
+local AutoSpinEnabled3 = false
 local AutoBuyEggEnabled = false
 
 local SelectedPotions = {}
@@ -271,26 +273,9 @@ end})
 myConfig:Register("AutoFishEnabled", FishToggle)
 
 -- ====================== AUTO SPIN ======================
-Main:Section({ Title = "Lottery", Icon = "piggy-bank" })
-
--- 🧩 ตัวเลือกจำนวน Spin
-local SpinCounts = {1, 5, 10, 50, 100}
-local SelectedCount = 1
-
-local SpinDropdown = Main:Dropdown({
-    Title = "Select Spin Count",
-    Values = SpinCounts,
-    Multi = false,
-    Callback = function(value)
-        SelectedCount = value
-        myConfig:Save()
-    end
-})
-myConfig:Register("SelectedCount", SpinDropdown)
-
 -- 🎰 Toggle Auto Spin
 local SpinToggle = Main:Toggle({
-    Title = "Auto Spin Lottery",
+    Title = "Auto Spin Lottery (x1)",
     Value = false,
     Callback = function(state)
         AutoSpinEnabled = state
@@ -304,7 +289,7 @@ local SpinToggle = Main:Toggle({
                     pcall(function()
                         LotteryRE:FireServer({
                             event = "lottery",
-                            count = SelectedCount
+                            count = 1
                         })
                     end)
                     task.wait(1)
@@ -315,7 +300,63 @@ local SpinToggle = Main:Toggle({
         myConfig:Save()
     end
 })
-myConfig:Register("AutoSpinEnabled", SpinToggle)
+myConfig:Register("AutoSpinx1Enabled", SpinToggle)
+
+local SpinToggle2 = Main:Toggle({
+    Title = "Auto Spin Lottery (x5)",
+    Value = false,
+    Callback = function(state)
+        AutoSpinEnabled2 = state
+
+        if state then
+            task.spawn(function()
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local LotteryRE = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("LotteryRE")
+
+                while AutoSpinEnabled2 do
+                    pcall(function()
+                        LotteryRE:FireServer({
+                            event = "lottery",
+                            count = 5
+                        })
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoSpinx2Enabled", SpinToggle2)
+
+local SpinToggle3 = Main:Toggle({
+    Title = "Auto Spin Lottery (x10)",
+    Value = false,
+    Callback = function(state)
+        AutoSpinEnabled3 = state
+
+        if state then
+            task.spawn(function()
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local LotteryRE = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("LotteryRE")
+
+                while AutoSpinEnabled3 do
+                    pcall(function()
+                        LotteryRE:FireServer({
+                            event = "lottery",
+                            count = 10
+                        })
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoSpinx3Enabled", SpinToggle3)
 
 Main:Button({
     Title = "Dupe Money (Beta)",
