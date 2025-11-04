@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.5.5"
+local version = "3.5.7"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -212,7 +212,7 @@ local function getClosestPet()
 end
 
 local CollectCoinToggle = Main:Toggle({
-    Title = "Auto Teleport to Closest Pet",
+    Title = "Auto Collect (Under Fixing)",
     Value = false,
     Callback = function(state)
         AutoCollectEnabled_Coin = state
@@ -271,15 +271,90 @@ end})
 myConfig:Register("AutoFishEnabled", FishToggle)
 
 -- ====================== AUTO SPIN ======================
-Main:Section({Title="Lottery", Icon="piggy-bank"})
-local SpinDropdown = Main:Dropdown({Title="Select Spin Count", Values=SpinCounts, Multi=false, Callback=function(value) SelectedCount=value; myConfig:Save() end})
+Main:Section({ Title = "Lottery", Icon = "piggy-bank" })
+
+-- 🧩 ตัวเลือกจำนวน Spin
+local SpinCounts = {1, 5, 10, 50, 100}
+local SelectedCount = 1
+
+local SpinDropdown = Main:Dropdown({
+    Title = "Select Spin Count",
+    Values = SpinCounts,
+    Multi = false,
+    Callback = function(value)
+        SelectedCount = value
+        myConfig:Save()
+    end
+})
 myConfig:Register("SelectedCount", SpinDropdown)
-local SpinToggle = Main:Toggle({Title="Auto Spin Lottery", Value=false, Callback=function(state)
-    AutoSpinEnabled=state
-    task.spawn(function() while AutoSpinEnabled do ReplicatedStorage.Remote.LotteryRE:FireServer({{event="lottery", count=SelectedCount}}); task.wait(1) end end)
-    myConfig:Save()
-end})
+
+-- 🎰 Toggle Auto Spin
+local SpinToggle = Main:Toggle({
+    Title = "Auto Spin Lottery",
+    Value = false,
+    Callback = function(state)
+        AutoSpinEnabled = state
+
+        if state then
+            task.spawn(function()
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local LotteryRE = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("LotteryRE")
+
+                while AutoSpinEnabled do
+                    pcall(function()
+                        LotteryRE:FireServer({
+                            event = "lottery",
+                            count = SelectedCount
+                        })
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
 myConfig:Register("AutoSpinEnabled", SpinToggle)
+
+Main:Button({
+    Title = "Dupe Money (Beta)",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        -- 🔍 ตรวจสอบว่า GUI มีอยู่จริง
+        local success, Event = pcall(function()
+            return LocalPlayer.PlayerGui
+                .ScreenSeasonPass
+                .Root
+                .FrameLotteryReward
+                .Event
+        end)
+
+        if success and Event then
+            pcall(function()
+                Event:Fire(
+                    "Coin",
+                    9000000000,
+                    "rbxassetid://87534904975459"
+                )
+            end)
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "💰 Dupe Money",
+                Text = "Successfully sent event (Beta)",
+                Duration = 2
+            })
+        else
+            warn("[Dupe Money] ❌ ไม่พบ Event ใน GUI")
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "💰 Dupe Money",
+                Text = "Event not found!",
+                Duration = 2
+            })
+        end
+    end
+})
 
 -- ====================== AUTO BUY & HATCH EGG ======================
 
