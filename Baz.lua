@@ -274,6 +274,8 @@ myConfig:Register("AutoFishEnabled", FishToggle)
 
 -- ====================== AUTO SPIN ======================
 -- 🎰 Toggle Auto Spin
+Main:Section({Title="Spin: Ticket", Icon="ticket"})
+
 local SpinToggle = Main:Toggle({
     Title = "Auto Spin Lottery (x1)",
     Value = false,
