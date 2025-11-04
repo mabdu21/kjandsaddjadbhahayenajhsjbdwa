@@ -61,7 +61,7 @@ local FoodList = {"Strawberry","Blueberry","Watermelon","Apple","Orange","Corn",
 local eggTypes = {"BasicEgg","RareEgg","SuperRareEgg","EpicEgg","LegendEgg","HyperEgg","BowserEgg","VoidEgg","CornEgg","BoneDragonEgg","DemonEgg","PrismaticEgg","DarkGoatyEgg","LionfishEgg","OctopusEgg","UltraEgg","UnicornEgg","UnicornProEgg","AnglerfishEgg","RhinoRockEgg","SaberCubEgg","SeaweedEgg","SharkEgg","SnowbunnyEgg","GeneralKongEgg","SailfishEgg","SeaDragonEgg","PegasusEgg","ClownfishEgg","AncientEgg","DinoEgg","FlyEgg","OceanEgg","MetroGiraffeEgg","GodzillaEgg","CapyEgg","HalloweenEgg"}
 local PotionList = {"Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
 local BaitList = {"FishingBait1","FishingBait2","FishingBait3"}
-local CodeList = {"CFJXEH4M8K5","DelayGift","60KCCU919","50KCCU0912","SeasonOne","ZooFish829","FIXERROR819","MagicFruit","WeekendEvent89","BugFixes","U2CA518SC5","X2CA821BA3","55PA21N8y2"}
+local CodeList = {"4XW5RG4CHRY","N7A68Q82H83","3XKK8Z2WB6G","DS5523YSQ3C"}
 
 local buyEggList = {}
 for _, egg in ipairs(eggTypes) do buyEggList[egg] = false end
