@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "4.0.2"
+local version = "4.0.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -703,7 +703,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 -- ⚙️ CONFIG
 -- ===============================
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.2 -- Delay between pumpkin collection
+local ACTION_DELAY = 1.69 -- Delay between pumpkin collection
 local CPumkin = false
 
 -- ===============================
@@ -711,13 +711,13 @@ local CPumkin = false
 -- ===============================
 local function createSafeZone()
 	local part = Instance.new("Part")
-	part.Name = "SafeZone"
+	part.Name = "DYHUB | SAFEZONE"
 	part.Anchored = true
 	part.CanCollide = true
 	part.Size = Vector3.new(10, 1, 10)
 	part.Position = Vector3.new(0, SAFEZONE_HEIGHT, 0)
 	part.Transparency = 0.5
-	part.Color = Color3.fromRGB(0, 0, 255)
+	part.Color = Color3.fromRGB(255, 0, 0)
 	part.Parent = Workspace
 	return part
 end
@@ -749,7 +749,7 @@ local function teleportTo(target)
 	local root = getRoot()
 	local targetPart = getPumpkinPart(target)
 	if root and targetPart then
-		root.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+		root.CFrame = targetPart.CFrame + Vector3.new(0, 1.11, 0)
 	end
 end
 
@@ -845,7 +845,7 @@ end
 -- ===============================
 MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
 MainTab:Toggle({
-	Title = "Auto Collect Pumpkin (Beta)",
+	Title = "Auto Collect Pumpkin (Safe Zone)",
 	Value = false,
 	Callback = function(v)
 		CPumkin = v
@@ -856,6 +856,20 @@ MainTab:Toggle({
 		else
 			print("[🛑] Auto collect stopped.")
 			teleportTo(safeZone)
+		end
+	end
+})
+MainTab:Toggle({
+	Title = "Auto Collect Pumpkin (No Safe Zone)",
+	Value = false,
+	Callback = function(v)
+		CPumkin = v
+		if v then
+			print("[🎃] Starting auto pumpkin collection...")
+			collected = {}
+			autoCollectPumpkins()
+		else
+			print("[🛑] Auto collect stopped.")
 		end
 	end
 })
@@ -1418,7 +1432,15 @@ SurTab:Button({
 })
 
 -- ====================== KILLER ======================
-killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
+killerTab:Paragraph({
+    Title = "Information: The Masked",
+    Desc = "• Richard (No Abilities)\n• Tony (One Shot, No hold)\n• Brandon (Speed Boost)\n• Jake (Lunge Range)\n• Richter (Removes terror radius)\n• Graham (Faster Vault)\n• Alex (Chainsaw, One Shot)",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 50,
+    Locked = false
+})
+
+killerTab:Section({ Title = "Killer: The Masked", Icon = "venetian-mask" })
 
 local Killer = {
     TheMasked = {
@@ -1476,6 +1498,8 @@ killerTab:Button({
         ActivatePower:FireServer(randomMask)
     end
 })
+
+killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
 
 local killallEnabled = false
 
@@ -1810,7 +1834,7 @@ PlayerTab:Toggle({
 })
 
 -- 🔧 ตั้งค่าพื้นฐาน
-local transparency = 0.5
+local transparency = 0.95
 local hitboxSize = 10
 local hitboxEnabled = false
 local hitboxConnection
@@ -1829,7 +1853,7 @@ Hitbox:Section({ Title = "Feature Hitbox", Icon = "package" })
 Hitbox:Input({
     Title = "Set Transparency (Visible)",
     Value = tostring(transparency),
-    Placeholder = "Transparency (Ex: 0.5)",
+    Placeholder = "Transparency (Ex: 0.95)",
     Callback = function(text)
         local num = tonumber(text)
         if num then
