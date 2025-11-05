@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "4.0.3"
+local version = "4.0.4"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -1184,45 +1184,64 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 
 -- Auto Heal
 local autoHealEnabled = false
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local SkillCheckEvent = ReplicatedStorage.Remotes.Healing.SkillCheckEvent -- RemoteEvent
-
 SurTab:Toggle({
-    Title = "Auto SkillCheck (In development)",
+    Title = "Auto Heal (UNDER FIXING)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
         if autoHealEnabled then
             task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
+
                 while autoHealEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        local closestTarget = nil
-                        local closestDist = 10
 
-                        -- หา player ที่อยู่ใกล้ที่สุดในระยะ 10 studs
-                        for _, plr in ipairs(Players:GetPlayers()) do
-                            if plr ~= player and plr.Character then
-                                local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-                                if targetRoot then
-                                    local dist = (root.Position - targetRoot.Position).Magnitude
-                                    if dist <= closestDist then
-                                        closestDist = dist
-                                        closestTarget = plr
+                    if root then
+                        -- ✅ รอให้ GUI "SkillCheckPromptGui" ปรากฏก่อน
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if not gui then
+                            local timeout = 0
+                            while autoHealEnabled and timeout < 5 do
+                                gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                                if gui then break end
+                                timeout += 0.05
+                                task.wait(0.05)
+                            end
+                        end
+
+                        -- ✅ ถ้ามี GUI แล้ว รอต่อจนกว่า Check จะโผล่และมองเห็น
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+                            local timeout = 0
+                            while autoHealEnabled and (not check or not check.Visible) and timeout < 5 do
+                                gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                                check = gui and gui:FindFirstChild("Check")
+                                timeout += 0.05
+                                task.wait(0.05)
+                            end
+
+                            -- 🔫 ถ้า GUI โผล่แล้ว ยิงใส่ผู้เล่นทุกคนที่อยู่ใกล้ในระยะ 10 studs
+                            if check and check.Visible then
+                                for _, plr in ipairs(Players:GetPlayers()) do
+                                    if plr ~= player and plr.Character then
+                                        local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
+                                        if targetRoot then
+                                            local dist = (root.Position - targetRoot.Position).Magnitude
+                                            if dist <= 10 then
+                                                remote:FireServer("success", 1, plr.Name)
+                                            end
+                                        end
                                     end
                                 end
                             end
                         end
-
-                        -- ถ้ามีเป้าหมายอยู่ใกล้
-                        if closestTarget then
-                            firesignal(SkillCheckEvent.OnClientEvent, closestTarget.Name)
-                        end
                     end
+
                     task.wait(0.5)
                 end
             end)
