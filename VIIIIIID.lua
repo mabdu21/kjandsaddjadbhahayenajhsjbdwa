@@ -1185,7 +1185,7 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto Heal (UNDER FIXING)",
+    Title = "Auto SkillCheck (Perfect)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -1193,51 +1193,49 @@ SurTab:Toggle({
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
 
                 while autoHealEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
 
                     if root then
-                        -- ✅ รอให้ GUI "SkillCheckPromptGui" ปรากฏก่อน
-                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                        if not gui then
-                            local timeout = 0
-                            while autoHealEnabled and timeout < 5 do
-                                gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                if gui then break end
-                                timeout += 0.05
-                                task.wait(0.05)
+                        -- 🔍 หา “ผู้เล่นที่ใกล้ที่สุด”
+                        local closestPlayer = nil
+                        local closestDist = 10
+
+                        for _, other in ipairs(Players:GetPlayers()) do
+                            if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
+                                local dist = (root.Position - other.Character.HumanoidRootPart.Position).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestPlayer = other
+                                end
                             end
                         end
 
-                        -- ✅ ถ้ามี GUI แล้ว รอต่อจนกว่า Check จะโผล่และมองเห็น
+                        -- 🎯 ตรวจจับ SkillCheck GUI
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            local timeout = 0
-                            while autoHealEnabled and (not check or not check.Visible) and timeout < 5 do
-                                gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                check = gui and gui:FindFirstChild("Check")
-                                timeout += 0.05
-                                task.wait(0.05)
+                            if not check then
+                                -- รอ GUI ปรากฏ
+                                local timeout = 0
+                                while autoHealEnabled and timeout < 5 do
+                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                                    check = gui and gui:FindFirstChild("Check")
+                                    if check and check.Visible then break end
+                                    timeout += 0.05
+                                    task.wait(0.05)
+                                end
                             end
 
-                            -- 🔫 ถ้า GUI โผล่แล้ว ยิงใส่ผู้เล่นทุกคนที่อยู่ใกล้ในระยะ 10 studs
-                            if check and check.Visible then
-                                for _, plr in ipairs(Players:GetPlayers()) do
-                                    if plr ~= player and plr.Character then
-                                        local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-                                        if targetRoot then
-                                            local dist = (root.Position - targetRoot.Position).Magnitude
-                                            if dist <= 10 then
-                                                remote:FireServer("success", 1, plr.Name)
-                                            end
-                                        end
-                                    end
-                                end
+                            -- ถ้า GUI Check โผล่ -> ยิง remote
+                            if check and check.Visible and closestPlayer then
+                                remote:FireServer("success", 1, closestPlayer.Name)
+                                check.Visible = false
                             end
                         end
                     end
@@ -1248,6 +1246,7 @@ SurTab:Toggle({
         end
     end
 })
+
 
 SurTab:Section({ Title = "Feature Cheat", Icon = "bug" })
 
