@@ -1,4 +1,4 @@
--- V545
+-- V548
 
 repeat task.wait() until game:IsLoaded()
 
@@ -1146,6 +1146,70 @@ Tabs.Combat:Slider({
     Value = { Min = 20, Max = 800, Default = 50 },
     Callback = function(value)
         auraRadius = math.clamp(value, 10, 800)
+    end
+})
+
+Tabs.Main:Section({ Title = "Dupe", Icon = "cnady" })
+
+Tabs.Main:Toggle({
+    Title = "Dupe Candy",
+    Value = false,
+    Callback = function(state)
+        _G.Auto = state
+        if state then
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local Event = ReplicatedStorage:FindFirstChild("RemoteEvents")
+                and ReplicatedStorage.RemoteEvents:FindFirstChild("CarnivalCompleteShootingGallery")
+
+            if not Event then
+                warn("⚠️ RemoteEvent: CarnivalCompleteShootingGallery")
+                return
+            end
+
+            local function findTargets(parent, depth)
+                if depth > 3 then return {} end
+                local targets = {}
+                for _, child in ipairs(parent:GetChildren()) do
+                    if child:IsA("BasePart") then
+                        table.insert(targets, child)
+                    end
+                    for _, subTarget in ipairs(findTargets(child, depth + 1)) do
+                        table.insert(targets, subTarget)
+                    end
+                end
+                return targets
+            end
+
+            task.spawn(function()
+                while _G.Auto and task.wait(3) do
+                    local targets = {}
+                    local areas = {
+                        workspace:FindFirstChild("Map"),
+                        workspace:FindFirstChild("Items"),
+                        workspace:FindFirstChild("Characters")
+                    }
+
+                    -- รวมทุกโฟลเดอร์ที่เจอ
+                    for _, area in ipairs(areas) do
+                        if area then
+                            for _, target in ipairs(findTargets(area, 0)) do
+                                table.insert(targets, target)
+                            end
+                        end
+                    end
+
+                    for _, target in ipairs(targets) do
+                        if not _G.Auto then break end
+                        pcall(function()
+                            Event:FireServer(target)
+                        end)
+                        task.wait(0.05)
+                    end
+                end
+            end)
+        else
+            _G.Auto = false
+        end
     end
 })
 
