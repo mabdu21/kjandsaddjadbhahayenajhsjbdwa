@@ -17,7 +17,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deivi
 local Window = Library:CreateWindow({
     Title = "DYHUB",
     Footer = "DYHUB @ Premium - Anime Eternal (dsc.gg/dyhub)",
-    ToggleKeybind = Enum.KeyCode.LeftAlt,
+    ToggleKeybind = Enum.KeyCode.K,
     Center = true,
     AutoShow = true,
     MobileButtonsSide = "Left"
@@ -146,8 +146,8 @@ ImageCorner.Parent = WatermarkImage
 
 -- Try multiple image formats for better compatibility
 local imageFormats = {
-    "rbxassetid://121631680891470",
-    "http://www.roblox.com/asset/?id=121631680891470",
+    "rbxassetid://104487529937663",
+    "http://www.roblox.com/asset/?id=104487529937663",
     "rbxasset://textures/ui/GuiImagePlaceholder.png" -- Fallback image
 }
 
@@ -2765,6 +2765,7 @@ task.defer(function()
         end
     end
 end)
+
 
 
 
