@@ -1185,7 +1185,7 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto SkillCheck (Heal in 1 sec)",
+    Title = "Auto SkillCheck (Test)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -1197,14 +1197,16 @@ SurTab:Toggle({
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
+                print("[AutoSkillCheck] Enabled")
+
                 while autoHealEnabled do
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local char = player.Character or player.CharacterAdded:Wait()
+                    local root = char:WaitForChild("HumanoidRootPart", 2)
 
                     if root then
                         -- 🔍 หา “ผู้เล่นที่ใกล้ที่สุด”
-                        local closestPlayer = nil
-                        local closestDist = 10
+                        local closestPlayer
+                        local closestDist = math.huge
 
                         for _, other in ipairs(Players:GetPlayers()) do
                             if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
@@ -1216,33 +1218,30 @@ SurTab:Toggle({
                             end
                         end
 
+                        if closestPlayer then
+                            print("[AutoSkillCheck] Closest player:", closestPlayer.Name)
+                        else
+                            print("[AutoSkillCheck] No nearby player found.")
+                        end
+
                         -- 🎯 ตรวจจับ SkillCheck GUI
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            if not check then
-                                -- ⏳ รอ GUI ปรากฏ
-                                local timeout = 0
-                                while autoHealEnabled and timeout < 5 do
-                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                    check = gui and gui:FindFirstChild("Check")
-                                    if check and check.Visible then break end
-                                    timeout += 0.05
-                                    task.wait(0.05)
-                                end
-                            end
-
-                            -- 💥 ยิง Remote เมื่อ GUI โผล่
-                            if check and check.Visible and closestPlayer then
-                                SkillCheckResultEvent:FireServer("fail", 99, closestPlayer.Name)
-                                check.Visible = false
+                            if check and check.Visible then
+                                print("[AutoSkillCheck] SkillCheck visible — firing remote...")
+                                -- 🔥 ยิง remote
+                                SkillCheckResultEvent:FireServer("fail", 50, closestPlayer and closestPlayer.Name or player.Name)
+                                task.wait(0.1)
                             end
                         end
                     end
 
-                    task.wait(0.5)
+                    task.wait(0.25)
                 end
             end)
+        else
+            print("[AutoSkillCheck] Disabled")
         end
     end
 })
