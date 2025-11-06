@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "4.0.4"
+local version = "4.0.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -1185,7 +1185,7 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto SkillCheck (Perfect)",
+    Title = "Auto SkillCheck (Heal in 1 sec)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -1193,7 +1193,7 @@ SurTab:Toggle({
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
+                local SkillCheckResultEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -1221,7 +1221,7 @@ SurTab:Toggle({
                         if gui then
                             local check = gui:FindFirstChild("Check")
                             if not check then
-                                -- รอ GUI ปรากฏ
+                                -- ⏳ รอ GUI ปรากฏ
                                 local timeout = 0
                                 while autoHealEnabled and timeout < 5 do
                                     gui = playerGui:FindFirstChild("SkillCheckPromptGui")
@@ -1232,9 +1232,9 @@ SurTab:Toggle({
                                 end
                             end
 
-                            -- ถ้า GUI Check โผล่ -> ยิง remote
+                            -- 💥 ยิง Remote เมื่อ GUI โผล่
                             if check and check.Visible and closestPlayer then
-                                remote:FireServer("success", 1, closestPlayer.Name)
+                                SkillCheckResultEvent:FireServer("fail", 99, closestPlayer.Name)
                                 check.Visible = false
                             end
                         end
