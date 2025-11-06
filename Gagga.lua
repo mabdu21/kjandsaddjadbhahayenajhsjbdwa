@@ -1149,7 +1149,7 @@ Tabs.Combat:Slider({
     end
 })
 
-Tabs.Main:Section({ Title = "Dupe", Icon = "cnady" })
+Tabs.Main:Section({ Title = "Dupe", Icon = "candy" })
 
 Tabs.Main:Toggle({
     Title = "Dupe Candy",
