@@ -739,9 +739,9 @@ crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
 crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
 crosshair.BackgroundTransparency = 1
 crosshair.BorderSizePixel = 0
-crosshair.Visible = false -- ลองเปิดไว้ก่อนเพื่อเช็คตำแหน่ง
+crosshair.Visible = false
 crosshair.ZIndex = 10
-crosshair.Image = defaultAssetId
+crosshair.Image = "rbxassetid://7072718365"
 crosshair.Parent = guiFolder
 
 --// Mobile Button GUI
