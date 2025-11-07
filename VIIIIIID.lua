@@ -1,4 +1,4 @@
--- Powered by GPT 5 v581
+-- Powered by GPT 5 v582
 -- ======================
 local version = "4.1.2"
 -- ======================
@@ -762,7 +762,7 @@ updateMobileButtonColor()
 MainTab:Dropdown({
     Title = "Select Target",
     Values = Settings.Aimbot.Target,
-    Multi = true,
+    Multi = false,
     Callback = function(values)
         Settings.Aimbot.SelectedTargets = values or {}
     end
@@ -771,7 +771,7 @@ MainTab:Dropdown({
 MainTab:Dropdown({
     Title = "Select Part",
     Values = Settings.Aimbot.Part,
-    Multi = true,
+    Multi = false,
     Callback = function(values)
         Settings.Aimbot.SelectedParts = values or {}
         -- ensure we have a default lock part if available
