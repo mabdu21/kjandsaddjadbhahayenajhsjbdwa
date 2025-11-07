@@ -743,7 +743,7 @@ UpdateKeybind()
 local function CreateCrosshair()
     if crosshair then crosshair:Destroy() end
     crosshair = Instance.new("Frame")
-    crosshair.Name = "AimbotCrosshair"
+    crosshair.Name = "Crosshair"
     crosshair.Size = UDim2.new(0, 10, 0, 10)
     crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
     crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -765,7 +765,7 @@ local function CreateMobileButton()
     mobileButton.Name = "AimbotToggleButton"
     mobileButton.Size = UDim2.new(0, 90, 0, 90)
     mobileButton.AnchorPoint = Vector2.new(1, 1)
-    mobileButton.Position = UDim2.new(1, -25, 1, -25)
+    mobileButton.Position = UDim2.new(1, -35, 1, -450)
     mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
     mobileButton.Text = "🎯"
     mobileButton.TextSize = 36
@@ -817,6 +817,18 @@ end
 
 -- Initial GUI
 EnsureGui()
+
+task.spawn(function()
+    while task.wait(1) do
+        if guiFolder and guiFolder:IsA("ScreenGui") then
+            if guiFolder.Enabled == false then
+                guiFolder.Enabled = true
+            end
+        else
+            EnsureGui()
+        end
+    end
+end)
 
 -- Auto-rebuild on character respawn or GUI deletion
 LocalPlayer.CharacterAdded:Connect(function()
@@ -2131,6 +2143,25 @@ MainTab:Toggle({
                 Lighting.Atmosphere.Density = 0.5
             end
         end
+    end
+})
+
+MainTab:Section({ Title = "Misc", Icon = "settings" })
+local AntiAFK = false
+MainTab:Toggle({
+    Title = "Anti-AFK",
+    Default = false,
+    Callback = function(state)
+        AntiAFK = state
+        task.spawn(function()
+            local vu = game:GetService("VirtualUser")
+            while AntiAFK do
+                vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(math.random(50,70))
+                vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(math.random(50,70))
+            end
+        end)
     end
 })
 
