@@ -1,4 +1,4 @@
--- Powered by GPT 5 v588
+-- Powered by GPT 5 v589
 -- ======================
 local version = "4.1.4"
 -- ======================
@@ -706,7 +706,7 @@ local Settings = {
         Enable = false,
         EnableUI = false,
         CrossHairUI = false,
-        Part = { "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso" },
+        Part = { "Head", "Torso", "HumanoidRootPart" },
         Target = { "Killer", "Survivor" },
         SelectedParts = { "Head" },
         SelectedTargets = { "Killer" },
