@@ -1,4 +1,4 @@
--- Powered by GPT 5 v586
+-- Powered by GPT 5 v588
 -- ======================
 local version = "4.1.3"
 -- ======================
