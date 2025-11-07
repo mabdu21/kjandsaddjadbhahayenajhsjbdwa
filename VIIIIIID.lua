@@ -689,6 +689,8 @@ local function setGateState(enabled)
 end
 
 -- ============= Aim bot ===============
+MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
+
 --// Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
