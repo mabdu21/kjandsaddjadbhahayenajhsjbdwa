@@ -1,4 +1,4 @@
--- Powered by GPT 5
+-- Powered by GPT 5 v581
 -- ======================
 local version = "4.1.2"
 -- ======================
@@ -733,21 +733,7 @@ guiFolder.ResetOnSpawn = false
 guiFolder.IgnoreGuiInset = true
 guiFolder.Parent = PlayerGui
 
-local defaultAssetId = 16396565428
 
---// Crosshair GUI
-local crosshair = Instance.new("ImageLabel")
-crosshair.Size = UDim2.new(0, 24, 0, 24)
-crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
-crosshair.BackgroundTransparency = 1
-crosshair.BorderSizePixel = 0
-crosshair.Visible = Settings.Aimbot.CrossHairUI
-crosshair.ZIndex = 10
-crosshair.Image = defaultAssetId
-crosshair.Parent = guiFolder
-
-local currentAssetId = defaultAssetId
 
 --// Mobile Button GUI
 local mobileButton = Instance.new("TextButton")
@@ -826,6 +812,22 @@ MainTab:Toggle({
 
 MainTab:Section({ Title = "Aimbot Setting", Icon = "settings" })
 
+local defaultAssetId = "rbxassetid://16396565428"
+
+--// Crosshair GUI
+local crosshair = Instance.new("ImageLabel")
+crosshair.Size = UDim2.new(0, 24, 0, 24)
+crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
+crosshair.BackgroundTransparency = 1
+crosshair.BorderSizePixel = 0
+crosshair.Visible = Settings.Aimbot.CrossHairUI
+crosshair.ZIndex = 10
+crosshair.Image = defaultAssetId
+crosshair.Parent = guiFolder
+
+local currentAssetId = defaultAssetId
+
 MainTab:Input({
     Title = "Set Image Crosshair (Asset)",
     Default = tostring(currentAssetId),
@@ -833,8 +835,8 @@ MainTab:Input({
     Callback = function(text)
         local num = tonumber(text)
         if num then
-            currentAssetId = num
-            crosshair.Image = num
+            currentAssetId = "rbxassetid://" .. num
+            crosshair.Image = currentAssetId
         end
     end
 })
