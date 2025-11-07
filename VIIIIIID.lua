@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "Pre-4.0.9"
+local version = "Pre-4.1.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -728,21 +728,26 @@ local KeybindLock = Enum.KeyCode[KeybindLockString:upper()] or Enum.KeyCode.V
 
 --// GUI: Crosshair
 local guiFolder = Instance.new("ScreenGui")
-guiFolder.Name = "AimbotUI"
+guiFolder.Name = "เขมรกาก"
 guiFolder.ResetOnSpawn = false
 guiFolder.IgnoreGuiInset = true
 guiFolder.Parent = PlayerGui
 
+local defaultAssetId = 16396565395
+
 --// Crosshair GUI
-local crosshair = Instance.new("Frame")
-crosshair.Size = UDim2.new(0, 8, 0, 8)
+local crosshair = Instance.new("ImageLabel")
+crosshair.Size = UDim2.new(0, 24, 0, 24)
 crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
-crosshair.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
+crosshair.BackgroundTransparency = 1
 crosshair.BorderSizePixel = 0
-crosshair.Visible = false
+crosshair.Visible = Settings.Aimbot.CrossHairUI
 crosshair.ZIndex = 10
+crosshair.Image = "rbxassetid://" .. tostring(defaultAssetId)
 crosshair.Parent = guiFolder
+
+local currentAssetId = defaultAssetId
 
 --// Mobile Button GUI
 local mobileButton = Instance.new("TextButton")
@@ -821,13 +826,25 @@ MainTab:Toggle({
 
 MainTab:Section({ Title = "Aimbot Setting", Icon = "settings" })
 
+MainTab:Input({
+    Title = "Set Image Crosshair (Asset)",
+    Default = tostring(currentAssetId),
+    Placeholder = "Asset (Ex: 16396565395)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            currentAssetId = num
+            crosshair.Image = "rbxassetid://" .. tostring(num)
+        end
+    end
+})
+
 MainTab:Toggle({
     Title = "Enable Crosshair",
     Default = Settings.Aimbot.CrossHairUI,
     Callback = function(state)
         Settings.Aimbot.CrossHairUI = state
         crosshair.Visible = state
-        CrosshairVisible = state
     end
 })
 
