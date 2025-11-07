@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "Pre-4.1.2"
+local version = "4.1.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -744,7 +744,7 @@ crosshair.BackgroundTransparency = 1
 crosshair.BorderSizePixel = 0
 crosshair.Visible = Settings.Aimbot.CrossHairUI
 crosshair.ZIndex = 10
-crosshair.Image = "rbxassetid://" .. tostring(defaultAssetId)
+crosshair.Image = defaultAssetId
 crosshair.Parent = guiFolder
 
 local currentAssetId = defaultAssetId
@@ -834,7 +834,7 @@ MainTab:Input({
         local num = tonumber(text)
         if num then
             currentAssetId = num
-            crosshair.Image = "rbxassetid://" .. tostring(num)
+            crosshair.Image = num
         end
     end
 })
