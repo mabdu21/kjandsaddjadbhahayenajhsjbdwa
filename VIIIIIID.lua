@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "4.0.9"
+local version = "Pre-4.0.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -690,6 +690,7 @@ end
 
 -- ============= Aim bot ===============
 MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
+
 --// Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -697,6 +698,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
 
 --// Settings
@@ -725,28 +727,35 @@ local KeybindLockString = Settings.Aimbot.SetKeybindLock or "V"
 local KeybindLock = Enum.KeyCode[KeybindLockString:upper()] or Enum.KeyCode.V
 
 --// GUI: Crosshair
+local guiFolder = Instance.new("ScreenGui")
+guiFolder.Name = "AimbotUI"
+guiFolder.ResetOnSpawn = false
+guiFolder.IgnoreGuiInset = true
+guiFolder.Parent = PlayerGui
+
+--// Crosshair GUI
 local crosshair = Instance.new("Frame")
 crosshair.Size = UDim2.new(0, 8, 0, 8)
-crosshair.Position = UDim2.new(0.5, -4, 0.5, -4)
 crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
 crosshair.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 crosshair.BorderSizePixel = 0
-crosshair.Visible = CrosshairVisible
-crosshair.ZIndex = 1000
-crosshair.Parent = game:GetService("CoreGui")
+crosshair.Visible = false
+crosshair.ZIndex = 10
+crosshair.Parent = guiFolder
 
---// GUI: Mobile Lock Button
+--// Mobile Button GUI
 local mobileButton = Instance.new("TextButton")
-mobileButton.Size = UDim2.new(0, 80, 0, 80)
-mobileButton.Position = UDim2.new(1, -100, 1, -150)
-mobileButton.AnchorPoint = Vector2.new(0, 0)
+mobileButton.Size = UDim2.new(0, 90, 0, 90)
+mobileButton.AnchorPoint = Vector2.new(1, 1)
+mobileButton.Position = UDim2.new(1, -25, 1, -25)
 mobileButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 mobileButton.Text = "🎯"
 mobileButton.TextSize = 30
-mobileButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-mobileButton.Visible = AimbotToggleGUIVisible
-mobileButton.ZIndex = 1000
-mobileButton.Parent = game:GetService("CoreGui")
+mobileButton.TextColor3 = Color3.new(1, 1, 1)
+mobileButton.Visible = false
+mobileButton.ZIndex = 10
+mobileButton.Parent = guiFolder
 
 -- update mobileButton color according to enabled state
 local function updateMobileButtonColor()
@@ -777,6 +786,22 @@ MainTab:Dropdown({
         -- ensure we have a default lock part if available
         if #Settings.Aimbot.SelectedParts > 0 then
             LockPart = Settings.Aimbot.SelectedParts[1]
+        end
+    end
+})
+
+local auraRange = 400
+
+MainTab:Input({
+    Title = "Set Distance Aimbot (Value)",
+    Default = tostring(auraRange),
+    Placeholder = "Distance (Ex: 400)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then
+            auraRange = num
+        else
+            warn("Entered an incorrect number!")
         end
     end
 })
@@ -818,7 +843,7 @@ MainTab:Toggle({
 
 -- Input for Keybind
 MainTab:Input({
-    Title = "Set Keybind Aimbot (Keybind)",
+    Title = "Set Aimbot (Keybind)",
     Default = Settings.Aimbot.SetKeybindLock,
     Placeholder = "Lock (Ex: V)",
     Callback = function(text)
@@ -891,7 +916,7 @@ local function IsValidTarget(plr)
     local root = LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character:FindFirstChild("Torso"))
     if not root then return false end
     local dist = (part.Position - root.Position).Magnitude
-    if dist > 300 then return false end
+    if dist > auraRange then return false end
 
     if not (root and part) then return false end
     local rayParams = RaycastParams.new()
