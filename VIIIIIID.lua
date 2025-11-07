@@ -1,6 +1,6 @@
 -- Powered by GPT 5
 -- ======================
-local version = "Pre-4.1.1"
+local version = "Pre-4.1.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -733,7 +733,7 @@ guiFolder.ResetOnSpawn = false
 guiFolder.IgnoreGuiInset = true
 guiFolder.Parent = PlayerGui
 
-local defaultAssetId = 16396565395
+local defaultAssetId = 16396565428
 
 --// Crosshair GUI
 local crosshair = Instance.new("ImageLabel")
@@ -829,7 +829,7 @@ MainTab:Section({ Title = "Aimbot Setting", Icon = "settings" })
 MainTab:Input({
     Title = "Set Image Crosshair (Asset)",
     Default = tostring(currentAssetId),
-    Placeholder = "Asset (Ex: 16396565395)",
+    Placeholder = "Asset (Ex: 16396565428)",
     Callback = function(text)
         local num = tonumber(text)
         if num then
