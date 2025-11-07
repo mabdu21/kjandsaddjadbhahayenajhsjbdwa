@@ -1,4 +1,4 @@
--- Powered by GPT 5 v582
+-- Powered by GPT 5 v583
 -- ======================
 local version = "4.1.2"
 -- ======================
@@ -733,7 +733,16 @@ guiFolder.ResetOnSpawn = false
 guiFolder.IgnoreGuiInset = true
 guiFolder.Parent = PlayerGui
 
-
+local crosshair = Instance.new("ImageLabel")
+crosshair.Size = UDim2.new(0, 24, 0, 24)
+crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
+crosshair.BackgroundTransparency = 1
+crosshair.BorderSizePixel = 0
+crosshair.Visible = false -- ลองเปิดไว้ก่อนเพื่อเช็คตำแหน่ง
+crosshair.ZIndex = 10
+crosshair.Image = defaultAssetId
+crosshair.Parent = guiFolder
 
 --// Mobile Button GUI
 local mobileButton = Instance.new("TextButton")
@@ -785,7 +794,7 @@ local auraRange = 400
 
 MainTab:Input({
     Title = "Set Distance Aimbot (Value)",
-    Default = tostring(auraRange),
+    Values = tostring(auraRange),
     Placeholder = "Distance (Ex: 400)",
     Callback = function(text)
         local num = tonumber(text)
@@ -799,7 +808,7 @@ MainTab:Input({
 
 MainTab:Toggle({
     Title = "Enable Aimbot",
-    Default = Settings.Aimbot.Enable,
+    Values = Settings.Aimbot.Enable,
     Callback = function(state)
         Settings.Aimbot.Enable = state
         AimbotEnabled = state
@@ -812,38 +821,9 @@ MainTab:Toggle({
 
 MainTab:Section({ Title = "Aimbot Setting", Icon = "settings" })
 
-local defaultAssetId = "rbxassetid://16396565428"
-
---// Crosshair GUI
-local crosshair = Instance.new("ImageLabel")
-crosshair.Size = UDim2.new(0, 24, 0, 24)
-crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
-crosshair.BackgroundTransparency = 1
-crosshair.BorderSizePixel = 0
-crosshair.Visible = Settings.Aimbot.CrossHairUI
-crosshair.ZIndex = 10
-crosshair.Image = defaultAssetId
-crosshair.Parent = guiFolder
-
-local currentAssetId = defaultAssetId
-
-MainTab:Input({
-    Title = "Set Image Crosshair (Asset)",
-    Default = tostring(currentAssetId),
-    Placeholder = "Asset (Ex: 16396565428)",
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then
-            currentAssetId = "rbxassetid://" .. num
-            crosshair.Image = currentAssetId
-        end
-    end
-})
-
 MainTab:Toggle({
     Title = "Enable Crosshair",
-    Default = Settings.Aimbot.CrossHairUI,
+    Values = Settings.Aimbot.CrossHairUI,
     Callback = function(state)
         Settings.Aimbot.CrossHairUI = state
         crosshair.Visible = state
@@ -852,7 +832,7 @@ MainTab:Toggle({
 
 MainTab:Toggle({
     Title = "Enable Aimbot (Toggle GUI)",
-    Default = Settings.Aimbot.EnableUI,
+    Values = Settings.Aimbot.EnableUI,
     Callback = function(state)
         Settings.Aimbot.EnableUI = state
         AimbotToggleGUIVisible = state
@@ -863,7 +843,7 @@ MainTab:Toggle({
 -- Input for Keybind
 MainTab:Input({
     Title = "Set Aimbot (Keybind)",
-    Default = Settings.Aimbot.SetKeybindLock,
+    Values = Settings.Aimbot.SetKeybindLock,
     Placeholder = "Lock (Ex: V)",
     Callback = function(text)
         if type(text) ~= "string" or #text == 0 then
