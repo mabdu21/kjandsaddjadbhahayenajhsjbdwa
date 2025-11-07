@@ -1,4 +1,4 @@
--- Powered by GPT 5 v584
+-- Powered by GPT 5 v586
 -- ======================
 local version = "4.1.3"
 -- ======================
@@ -709,9 +709,9 @@ local Settings = {
         CrossHairUI = false,
         Part = { "Head", "Torso" },
         Target = { "Killer", "Survivor" },
-        SelectedParts = { "Head" },      -- default selected
-        SelectedTargets = { "Killer" },  -- default selected
-        SetKeybindLock = "V"             -- default keybind (string)
+        SelectedParts = { "Head" },
+        SelectedTargets = { "Killer" },
+        SetKeybindLock = "V"
     }
 }
 
@@ -721,58 +721,90 @@ local CrosshairVisible = Settings.Aimbot.CrossHairUI
 local AimbotToggleGUIVisible = Settings.Aimbot.EnableUI
 local LockedTarget = nil
 local LockPart = "Head"
+local auraRange = 400
 
 -- Keybind handling
 local KeybindLockString = Settings.Aimbot.SetKeybindLock or "V"
 local KeybindLock = Enum.KeyCode[KeybindLockString:upper()] or Enum.KeyCode.V
 
---// GUI: Crosshair
-local guiFolder = Instance.new("ScreenGui")
-guiFolder.Name = "เขมรกาก"
-guiFolder.ResetOnSpawn = false
-guiFolder.IgnoreGuiInset = true
-guiFolder.Parent = PlayerGui
+----------------------------------------------------------
+-- GUI SYSTEM
+----------------------------------------------------------
 
-local crosshair = Instance.new("Frame")
-crosshair.Size = UDim2.new(0, 8, 0, 8) -- ขนาดวงกลม (8x8 px)
-crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
-crosshair.BackgroundColor3 = Color3.new(1, 1, 1) -- สีขาว
-crosshair.BackgroundTransparency = 0.2 -- โปร่งใสนิดหน่อย
-crosshair.BorderSizePixel = 0
-crosshair.Visible = false
-crosshair.ZIndex = 10
-crosshair.Parent = guiFolder
+local guiFolder, crosshair, mobileButton
 
--- ทำให้เป็นวงกลม
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(1, 0)
-corner.Parent = crosshair
-
---// Mobile Button GUI
-local mobileButton = Instance.new("TextButton")
-mobileButton.Size = UDim2.new(0, 90, 0, 90)
-mobileButton.AnchorPoint = Vector2.new(1, 1)
-mobileButton.Position = UDim2.new(1, -25, 1, -25)
-mobileButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-mobileButton.Text = "🎯"
-mobileButton.TextSize = 30
-mobileButton.TextColor3 = Color3.new(1, 1, 1)
-mobileButton.Visible = false
-mobileButton.ZIndex = 10
-mobileButton.Parent = guiFolder
-
--- update mobileButton color according to enabled state
 local function updateMobileButtonColor()
-    if AimbotEnabled then
-        mobileButton.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
-    else
-        mobileButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    if mobileButton then
+        if AimbotEnabled then
+            mobileButton.BackgroundColor3 = Color3.fromRGB(60, 255, 60)
+        else
+            mobileButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+        end
     end
 end
-updateMobileButtonColor()
 
---// UI Dropdowns and Toggles (use your existing Main API)
+-- ฟังก์ชันสร้าง GUI ใหม่ (จะเรียกทุกครั้งที่ GUI หาย)
+local function EnsureGui()
+    if not PlayerGui:FindFirstChild("เขมรกาก") then
+        guiFolder = Instance.new("ScreenGui")
+        guiFolder.Name = "เขมรกาก"
+        guiFolder.ResetOnSpawn = false
+        guiFolder.IgnoreGuiInset = true
+        guiFolder.Parent = PlayerGui
+
+        crosshair = Instance.new("Frame")
+        crosshair.Size = UDim2.new(0, 8, 0, 8)
+        crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+        crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
+        crosshair.BackgroundColor3 = Color3.new(1, 1, 1)
+        crosshair.BackgroundTransparency = 0.2
+        crosshair.BorderSizePixel = 0
+        crosshair.Visible = Settings.Aimbot.CrossHairUI
+        crosshair.ZIndex = 10
+        crosshair.Parent = guiFolder
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = crosshair
+
+        mobileButton = Instance.new("TextButton")
+        mobileButton.Size = UDim2.new(0, 90, 0, 90)
+        mobileButton.AnchorPoint = Vector2.new(1, 1)
+        mobileButton.Position = UDim2.new(1, -25, 1, -25)
+        mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
+        mobileButton.Text = "🎯"
+        mobileButton.TextSize = 30
+        mobileButton.TextColor3 = Color3.new(1, 1, 1)
+        mobileButton.Visible = Settings.Aimbot.EnableUI
+        mobileButton.ZIndex = 10
+        mobileButton.Parent = guiFolder
+
+        mobileButton.MouseButton1Click:Connect(function()
+            AimbotEnabled = not AimbotEnabled
+            Settings.Aimbot.Enable = AimbotEnabled
+            if not AimbotEnabled then
+                LockedTarget = nil
+            else
+                LockedTarget = FindNearestTarget()
+            end
+            updateMobileButtonColor()
+        end)
+    end
+end
+
+-- เรียกใช้งานครั้งแรก
+EnsureGui()
+
+-- ถ้า GUI ถูกลบตอนรีเซ็ตตัวละคร → สร้างใหม่อัตโนมัติ
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    EnsureGui()
+end)
+
+----------------------------------------------------------
+-- UI SETUP
+----------------------------------------------------------
+
 MainTab:Dropdown({
     Title = "Select Target",
     Values = Settings.Aimbot.Target,
@@ -788,14 +820,11 @@ MainTab:Dropdown({
     Multi = false,
     Callback = function(values)
         Settings.Aimbot.SelectedParts = values or {}
-        -- ensure we have a default lock part if available
         if #Settings.Aimbot.SelectedParts > 0 then
             LockPart = Settings.Aimbot.SelectedParts[1]
         end
     end
 })
-
-local auraRange = 400
 
 MainTab:Input({
     Title = "Set Distance Aimbot (Value)",
@@ -831,7 +860,7 @@ MainTab:Toggle({
     Values = Settings.Aimbot.CrossHairUI,
     Callback = function(state)
         Settings.Aimbot.CrossHairUI = state
-        crosshair.Visible = state
+        if crosshair then crosshair.Visible = state end
     end
 })
 
@@ -840,58 +869,33 @@ MainTab:Toggle({
     Values = Settings.Aimbot.EnableUI,
     Callback = function(state)
         Settings.Aimbot.EnableUI = state
-        AimbotToggleGUIVisible = state
-        mobileButton.Visible = state
+        if mobileButton then mobileButton.Visible = state end
     end
 })
 
--- Input for Keybind
 MainTab:Input({
     Title = "Set Aimbot (Keybind)",
     Values = Settings.Aimbot.SetKeybindLock,
     Placeholder = "Lock (Ex: V)",
     Callback = function(text)
-        if type(text) ~= "string" or #text == 0 then
-            -- ignore invalid
-            return
-        end
-
-        -- normalize
-        local keyName = text:gsub("%s+", ""):gsub("^%l", string.upper) -- e.g. "v" -> "V", "space" -> "Space"
-        -- attempt to find matching Enum.KeyCode
-        local kc = Enum.KeyCode[keyName:upper()] or Enum.KeyCode[keyName]
-        if not kc then
-            -- try a few friendly name mappings
-            local friendly = {
-                ["SPACE"] = Enum.KeyCode.Space,
-                ["LEFTSHIFT"] = Enum.KeyCode.LeftShift,
-                ["RIGHTSHIFT"] = Enum.KeyCode.RightShift,
-                ["LSHIFT"] = Enum.KeyCode.LeftShift,
-                ["RSHIFT"] = Enum.KeyCode.RightShift,
-                ["CTRL"] = Enum.KeyCode.LeftControl,
-                ["CONTROL"] = Enum.KeyCode.LeftControl,
-                ["ALT"] = Enum.KeyCode.LeftAlt,
-                ["ENTER"] = Enum.KeyCode.Return,
-                ["RETURN"] = Enum.KeyCode.Return,
-                ["ESC"] = Enum.KeyCode.Escape,
-                ["ESCAPE"] = Enum.KeyCode.Escape
-            }
-            kc = friendly[keyName:upper()]
-        end
-
+        if type(text) ~= "string" or #text == 0 then return end
+        local keyName = text:gsub("%s+", ""):upper()
+        local kc = Enum.KeyCode[keyName]
         if kc then
             KeybindLock = kc
             Settings.Aimbot.SetKeybindLock = keyName
             KeybindLockString = keyName
             print("[Aimbot] Keybind set to:", KeybindLock.Name)
         else
-            -- invalid key string: keep previous
-            warn("[Aimbot] Invalid keybind:", text, " — keeping previous:", KeybindLock.Name)
+            warn("[Aimbot] Invalid keybind:", text)
         end
     end
 })
 
---// Function: Check if player is Killer or Survivor
+----------------------------------------------------------
+-- AIMBOT SYSTEM
+----------------------------------------------------------
+
 local function IsTargetType(plr)
     local isKiller = plr.Character and plr.Character:FindFirstChild("Weapon")
     if table.find(Settings.Aimbot.SelectedTargets, "Killer") and isKiller then
@@ -903,26 +907,27 @@ local function IsTargetType(plr)
     return false
 end
 
---// Function: Validate target
 local function IsValidTarget(plr)
     if not plr or plr == LocalPlayer then return false end
     if not IsTargetType(plr) then return false end
     local char = plr.Character
     if not char or not char:FindFirstChild("Humanoid") then return false end
-    local part = nil
+
+    local part
     for _, p in ipairs(Settings.Aimbot.SelectedParts) do
         if char:FindFirstChild(p) then
-            part = char:FindFirstChild(p)
+            part = char[p]
             break
         end
     end
     if not part then return false end
+
     local root = LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character:FindFirstChild("Torso"))
     if not root then return false end
+
     local dist = (part.Position - root.Position).Magnitude
     if dist > auraRange then return false end
 
-    if not (root and part) then return false end
     local rayParams = RaycastParams.new()
     rayParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
     rayParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -930,15 +935,15 @@ local function IsValidTarget(plr)
     if res and res.Instance and not res.Instance:IsDescendantOf(char) then
         return false
     end
+
     return true
 end
 
---// Function: Find closest target
-local function FindNearestTarget()
+function FindNearestTarget()
     local root = LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character:FindFirstChild("Torso"))
     if not root then return nil end
-    local closest, closestDist = nil, math.huge
 
+    local closest, dist = nil, math.huge
     for _, plr in ipairs(Players:GetPlayers()) do
         if IsValidTarget(plr) then
             local char = plr.Character
@@ -946,9 +951,9 @@ local function FindNearestTarget()
                 local part = char and char:FindFirstChild(p)
                 if part then
                     local d = (part.Position - root.Position).Magnitude
-                    if d < closestDist then
+                    if d < dist then
                         closest = plr
-                        closestDist = d
+                        dist = d
                         LockPart = p
                     end
                 end
@@ -958,65 +963,74 @@ local function FindNearestTarget()
     return closest
 end
 
---// Aimbot Logic (use LockedTarget if set; otherwise use nearest)
 RunService.RenderStepped:Connect(function()
     if not AimbotEnabled then return end
+    local cam = Workspace.CurrentCamera
 
-    local camera = Workspace.CurrentCamera
-    if LockedTarget and LockedTarget.Character and LockedTarget.Character:FindFirstChild(LockPart) and IsValidTarget(LockedTarget) then
+    if LockedTarget and IsValidTarget(LockedTarget) then
         local aimPart = LockedTarget.Character[LockPart]
-        camera.CFrame = CFrame.new(camera.CFrame.Position, aimPart.Position)
-        return
-    end
-
-    -- if no locked target, find nearest and aim to it
-    local target = FindNearestTarget()
-    if target and target.Character and target.Character:FindFirstChild(LockPart) then
-        local aimPart = target.Character[LockPart]
-        camera.CFrame = CFrame.new(camera.CFrame.Position, aimPart.Position)
-    end
-end)
-
---// Mobile Button Action (toggle Aimbot)
-mobileButton.MouseButton1Click:Connect(function()
-    AimbotEnabled = not AimbotEnabled
-    Settings.Aimbot.Enable = AimbotEnabled
-    if not AimbotEnabled then
-        LockedTarget = nil
+        cam.CFrame = CFrame.new(cam.CFrame.Position, aimPart.Position)
     else
-        -- when enabling, try lock nearest
-        LockedTarget = FindNearestTarget()
-    end
-    updateMobileButtonColor()
-end)
-
---// Keyboard Keybind - toggle Aimbot + lock nearest when enabling
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        if input.KeyCode == KeybindLock then
-            AimbotEnabled = not AimbotEnabled
-            Settings.Aimbot.Enable = AimbotEnabled
-            if AimbotEnabled then
-                LockedTarget = FindNearestTarget()
-                if LockedTarget then
-                    print("[Aimbot] Locked to:", LockedTarget.Name)
-                else
-                    print("[Aimbot] No valid target to lock.")
-                end
-            else
-                LockedTarget = nil
-                print("[Aimbot] Unlocked.")
-            end
-            updateMobileButtonColor()
+        local t = FindNearestTarget()
+        if t and t.Character and t.Character:FindFirstChild(LockPart) then
+            local aimPart = t.Character[LockPart]
+            cam.CFrame = CFrame.new(cam.CFrame.Position, aimPart.Position)
         end
     end
 end)
 
---// Cleanup when target leaves
+----------------------------------------------------------
+-- EVENT SYSTEM
+----------------------------------------------------------
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == KeybindLock then
+        AimbotEnabled = not AimbotEnabled
+        Settings.Aimbot.Enable = AimbotEnabled
+        if AimbotEnabled then
+            LockedTarget = FindNearestTarget()
+            print("[Aimbot] Locked to:", LockedTarget and LockedTarget.Name or "None")
+        else
+            LockedTarget = nil
+            print("[Aimbot] Unlocked.")
+        end
+        updateMobileButtonColor()
+    end
+end)
+
+-- รีเช็คเมื่อมี Player เข้า/ออก
+local function RefreshAimbotTarget()
+    if AimbotEnabled then
+        LockedTarget = FindNearestTarget()
+        if LockedTarget then
+            print("[Aimbot] Updated target:", LockedTarget.Name)
+        else
+            print("[Aimbot] No valid target found after refresh.")
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    task.wait(1)
+    RefreshAimbotTarget()
+end)
+
 Players.PlayerRemoving:Connect(function(plr)
     if LockedTarget == plr then
         LockedTarget = nil
+        RefreshAimbotTarget()
+    end
+end)
+
+-- ตรวจสอบทุก 3 วิ ถ้าเป้าหมายไม่ valid จะรีเฟรชใหม่
+task.spawn(function()
+    while task.wait(3) do
+        if AimbotEnabled then
+            if not LockedTarget or not IsValidTarget(LockedTarget) then
+                RefreshAimbotTarget()
+            end
+        end
     end
 end)
 
