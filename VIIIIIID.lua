@@ -1,6 +1,6 @@
--- Powered by GPT 5 v583
+-- Powered by GPT 5 v584
 -- ======================
-local version = "4.1.2"
+local version = "4.1.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -733,16 +733,21 @@ guiFolder.ResetOnSpawn = false
 guiFolder.IgnoreGuiInset = true
 guiFolder.Parent = PlayerGui
 
-local crosshair = Instance.new("ImageLabel")
-crosshair.Size = UDim2.new(0, 24, 0, 24)
+local crosshair = Instance.new("Frame")
+crosshair.Size = UDim2.new(0, 8, 0, 8) -- ขนาดวงกลม (8x8 px)
 crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.Position = UDim2.new(0.5, 0.5, 0, 0)
-crosshair.BackgroundTransparency = 1
+crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
+crosshair.BackgroundColor3 = Color3.new(1, 1, 1) -- สีขาว
+crosshair.BackgroundTransparency = 0.2 -- โปร่งใสนิดหน่อย
 crosshair.BorderSizePixel = 0
 crosshair.Visible = false
 crosshair.ZIndex = 10
-crosshair.Image = "rbxassetid://7072718365"
 crosshair.Parent = guiFolder
+
+-- ทำให้เป็นวงกลม
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = crosshair
 
 --// Mobile Button GUI
 local mobileButton = Instance.new("TextButton")
