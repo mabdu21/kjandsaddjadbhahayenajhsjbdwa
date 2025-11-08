@@ -1647,7 +1647,7 @@ SurTab:Toggle({
                             if check and check.Visible then
                                 print("[AutoSkillCheck] SkillCheck visible — firing remote...")
                                 -- 🔥 ยิง remote
-                                SkillCheckResultEvent:FireServer("fail", 50, closestPlayer and closestPlayer.Name or player.Name)
+                                SkillCheckResultEvent:FireServer("fail", 50, closestPlayer.Name or player.Name)
                                 task.wait(0.1)
                             end
                         end
