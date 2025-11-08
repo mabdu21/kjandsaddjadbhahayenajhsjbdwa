@@ -1,6 +1,6 @@
 -- Powered by GPT 5 v589
 -- ======================
-local version = "4.1.4"
+local version = "4.1.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -765,7 +765,7 @@ local function CreateMobileButton()
     mobileButton.Name = "AimbotToggleButton"
     mobileButton.Size = UDim2.new(0, 90, 0, 90)
     mobileButton.AnchorPoint = Vector2.new(1, 1)
-    mobileButton.Position = UDim2.new(1, -35, 1, -450)
+    mobileButton.Position = UDim2.new(1, -40, 1, -40)
     mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
     mobileButton.Text = "🎯"
     mobileButton.TextSize = 36
@@ -918,18 +918,77 @@ MainTab:Toggle({
     end
 })
 
+--// [FIXED & UPGRADED] PC Keybind System
+local ContextActionService = game:GetService("ContextActionService")
+local KEYBIND_ACTION_NAME = "AimbotPCKeybind"
+
+local function UpdateKeybindAction()
+    -- Remove old binding
+    ContextActionService:UnbindAction(KEYBIND_ACTION_NAME)
+
+    -- Get current key
+    local keyName = Settings.Aimbot.SetKeybindLock:gsub("%s+", ""):upper()
+    local keyCode = Enum.KeyCode[keyName]
+    if not keyCode then
+        warn("[Aimbot] Invalid keybind:", keyName)
+        return
+    end
+
+    KeybindLock = keyCode
+
+    -- Bind new key (works even in chat/UI)
+    ContextActionService:BindAction(
+        KEYBIND_ACTION_NAME,
+        function(name, inputState, inputObject)
+            if inputState == Enum.UserInputState.Begin and AimbotEnabled then
+                if LockedTarget then
+                    -- Already locked → unlock
+                    LockedTarget = nil
+                    print("[Aimbot] Unlocked target.")
+                else
+                    -- Find and lock nearest
+                    local target = FindNearestTarget()
+                    if target then
+                        LockedTarget = target
+                        print("[Aimbot] Locked onto:", target.DisplayName, "->", LockPart)
+                    else
+                        print("[Aimbot] No valid target in range.")
+                    end
+                end
+                return Enum.ContextActionResult.Sink
+            end
+            return Enum.ContextActionResult.Pass
+        end,
+        false,
+        keyCode
+    )
+end
+
+-- Initial bind
+UpdateKeybindAction()
+
 MainTab:Input({
     Title = "Set Keybind Aimbot (PC ONLY)",
     Default = Settings.Aimbot.SetKeybindLock,
     Placeholder = "Lock (Ex: V)",
     Callback = function(text)
-        if text and #text:gsub("%s+", "") > 0 then
-            Settings.Aimbot.SetKeybindLock = text:gsub("%s+", ""):upper()
-            UpdateKeybind()
-            print("[Aimbot] Keybind set to:", KeybindLock.Name)
+        local clean = text:gsub("%s+", ""):upper()
+        if clean ~= "" and Enum.KeyCode[clean] then
+            Settings.Aimbot.SetKeybindLock = clean
+            UpdateKeybindAction()  -- Rebind immediately
+            print("[Aimbot] Keybind updated to:", clean)
+        else
+            warn("[Aimbot] Invalid key:", text)
         end
     end
 })
+
+-- Optional: Auto-unbind on leave
+Players.LocalPlayer.AncestryChanged:Connect(function()
+    if not Players.LocalPlayer.Parent then
+        ContextActionService:UnbindAction(KEYBIND_ACTION_NAME)
+    end
+end)
 
 ----------------------------------------------------------
 -- AIMBOT CORE (1st & 3rd Person Support)
@@ -1013,14 +1072,6 @@ function FindNearestTarget()
     end
     return nil
 end
-
--- Keybind Lock
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == KeybindLock and AimbotEnabled then
-        LockedTarget = FindNearestTarget()
-    end
-end)
 
 -- Main Aimbot Loop
 RunService.RenderStepped:Connect(function()
