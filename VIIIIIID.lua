@@ -1,4 +1,4 @@
--- Powered by GPT 5 v589
+-- Powered by GPT 5 v5899
 -- ======================
 local version = "4.1.5"
 -- ======================
@@ -744,7 +744,7 @@ local function CreateCrosshair()
     if crosshair then crosshair:Destroy() end
     crosshair = Instance.new("Frame")
     crosshair.Name = "Crosshair"
-    crosshair.Size = UDim2.new(0, 10, 0, 10)
+    crosshair.Size = UDim2.new(0, 5, 0, 5)
     crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
     crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
     crosshair.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -762,7 +762,7 @@ end
 local function CreateMobileButton()
     if mobileButton then mobileButton:Destroy() end
     mobileButton = Instance.new("TextButton")
-    mobileButton.Name = "AimbotToggleButton"
+    mobileButton.Name = "AimbotBTNForMB"
     mobileButton.Size = UDim2.new(0, 90, 0, 90)
     mobileButton.AnchorPoint = Vector2.new(1, 1)
     mobileButton.Position = UDim2.new(1, -40, 1, -40)
