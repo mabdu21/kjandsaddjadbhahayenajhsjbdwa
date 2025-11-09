@@ -1,4 +1,4 @@
--- V548
+-- V549
 
 repeat task.wait() until game:IsLoaded()
 
@@ -1152,17 +1152,17 @@ Tabs.Combat:Slider({
 Tabs.Main:Section({ Title = "Dupe", Icon = "candy" })
 
 Tabs.Main:Toggle({
-    Title = "Dupe Candy",
+    Title = "Dupe Candy (Fixed)",
     Value = false,
     Callback = function(state)
         _G.Auto = state
-        if state then
+
+        task.spawn(function()
             local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local Event = ReplicatedStorage:FindFirstChild("RemoteEvents")
-                and ReplicatedStorage.RemoteEvents:FindFirstChild("CarnivalCompleteShootingGallery")
+            local Event = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("CarnivalCompleteShootingGallery")
 
             if not Event then
-                warn("⚠️ RemoteEvent: CarnivalCompleteShootingGallery")
+                warn("[DupeCandy] ❌ ไม่พบ Event 'CarnivalCompleteShootingGallery'")
                 return
             end
 
@@ -1180,36 +1180,31 @@ Tabs.Main:Toggle({
                 return targets
             end
 
-            task.spawn(function()
-                while _G.Auto and task.wait(3) do
-                    local targets = {}
-                    local areas = {
-                        workspace:FindFirstChild("Map"),
-                        workspace:FindFirstChild("Items"),
-                        workspace:FindFirstChild("Characters")
-                    }
+            while _G.Auto do
+                task.wait(2.5)
 
-                    -- รวมทุกโฟลเดอร์ที่เจอ
-                    for _, area in ipairs(areas) do
-                        if area then
-                            for _, target in ipairs(findTargets(area, 0)) do
-                                table.insert(targets, target)
-                            end
+                if not _G.Auto then break end
+
+                local areas = { workspace:FindFirstChild("Map"), workspace:FindFirstChild("Items"), workspace:FindFirstChild("Characters") }
+                local targets = {}
+
+                for _, area in ipairs(areas) do
+                    if area then
+                        for _, t in ipairs(findTargets(area, 0)) do
+                            table.insert(targets, t)
                         end
                     end
-
-                    for _, target in ipairs(targets) do
-                        if not _G.Auto then break end
-                        pcall(function()
-                            Event:FireServer(target)
-                        end)
-                        task.wait(0.05)
-                    end
                 end
-            end)
-        else
-            _G.Auto = false
-        end
+
+                for _, target in ipairs(targets) do
+                    if not _G.Auto then break end
+                    pcall(function()
+                        Event:FireServer(target)
+                    end)
+                    task.wait(0.05)
+                end
+            end
+        end)
     end
 })
 
