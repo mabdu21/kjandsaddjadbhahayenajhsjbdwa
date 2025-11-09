@@ -1,6 +1,6 @@
--- Powered by GPT 5 v5899
+-- Powered by GPT 5 v613
 -- ======================
-local version = "4.1.5"
+local version = "4.1.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -445,6 +445,9 @@ local function updateESP(dt)
                     local color = COLOR_GENERATOR
                     if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
                         color = COLOR_GENERATOR_DONE
+						removeESP(obj)
+						wait(0.5)
+						createESP(obj, COLOR_GENERATOR_DONE)
                     end
                     createESP(obj, color)
                 else
@@ -710,7 +713,9 @@ local Settings = {
         Target = { "Killer", "Survivor" },
         SelectedParts = { "Head" },
         SelectedTargets = { "Killer" },
-        SetKeybindLock = "V"
+        SetKeybindLock = "V",
+		DragUI = false,
+        MobileButtonPosition = UDim2.new(1, -40, 1, -40)
     }
 }
 
@@ -1105,6 +1110,81 @@ RunService.Heartbeat:Connect(function()
         crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
     end
 end)
+
+-- เพิ่มค่าใน Settings สำหรับบันทึกตำแหน่งล่าสุด
+Settings.Aimbot.DragUI = false
+Settings.Aimbot.MobileButtonPosition = UDim2.new(1, -40, 1, -40)
+
+-- ตัวแปรสำหรับระบบลาก
+local dragging = false
+local dragStart, startPos
+local dragConn, dragMoveConn
+
+-- ฟังก์ชันเปิด/ปิดระบบลากปุ่ม
+local function EnableDrag(state)
+    if not mobileButton then return end
+
+    -- ยกเลิกการเชื่อมต่อเดิมก่อน
+    if dragConn then dragConn:Disconnect() end
+    if dragMoveConn then dragMoveConn:Disconnect() end
+
+    if state then
+        -- เปิดระบบลาก
+        dragConn = mobileButton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = mobileButton.Position
+
+                local function endDrag()
+                    dragging = false
+                    -- บันทึกตำแหน่งล่าสุดไว้ใน Settings
+                    Settings.Aimbot.MobileButtonPosition = mobileButton.Position
+                end
+
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        endDrag()
+                    end
+                end)
+            end
+        end)
+
+        dragMoveConn = UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+                mobileButton.Position = newPos
+            end
+        end)
+    else
+        -- ปิดโหมดลาก -> เก็บตำแหน่งล่าสุดไว้
+        Settings.Aimbot.MobileButtonPosition = mobileButton.Position
+    end
+end
+
+-- เมื่อ GUI ถูกสร้าง ให้ใช้ตำแหน่งที่ผู้ใช้ตั้งไว้ล่าสุด
+task.spawn(function()
+    repeat task.wait() until mobileButton
+    mobileButton.Position = Settings.Aimbot.MobileButtonPosition or UDim2.new(1, -40, 1, -40)
+end)
+
+-- เพิ่ม Toggle เพื่อเปิด/ปิดระบบลาก
+MainTab:Toggle({
+    Title = "Custom Position Drag (Toggle GUI)",
+    Default = Settings.Aimbot.DragUI,
+    Callback = function(state)
+        Settings.Aimbot.DragUI = state
+        EnableDrag(state)
+    end
+})
 
 -- ========== Auto-Collect =============
 
