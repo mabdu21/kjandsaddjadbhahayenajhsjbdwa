@@ -392,7 +392,7 @@ Main1Group:AddToggle("AutoSukkars", {
     Callback = function(Value)
         _G.AutoFarm1 = Value
         getgenv().AutoSukkars = getgenv().AutoSukkars or {
-            TeleportAmount = 20 -- ยังอยู่ได้ แต่ตอนนี้ไม่มีผลต่อการย้ายเซิร์ฟเวอร์แล้ว
+            TeleportAmount = 99999 -- ยังอยู่ได้ แต่ตอนนี้ไม่มีผลต่อการย้ายเซิร์ฟเวอร์แล้ว
         }
 
         local RunService = game:GetService("RunService")
