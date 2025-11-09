@@ -1,4 +1,4 @@
--- Powered by GPT 5 v613
+-- Powered by GPT 5 v618
 -- ======================
 local version = "4.1.6"
 -- ======================
@@ -446,7 +446,6 @@ local function updateESP(dt)
                     if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
                         color = COLOR_GENERATOR_DONE
 						removeESP(obj)
-						wait(0.5)
 						createESP(obj, COLOR_GENERATOR_DONE)
                     end
                     createESP(obj, color)
