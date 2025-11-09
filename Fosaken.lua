@@ -386,6 +386,103 @@ end)
     end
 })
 
+Main1Group:AddToggle("AutoSukkars", {
+    Text = "Auto Farm Sukkars",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarm1 = Value
+        getgenv().AutoSukkars = getgenv().AutoSukkars or {
+            TeleportAmount = 20 -- ยังอยู่ได้ แต่ตอนนี้ไม่มีผลต่อการย้ายเซิร์ฟเวอร์แล้ว
+        }
+
+        local RunService = game:GetService("RunService")
+        local Players = game:GetService("Players")
+        local Player = Players.LocalPlayer
+        local HttpService = game:GetService("HttpService")
+
+        local Activated = false
+        local Count = 0
+        local VisitedLocations = {}
+
+        local function CheckSurvivor()
+            local WorkspacePlayers = workspace:FindFirstChild("Players")
+            if not WorkspacePlayers then return false end
+
+            local Survivors = WorkspacePlayers:FindFirstChild("Survivors")
+            if not Survivors then return false end
+
+            for _, SurvivorModel in pairs(Survivors:GetChildren()) do
+                if SurvivorModel:GetAttribute("Username") == Player.Name then
+                    return true
+                end
+            end
+
+            return false
+        end
+
+        local function StartFarming()
+            if Activated then return end
+            Activated = true
+            Count = 0
+            VisitedLocations = {}
+
+            local Character = Player.Character or Player.CharacterAdded:Wait()
+            local Humanoid = Character:WaitForChild("Humanoid")
+            local Animator = Humanoid:WaitForChild("Animator")
+
+            local Animation = Instance.new("Animation")
+            Animation.AnimationId = "rbxassetid://75804462760596"
+            local AnimationTrack = Animator:LoadAnimation(Animation)
+            AnimationTrack:Play()
+            AnimationTrack:AdjustSpeed(0)
+        end
+
+        while task.wait(0.1) do
+            if not _G.AutoFarm1 then break end
+            if not CheckSurvivor() then
+                Activated = false
+                continue
+            end
+
+            if not Activated then
+                StartFarming()
+            end
+
+            local Map = workspace:FindFirstChild("Map")
+            if not Map then continue end
+
+            local Ingame = Map:FindFirstChild("Ingame")
+            if not Ingame then continue end
+
+            local CurrencyLocations = Ingame:FindFirstChild("CurrencyLocations")
+            if not CurrencyLocations then continue end
+
+            for _, Item in pairs(CurrencyLocations:GetDescendants()) do
+                if (Item:IsA("BasePart") or Item:IsA("Model"))
+                and not VisitedLocations[Item] then
+
+                    local Character = Player.Character
+                    if Character and Character:FindFirstChild("HumanoidRootPart") then
+                        local targetCFrame
+                        if Item:IsA("Model") and Item.PrimaryPart then
+                            targetCFrame = Item.PrimaryPart.CFrame
+                        elseif Item:IsA("Model") then
+                            targetCFrame = Item:GetModelCFrame()
+                        else
+                            targetCFrame = Item.CFrame
+                        end
+
+                        Character.HumanoidRootPart.CFrame = targetCFrame
+                        VisitedLocations[Item] = true
+                        Count += 1
+                        task.wait(0.1)
+                    end
+                end
+            end
+        end
+    end
+})
+
 local Main2Group = Tabs.Tab:AddRightGroupbox("Esp")
 
 Main2Group:AddToggle("Generator", {
