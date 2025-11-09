@@ -445,7 +445,6 @@ local function updateESP(dt)
                     local color = COLOR_GENERATOR
                     if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
                         color = COLOR_GENERATOR_DONE
-						removeESP(obj)
 						createESP(obj, COLOR_GENERATOR_DONE)
                     end
                     createESP(obj, color)
