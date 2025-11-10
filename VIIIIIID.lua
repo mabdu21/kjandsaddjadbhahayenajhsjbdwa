@@ -1,6 +1,6 @@
--- Powered by GPT 5 v621
+-- Powered by GPT 5 v623
 -- ======================
-local version = "Pre-4.1.8"
+local version = "Pre-4.1.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -707,7 +707,7 @@ local Settings = {
         Enable = false,
         EnableUI = false,
         CrossHairUI = false,
-		TWallUI = false,
+	    TWallUI = false,
 		DragUI = false,
         Part = { "Head", "Torso", "HumanoidRootPart" },
         Target = { "Killer", "Survivor" },
