@@ -1,4 +1,4 @@
--- Powered by GPT 5 v649
+-- Powered by GPT 5 v691
 -- ======================
 local version = "4.2.1"
 -- ======================
@@ -2440,26 +2440,6 @@ Hitbox:Toggle({
 
 
 -- =============== IDK ===============
-
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
-local Window = WindUI:CreateWindow({
-    Title = "DYHUB",
-    IconThemed = true,
-    Icon = "rbxassetid://104487529937663",
-    Author = "Violence District | ",
-    Folder = "DYHUB_VD_config",
-    Size = UDim2.fromOffset(500, 400),
-    Transparent = true,
-    Theme = "Dark",
-    BackgroundImageTransparency = 0.8,
-    HasOutline = false,
-    HideSearchBar = true,
-    ScrollBarEnabled = true,
-    User = { Enabled = true, Anonymous = false },
-})
-
-local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
