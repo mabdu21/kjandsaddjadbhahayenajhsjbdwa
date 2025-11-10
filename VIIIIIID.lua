@@ -1,4 +1,4 @@
--- Powered by GPT 5 v703
+-- Powered by GPT 5 v705
 -- ======================
 local version = "4.2.3"
 -- ======================
@@ -1415,19 +1415,18 @@ SurTab:Toggle({
 SurTab:Section({ Title = "Feature Generator", Icon = "zap" })
 
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local autoGeneratorEnabled = false
-local autoGenerator1Enabled = false
+local autoGeneratorEnabledtest = false
 
 SurTab:Toggle({
     Title = "Auto SkillCheck (Perfect)",
     Value = false,
     Callback = function(v)
-        autoGeneratorEnabled = v
-        if autoGeneratorEnabled then
+        autoGeneratorEnabledtest = v
+        if autoGeneratorEnabledtest then
             task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -1461,30 +1460,8 @@ SurTab:Toggle({
                     return closestGen, closestPoint, closestDist
                 end
 
-                -- 🔄 ตรวจ Input ว่าจะ cancel หรือไม่
-                local function isCancelInput()
-                    -- PC Input: WASD + คลิกเมาส์ซ้าย
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.A)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.S)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.D)
-                    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        return true
-                    end
-
-                    -- Mobile Input: Touch movement
-                    for _, touch in ipairs(UserInputService:GetTouches()) do
-                        if touch.UserInputState == Enum.UserInputState.Begin or
-                           touch.UserInputState == Enum.UserInputState.Change then
-                            return true
-                        end
-                    end
-
-                    return false
-                end
-
                 -- 🔄 Loop หลัก
-                while autoGeneratorEnabled do
+                while autoGeneratorEnabledtest do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
 
@@ -1496,29 +1473,38 @@ SurTab:Toggle({
                             lastGenPoint = genPoint
                         end
 
-                        -- ตรวจการเคลื่อนไหวตัวละคร
-                        local cancel = false
-                        if lastPosition then
-                            local moved = (root.Position - lastPosition).Magnitude
-                            if moved > stationaryThreshold then
-                                cancel = true
+                        -- ตรวจการเคลื่อนที่
+                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
+                        local cancelDetected = false
+
+                        -- 🖱 ตรวจการกดเมาส์ซ้าย / WASD บน PC
+                        if UserInputService.KeyboardEnabled then
+                            local keysPressed = {
+                                Enum.KeyCode.W, Enum.KeyCode.A,
+                                Enum.KeyCode.S, Enum.KeyCode.D
+                            }
+                            for _, key in ipairs(keysPressed) do
+                                if UserInputService:IsKeyDown(key) then
+                                    cancelDetected = true
+                                    break
+                                end
+                            end
+                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                                cancelDetected = true
                             end
                         end
+
+                        -- ถ้าเดินเกิน threshold หรือกด input ให้ cancel
+                        if moved > stationaryThreshold or cancelDetected then
+                            if lastGenPoint then
+                                repairRemote:FireServer(lastGenPoint, false)
+                                task.wait(cancelCooldown)
+                                lastGenPoint = nil
+                                lastGenModel = nil
+                            end
+                        end
+
                         lastPosition = root.Position
-
-                        -- ตรวจ Input ของผู้เล่น
-                        if isCancelInput() then
-                            cancel = true
-                        end
-
-                        -- 🔴 Cancel Generator
-                        if cancel and lastGenPoint then
-                            local args = { lastGenPoint, false }
-                            repairRemote:FireServer(unpack(args))
-                            task.wait(cancelCooldown)
-                            lastGenPoint = nil
-                            lastGenModel = nil
-                        end
 
                         -- 🎯 Auto Perfect SkillCheck
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
@@ -1531,21 +1517,25 @@ SurTab:Toggle({
                             end
                         end
                     end
-
-                    task.wait(0.1) -- ปรับให้ loop เร็วขึ้น
+                    task.wait(0.2)
                 end
             end)
         end
     end
 })
 
+-- ===============================================
+local autoGeneratorEnabled = false
+
 SurTab:Toggle({
     Title = "Auto SkillCheck (Not Perfect)",
     Value = false,
     Callback = function(v)
-        autoGenerator1Enabled = v
-        if autoGenerator1Enabled then
+        autoGeneratorEnabled = v
+        if autoGeneratorEnabled then
             task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -1558,7 +1548,6 @@ SurTab:Toggle({
                 local stationaryThreshold = 2
                 local cancelCooldown = 0.2
 
-                -- 🧠 หา GeneratorPoint ที่ใกล้ที่สุด
                 local function getClosestGeneratorPoint(root)
                     local generators = getFolderGenerator()
                     local closestGen, closestPoint, closestDist = nil, nil, 10
@@ -1579,30 +1568,7 @@ SurTab:Toggle({
                     return closestGen, closestPoint, closestDist
                 end
 
-                -- 🔄 ตรวจ Input ว่าจะ cancel หรือไม่
-                local function isCancelInput()
-                    -- PC Input: WASD + คลิกเมาส์ซ้าย
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.A)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.S)
-                    or UserInputService:IsKeyDown(Enum.KeyCode.D)
-                    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        return true
-                    end
-
-                    -- Mobile Input: Touch movement
-                    for _, touch in ipairs(UserInputService:GetTouches()) do
-                        if touch.UserInputState == Enum.UserInputState.Begin or
-                           touch.UserInputState == Enum.UserInputState.Change then
-                            return true
-                        end
-                    end
-
-                    return false
-                end
-
-                -- 🔄 Loop หลัก
-                while autoGenerator1Enabled do
+                while autoGeneratorEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
 
@@ -1614,31 +1580,36 @@ SurTab:Toggle({
                             lastGenPoint = genPoint
                         end
 
-                        -- ตรวจการเคลื่อนไหวตัวละคร
-                        local cancel = false
-                        if lastPosition then
-                            local moved = (root.Position - lastPosition).Magnitude
-                            if moved > stationaryThreshold then
-                                cancel = true
+                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
+                        local cancelDetected = false
+
+                        if UserInputService.KeyboardEnabled then
+                            local keysPressed = {
+                                Enum.KeyCode.W, Enum.KeyCode.A,
+                                Enum.KeyCode.S, Enum.KeyCode.D
+                            }
+                            for _, key in ipairs(keysPressed) do
+                                if UserInputService:IsKeyDown(key) then
+                                    cancelDetected = true
+                                    break
+                                end
+                            end
+                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                                cancelDetected = true
                             end
                         end
+
+                        if moved > stationaryThreshold or cancelDetected then
+                            if lastGenPoint then
+                                repairRemote:FireServer(lastGenPoint, false)
+                                task.wait(cancelCooldown)
+                                lastGenPoint = nil
+                                lastGenModel = nil
+                            end
+                        end
+
                         lastPosition = root.Position
 
-                        -- ตรวจ Input ของผู้เล่น
-                        if isCancelInput() then
-                            cancel = true
-                        end
-
-                        -- 🔴 Cancel Generator
-                        if cancel and lastGenPoint then
-                            local args = { lastGenPoint, false }
-                            repairRemote:FireServer(unpack(args))
-                            task.wait(cancelCooldown)
-                            lastGenPoint = nil
-                            lastGenModel = nil
-                        end
-
-                        -- 🎯 Auto Perfect SkillCheck
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
@@ -1649,8 +1620,7 @@ SurTab:Toggle({
                             end
                         end
                     end
-
-                    task.wait(0.1) -- ปรับให้ loop เร็วขึ้น
+                    task.wait(0.2)
                 end
             end)
         end
