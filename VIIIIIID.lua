@@ -1,6 +1,6 @@
--- Powered by GPT 5 v691
+-- Powered by GPT 5 v693
 -- ======================
-local version = "4.2.1"
+local version = "4.2.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2168,6 +2168,34 @@ task.spawn(function()
         end
     end
 end)
+
+local destroyPalletwrong = false
+
+local function removePalletwrong(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        if child:IsA("Model") and child.Name == "Palletwrong" then
+            child:Destroy()
+        else
+            removePalletwrong(child)
+        end
+    end
+end
+
+killerTab:Toggle({
+    Title = "Remove Palletwrong (All)",
+    Value = false,
+    Callback = function(v)
+        destroyPalletwrong = v
+        if destroyPalletwrong then
+            task.spawn(function()
+                while destroyPalletwrong do
+                    removePalletwrong(workspace)
+                    task.wait(0.69)
+                end
+            end)
+        end
+    end
+})
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
