@@ -1,6 +1,6 @@
 -- Powered by GPT 5 v621
 -- ======================
-local version = "4.1.7"
+local version = "Pre-4.1.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -708,12 +708,13 @@ local Settings = {
         EnableUI = false,
         CrossHairUI = false,
 		TWallUI = false,
+		PTLock = false,
+		DragUI = false,
         Part = { "Head", "Torso", "HumanoidRootPart" },
         Target = { "Killer", "Survivor" },
         SelectedParts = { "Head" },
         SelectedTargets = { "Killer" },
         SetKeybindLock = "V",
-		DragUI = false,
         MobileButtonPosition = UDim2.new(1, -40, 1, -40)
     }
 }
@@ -1094,6 +1095,33 @@ function FindNearestTarget()
     return nil
 end
 
+----------------------------------------------------------
+-- PROJECTILE TRAJECTORY SYSTEM (The Veil)
+----------------------------------------------------------
+local gravity = 196.2 -- Roblox gravity (studs/s^2)
+local projectileSpeed = 120 -- approximate throwing speed, adjust if needed
+
+local function CalculateTrajectoryAngle(startPos, targetPos)
+    local diff = targetPos - startPos
+    local horizontalDist = Vector3.new(diff.X, 0, diff.Z).Magnitude
+    local heightDiff = diff.Y
+
+    local v = projectileSpeed
+    local g = gravity
+
+    local inside = (v^4) - g * (g * horizontalDist^2 + 2 * heightDiff * v^2)
+    if inside < 0 then
+        return math.rad(30) -- fallback angle if too far or impossible
+    end
+
+    -- Two possible angles (high arc / low arc)
+    local angle1 = math.atan((v^2 + math.sqrt(inside)) / (g * horizontalDist))
+    local angle2 = math.atan((v^2 - math.sqrt(inside)) / (g * horizontalDist))
+
+    -- ใช้มุมต่ำเพื่อให้เหมือน Huntress
+    return angle2
+end
+
 -- Main Aimbot Loop
 RunService.RenderStepped:Connect(function()
     if not AimbotEnabled then
@@ -1114,10 +1142,24 @@ RunService.RenderStepped:Connect(function()
         local aimPart = target.Character[LockPart]
         local targetPos = aimPart.Position
 
-        -- 1st Person: ใช้ CFrame ตรง
-        -- 3rd Person: ใช้ CFrame ธรรมดา
+    if Settings.Aimbot.PTLock then
+    -- Projectile Trajectory (The Veil)
+        local startPos = GetCameraPosition()
+        local diff = targetPos - startPos
+        local horizontal = Vector3.new(diff.X, 0, diff.Z)
+        local dist = horizontal.Magnitude
+
+    -- คำนวณมุมยิงแบบพาราโบลา
+        local theta = CalculateTrajectoryAngle(startPos, targetPos)
+
+    -- ปรับกล้องตามมุมยิง
+        local dir = horizontal.Unit
+        local elevated = Vector3.new(dir.X, math.tan(theta), dir.Z).Unit
+		cam.CFrame = CFrame.new(cam.CFrame.Position, cam.CFrame.Position + elevated)
+    else
+    -- Normal aimbot lock (no trajectory)
         cam.CFrame = CFrame.new(cam.CFrame.Position, targetPos)
-    end
+	end
 end)
 
 -- Auto-update crosshair position
@@ -1199,6 +1241,15 @@ MainTab:Toggle({
     Callback = function(state)
         Settings.Aimbot.DragUI = state
         EnableDrag(state)
+    end
+})
+
+MainTab:Toggle({
+    Title = "Projectile Trajectory (The Veil)",
+    Default = Settings.Aimbot.PTLock,
+    Callback = function(state)
+        Settings.Aimbot.PTLock = state
+        print("[Aimbot] Projectile Trajectory set to:", state)
     end
 })
 
