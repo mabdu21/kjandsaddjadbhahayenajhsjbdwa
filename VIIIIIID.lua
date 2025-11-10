@@ -1,4 +1,4 @@
--- Powered by GPT 5 v637
+-- Powered by GPT 5 v645
 -- ======================
 local version = "4.2.0"
 -- ======================
@@ -2438,19 +2438,82 @@ Hitbox:Toggle({
     end
 })
 
+
+-- ==============================
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
--- map structure
+-- Config
+local LOBBY_POSITION = Vector3.new(653.552002, 684.317444, 1577.81934)
+local SAFE_DISTANCE_FROM_LOBBY = 50 -- Pumpkin ใกล้ Lobby จะถูกละเว้น
+
+-- ==============================
+-- Helper Functions
+-- ==============================
+
+local function getAllGenerators()
+    local list = {}
+    local nameCount = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name == "Generator" and (obj:IsA("Model") or obj:IsA("BasePart")) then
+            -- ให้ตัวเลขต่อท้ายถ้ามีชื่อซ้ำ
+            local baseName = "Generator"
+            nameCount[baseName] = (nameCount[baseName] or 0) + 1
+            local displayName = baseName .. " " .. nameCount[baseName]
+            table.insert(list, {Name = displayName, Object = obj})
+        end
+    end
+    return list
+end
+
+local function getAllPumpkins()
+    local list = {}
+    local nameCount = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name:match("^Pumpkin") and (obj:IsA("Model") or obj:IsA("BasePart")) then
+            -- ตรวจสอบระยะห่างจาก Lobby
+            local part
+            if obj:IsA("Model") then
+                part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+            else
+                part = obj
+            end
+            if part then
+                local dist = (part.Position - LOBBY_POSITION).Magnitude
+                if dist > SAFE_DISTANCE_FROM_LOBBY then
+                    local baseName = "Pumpkin"
+                    nameCount[baseName] = (nameCount[baseName] or 0) + 1
+                    local displayName = baseName .. " " .. nameCount[baseName]
+                    table.insert(list, {Name = displayName, Object = obj})
+                end
+            end
+        end
+    end
+    return list
+end
+
+local function getCFrame(obj)
+    if obj:IsA("BasePart") then
+        return obj.CFrame
+    elseif obj:IsA("Model") then
+        return obj.PrimaryPart and obj.PrimaryPart.CFrame or nil
+    end
+    return nil
+end
+
+-- ==============================
+-- Map Structure
+-- ==============================
 local map = {
     teleport = {
         Map = {
             Lobby = CFrame.new(653.552002, 684.317444, 1577.81934),
-            Game = "PlayerWithWeapon" -- special case
+            Game = "PlayerWithWeapon"
         },
-        Generator = getFolderGenerator(),
-        Pumpkin = getPumkinFolders()
+        Generator = {}, -- จะ fill ด้วย getAllGenerators()
+        Pumpkin = {}   -- จะ fill ด้วย getAllPumpkins()
     }
 }
 
@@ -2487,12 +2550,11 @@ TeleportTab:Button({
                 local targetCFrame = targetPlayer.Character.PrimaryPart.CFrame
                 local offsetDistance = 200
 
-                -- คำนวณตำแหน่งห่างประมาณ 200 เมตร
                 local direction = (LocalPlayer.Character.PrimaryPart.Position - targetCFrame.Position).Unit
                 local desiredPos = targetCFrame.Position + direction * offsetDistance
                 local desiredCFrame = CFrame.new(desiredPos.X, targetCFrame.Position.Y, desiredPos.Z)
 
-                -- ตรวจสอบสิ่งกีดขวางด้วย Raycast
+                -- Raycast เช็คสิ่งกีดขวาง
                 local rayParams = RaycastParams.new()
                 rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
                 rayParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -2510,14 +2572,30 @@ TeleportTab:Button({
 -- ==============================
 -- Teleport: Generator
 -- ==============================
+local generatorList = getAllGenerators()
+
+local function refreshGenerators()
+    generatorList = getAllGenerators()
+    local values = {}
+    for _, g in ipairs(generatorList) do
+        table.insert(values, g.Name)
+    end
+    GeneratorDropdown:Update(values) -- สมมติว่า GUI มีฟังก์ชัน Update สำหรับ dropdown
+end
+
 TeleportTab:Section({ Title = "Teleport: Generator", Icon = "zap" })
 
-TeleportTab:Dropdown({
-    Title = "Select Teleport (Generator)",
-    Values = map.teleport.Generator,
+local GeneratorDropdown = TeleportTab:Dropdown({
+    Title = "Select Generator",
+    Values = (function() local t={} for _,g in ipairs(generatorList) do table.insert(t,g.Name) end return t end)(),
     Multi = false,
     Callback = function(value)
-        Teleport = value
+        for _, g in ipairs(generatorList) do
+            if g.Name == value then
+                Teleport = g.Object
+                break
+            end
+        end
     end
 })
 
@@ -2525,25 +2603,46 @@ TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
         if Teleport then
-            local part = getPumpkinPart(Teleport)
-            if part then
-                LocalPlayer.Character:PivotTo(part.CFrame)
+            local cframe = getCFrame(Teleport)
+            if cframe then
+                LocalPlayer.Character:PivotTo(cframe)
             end
         end
     end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Generators",
+    Callback = refreshGenerators
 })
 
 -- ==============================
 -- Teleport: Pumpkin
 -- ==============================
+local pumpkinList = getAllPumpkins()
+
+local function refreshPumpkins()
+    pumpkinList = getAllPumpkins()
+    local values = {}
+    for _, p in ipairs(pumpkinList) do
+        table.insert(values, p.Name)
+    end
+    PumpkinDropdown:Update(values)
+end
+
 TeleportTab:Section({ Title = "Teleport: Pumpkin", Icon = "candy" })
 
-TeleportTab:Dropdown({
-    Title = "Select Teleport (Pumpkin)",
-    Values = map.teleport.Pumpkin,
+local PumpkinDropdown = TeleportTab:Dropdown({
+    Title = "Select Pumpkin",
+    Values = (function() local t={} for _,p in ipairs(pumpkinList) do table.insert(t,p.Name) end return t end)(),
     Multi = false,
     Callback = function(value)
-        Teleport = value
+        for _, p in ipairs(pumpkinList) do
+            if p.Name == value then
+                Teleport = p.Object
+                break
+            end
+        end
     end
 })
 
@@ -2551,13 +2650,33 @@ TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
         if Teleport then
-            local part = getPumpkinPart(Teleport)
-            if part then
-                LocalPlayer.Character:PivotTo(part.CFrame)
+            local cframe = getCFrame(Teleport)
+            if cframe then
+                LocalPlayer.Character:PivotTo(cframe)
             end
         end
     end
 })
+
+TeleportTab:Button({
+    Title = "Refresh Pumpkins",
+    Callback = refreshPumpkins
+})
+
+-- ==============================
+-- Refresh All
+-- ==============================
+
+TeleportTab:Section({ Title = "Teleport Setting", Icon = "settings" })
+TeleportTab:Button({
+    Title = "Refresh All",
+    Callback = function()
+        refreshGenerators()
+        refreshPumpkins()
+    end
+})
+
+
 
 Info = InfoTab
 
