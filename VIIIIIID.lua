@@ -1,6 +1,6 @@
--- Powered by GPT 5 v645
+-- Powered by GPT 5 v649
 -- ======================
-local version = "4.2.0"
+local version = "4.2.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2439,7 +2439,27 @@ Hitbox:Toggle({
 })
 
 
--- ==============================
+-- =============== IDK ===============
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "DYHUB",
+    IconThemed = true,
+    Icon = "rbxassetid://104487529937663",
+    Author = "Violence District | ",
+    Folder = "DYHUB_VD_config",
+    Size = UDim2.fromOffset(500, 400),
+    Transparent = true,
+    Theme = "Dark",
+    BackgroundImageTransparency = 0.8,
+    HasOutline = false,
+    HideSearchBar = true,
+    ScrollBarEnabled = true,
+    User = { Enabled = true, Anonymous = false },
+})
+
+local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -2448,17 +2468,18 @@ local Workspace = game:GetService("Workspace")
 -- Config
 local LOBBY_POSITION = Vector3.new(653.552002, 684.317444, 1577.81934)
 local SAFE_DISTANCE_FROM_LOBBY = 50 -- Pumpkin ใกล้ Lobby จะถูกละเว้น
+local TELEPORT_OFFSET = 10 -- ระยะห่างจากวัตถุเวลา teleport
 
 -- ==============================
 -- Helper Functions
 -- ==============================
 
+-- หา Generator ทุกอันใน Workspace
 local function getAllGenerators()
     local list = {}
     local nameCount = {}
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj.Name == "Generator" and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            -- ให้ตัวเลขต่อท้ายถ้ามีชื่อซ้ำ
             local baseName = "Generator"
             nameCount[baseName] = (nameCount[baseName] or 0) + 1
             local displayName = baseName .. " " .. nameCount[baseName]
@@ -2468,12 +2489,16 @@ local function getAllGenerators()
     return list
 end
 
+-- หา Pumpkin ทุกอันใน Workspace แต่ละเว้นใกล้ Lobby และ Decorations
 local function getAllPumpkins()
     local list = {}
     local nameCount = {}
     for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsDescendantOf(Workspace.Lobby.Decorations) then
+            continue
+        end
+
         if obj.Name:match("^Pumpkin") and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            -- ตรวจสอบระยะห่างจาก Lobby
             local part
             if obj:IsA("Model") then
                 part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
@@ -2494,13 +2519,32 @@ local function getAllPumpkins()
     return list
 end
 
+-- คืนค่า CFrame ของ object
 local function getCFrame(obj)
     if obj:IsA("BasePart") then
         return obj.CFrame
     elseif obj:IsA("Model") then
-        return obj.PrimaryPart and obj.PrimaryPart.CFrame or nil
+        return obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").CFrame
     end
     return nil
+end
+
+-- ตรวจสอบตำแหน่งก่อนวาร์ป (ไม่ชนสิ่งกีดขวาง)
+local function safeCFrame(baseCFrame, directionVector)
+    local offset = directionVector.Unit * TELEPORT_OFFSET
+    local targetPos = baseCFrame.Position + offset
+
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local ray = Workspace:Raycast(baseCFrame.Position, offset, rayParams)
+    if ray then
+        -- มีสิ่งกีดขวาง → ปรับ Y ให้สูงขึ้น 5 studs
+        return CFrame.new(targetPos.X, ray.Position.Y + 5, targetPos.Z)
+    else
+        return CFrame.new(targetPos)
+    end
 end
 
 -- ==============================
@@ -2520,10 +2564,11 @@ local map = {
 -- ==============================
 -- Teleport: Map
 -- ==============================
-TeleportTab:Section({ Title = "Teleport: Map", Icon = "map" })
+TeleportTab:Section({ Title = "Teleport: Place", Icon = "map" })
 
+local Teleport
 TeleportTab:Dropdown({
-    Title = "Select Teleport (Map)",
+    Title = "Select Place",
     Values = { "Lobby", "Game" },
     Multi = false,
     Callback = function(value)
@@ -2537,7 +2582,6 @@ TeleportTab:Button({
         if Teleport == "Lobby" then
             LocalPlayer.Character:PivotTo(map.teleport.Map.Lobby)
         elseif Teleport == "Game" then
-            -- หา player ที่ถือ Weapon
             local targetPlayer
             for _, p in ipairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Weapon") then
@@ -2554,7 +2598,6 @@ TeleportTab:Button({
                 local desiredPos = targetCFrame.Position + direction * offsetDistance
                 local desiredCFrame = CFrame.new(desiredPos.X, targetCFrame.Position.Y, desiredPos.Z)
 
-                -- Raycast เช็คสิ่งกีดขวาง
                 local rayParams = RaycastParams.new()
                 rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
                 rayParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -2564,6 +2607,8 @@ TeleportTab:Button({
                 end
 
                 LocalPlayer.Character:PivotTo(desiredCFrame)
+            else
+                warn("[Teleport] No player with Weapon found!")
             end
         end
     end
@@ -2580,7 +2625,8 @@ local function refreshGenerators()
     for _, g in ipairs(generatorList) do
         table.insert(values, g.Name)
     end
-    GeneratorDropdown:Update(values) -- สมมติว่า GUI มีฟังก์ชัน Update สำหรับ dropdown
+    GeneratorDropdown:Update(values)
+    Teleport = nil
 end
 
 TeleportTab:Section({ Title = "Teleport: Generator", Icon = "zap" })
@@ -2599,14 +2645,43 @@ local GeneratorDropdown = TeleportTab:Dropdown({
     end
 })
 
+-- เลือกทิศทางวาร์ป
+local TeleportDirection = "Front"
+TeleportTab:Dropdown({
+    Title = "Teleport Direction (D: Front)",
+    Values = { "Front", "Back", "Left", "Right" },
+    Multi = false,
+    Callback = function(value)
+        TeleportDirection = value
+    end
+})
+
 TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
         if Teleport then
             local cframe = getCFrame(Teleport)
             if cframe then
-                LocalPlayer.Character:PivotTo(cframe)
+                local dirVector
+                if TeleportDirection == "Front" then
+                    dirVector = cframe.LookVector
+                elseif TeleportDirection == "Back" then
+                    dirVector = -cframe.LookVector
+                elseif TeleportDirection == "Left" then
+                    dirVector = -cframe.RightVector
+                elseif TeleportDirection == "Right" then
+                    dirVector = cframe.RightVector
+                else
+                    dirVector = cframe.LookVector
+                end
+
+                local safeCF = safeCFrame(cframe, dirVector)
+                LocalPlayer.Character:PivotTo(safeCF)
+            else
+                warn("[Teleport] Cannot get CFrame from selected Generator!")
             end
+        else
+            warn("[Teleport] No Generator selected!")
         end
     end
 })
@@ -2628,6 +2703,7 @@ local function refreshPumpkins()
         table.insert(values, p.Name)
     end
     PumpkinDropdown:Update(values)
+    Teleport = nil
 end
 
 TeleportTab:Section({ Title = "Teleport: Pumpkin", Icon = "candy" })
@@ -2653,7 +2729,11 @@ TeleportTab:Button({
             local cframe = getCFrame(Teleport)
             if cframe then
                 LocalPlayer.Character:PivotTo(cframe)
+            else
+                warn("[Teleport] Cannot get CFrame from selected Pumpkin!")
             end
+        else
+            warn("[Teleport] No Pumpkin selected!")
         end
     end
 })
@@ -2666,8 +2746,8 @@ TeleportTab:Button({
 -- ==============================
 -- Refresh All
 -- ==============================
-
 TeleportTab:Section({ Title = "Teleport Setting", Icon = "settings" })
+
 TeleportTab:Button({
     Title = "Refresh All",
     Callback = function()
@@ -2676,7 +2756,7 @@ TeleportTab:Button({
     end
 })
 
-
+-- ============= DISCORD ================= 
 
 Info = InfoTab
 
