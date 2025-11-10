@@ -1,6 +1,6 @@
--- Powered by GPT 5 v623
+-- Powered by GPT 5 v637
 -- ======================
-local version = "Pre-4.1.9"
+local version = "4.2.0"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -118,8 +118,9 @@ local killerTab = Window:Tab({ Title = "Killer", Icon = "swords" })
 local Main2Divider = Window:Divider()
 local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
 local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
-local Hitbox = Window:Tab({ Title = "Hitbox", Icon = "package" })
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local Hitbox = Window:Tab({ Title = "Hitbox", Icon = "package" })
+local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
 
 Window:SelectTab(1)
 
@@ -1204,21 +1205,19 @@ MainTab:Toggle({
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- ===============================
--- ⚙️ CONFIG
--- ===============================
+-- CONFIG
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.69 -- Delay between pumpkin collection
-local CPumkin = false
+local ACTION_DELAY = 1.5
+local CHECK_INTERVAL = 5 -- วินาทีที่ใช้เช็ค Pumpkin ใหม่ตอนหมดแล้ว
 
--- ===============================
--- 🧱 Safe Zone Setup
--- ===============================
+local CPumkin = false
+local collected = {}
+local collecting = false
+
+-- 🧱 สร้าง Safe Zone
 local function createSafeZone()
 	local part = Instance.new("Part")
 	part.Name = "DYHUB | SAFEZONE"
@@ -1232,25 +1231,27 @@ local function createSafeZone()
 	return part
 end
 
-local safeZone = Workspace:FindFirstChild("SafeZone") or createSafeZone()
+local safeZone = Workspace:FindFirstChild("DYHUB | SAFEZONE") or createSafeZone()
 
--- ===============================
 -- 🧭 Helper Functions
--- ===============================
 local function getRoot()
 	local character = LocalPlayer.Character
 	if not character then return nil end
 	return character:FindFirstChild("HumanoidRootPart")
 end
 
+local function waitForCharacter()
+	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		LocalPlayer.CharacterAdded:Wait()
+		repeat task.wait() until LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	end
+end
+
 local function getPumpkinPart(pumpkin)
 	if not pumpkin then return nil end
 	if pumpkin:IsA("BasePart") then return pumpkin end
 	if pumpkin:IsA("Model") then
-		if pumpkin.PrimaryPart then
-			return pumpkin.PrimaryPart
-		end
-		return pumpkin:FindFirstChildWhichIsA("BasePart")
+		return pumpkin.PrimaryPart or pumpkin:FindFirstChildWhichIsA("BasePart")
 	end
 	return nil
 end
@@ -1263,25 +1264,7 @@ local function teleportTo(target)
 	end
 end
 
--- ===============================
--- 🖱️ Simulate Left Click (PC + Mobile)
--- ===============================
-local function simulateClick()
-	local viewportSize = Workspace.CurrentCamera.ViewportSize
-	local centerX = viewportSize.X / 2
-	local centerY = viewportSize.Y / 2
-
-	-- Press down
-	VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
-	task.wait(0.05)
-	-- Release
-	VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
-	task.wait(0.05)
-end
-
--- ===============================
--- 🎃 Pumpkin Finder
--- ===============================
+-- 🎃 ค้นหา Pumpkin ทั้งหมดใน Map และ Rooftop
 local function getPumpkins()
 	local pumpkins = {}
 	local paths = {
@@ -1302,57 +1285,48 @@ local function getPumpkins()
 	return pumpkins
 end
 
--- ===============================
--- 🔁 Auto Collect Loop
--- ===============================
-local collecting = false
-local collected = {}
-
+-- 🔁 ระบบเก็บ Pumpkin อัตโนมัติ
 local function autoCollectPumpkins()
 	if collecting then return end
 	collecting = true
 
 	task.spawn(function()
 		while CPumkin do
+			waitForCharacter()
+
 			local pumpkins = getPumpkins()
-			local newPumpkins = {}
-
-			for _, p in ipairs(pumpkins) do
-				if not collected[p] then
-					table.insert(newPumpkins, p)
-				end
-			end
-
-			if #newPumpkins == 0 then
-				print("[✅] No pumpkins left to collect. Auto-collect stopped.")
+			if #pumpkins == 0 then
+				print("[🎃] No pumpkins found. Waiting for respawn...")
 				teleportTo(safeZone)
-				CPumkin = false
-				break
-			end
+				task.wait(CHECK_INTERVAL)
+			else
+				for _, pumpkin in ipairs(pumpkins) do
+					if not CPumkin then break end
+					waitForCharacter()
 
-			for _, pumpkin in ipairs(newPumpkins) do
-				if not CPumkin then break end
+					local pumpkinPart = getPumpkinPart(pumpkin)
+					if pumpkinPart then
+						teleportTo(pumpkinPart)
+						task.wait(0.3)
 
-				local pumpkinPart = getPumpkinPart(pumpkin)
-				if pumpkinPart then
-					teleportTo(pumpkinPart)
-					task.wait(0.3)
-					simulateClick() -- simulate left click instead of key press
-					collected[pumpkin] = true
-					task.wait(ACTION_DELAY)
+						local HB = pumpkin:FindFirstChild("HB")
+						if HB then
+							ReplicatedStorage.Remotes.Events.Halloween.Crush:FireServer(HB)
+						end
+
+						collected[pumpkin] = true
+						task.wait(ACTION_DELAY)
+					end
 				end
 			end
 
-			task.wait(0.4) -- small delay to avoid freezing
+			task.wait(0.3)
 		end
-
 		collecting = false
 	end)
 end
 
--- ===============================
--- 🧠 Toggle GUI Integration
--- ===============================
+-- 🧠 GUI Integration (Toggle)
 MainTab:Section({ Title = "Feature Farm", Icon = "candy" })
 MainTab:Toggle({
 	Title = "Auto Collect Pumpkin (Safe Zone)",
@@ -1360,7 +1334,7 @@ MainTab:Toggle({
 	Callback = function(v)
 		CPumkin = v
 		if v then
-			print("[🎃] Starting auto pumpkin collection...")
+			print("[🎃] Auto Pumpkin started. Will continue until stopped.")
 			collected = {}
 			autoCollectPumpkins()
 		else
@@ -1369,6 +1343,7 @@ MainTab:Toggle({
 		end
 	end
 })
+
 MainTab:Toggle({
 	Title = "Auto Collect Pumpkin (No Safe Zone)",
 	Value = false,
@@ -1387,7 +1362,7 @@ MainTab:Toggle({
 
 MainTab:Section({ Title = "Feature Bypass", Icon = "lock-open" })
 MainTab:Toggle({
-    Title = "Bypass Gate (Fixed)",
+    Title = "Bypass Gate (Open Gate)",
     Value = false,
     Callback = function(state)
         bypassGateEnabled = state
@@ -1401,7 +1376,7 @@ SurTab:Section({ Title = "Feature Survivor", Icon = "user" })
 local autoparry = false
 
 SurTab:Toggle({
-    Title = "Auto Parry (Under Fixing)",
+    Title = "Auto Parry (DONT USE IN DEV)",
     Value = false,
     Callback = function(v)
         autoparry = v
@@ -1437,7 +1412,7 @@ SurTab:Toggle({
     end
 })
 
-SurTab:Section({ Title = "Feature Object", Icon = "zap" })
+SurTab:Section({ Title = "Feature Generator", Icon = "zap" })
 
 local autoGeneratorEnabledtest = false
 
@@ -1450,95 +1425,78 @@ SurTab:Toggle({
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
-                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
+                local skillRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
+
+                local lastGenPoint = nil
+                local lastGenModel = nil
                 local lastPosition = nil
                 local stationaryThreshold = 2
-                local cancelCooldown = 1
-                local repairCooldown = 2
+                local cancelCooldown = 0.2
 
-                local repairing = false
-                local lastGenPoint = nil
+                -- 🧠 หา GeneratorPoint ที่ใกล้ที่สุด
+                local function getClosestGeneratorPoint(root)
+                    local generators = getFolderGenerator()
+                    local closestGen, closestPoint, closestDist = nil, nil, 10
 
+                    for _, gen in ipairs(generators) do
+                        for i = 1, 4 do
+                            local point = gen:FindFirstChild("GeneratorPoint" .. i)
+                            if point then
+                                local dist = (root.Position - point.Position).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestGen = gen
+                                    closestPoint = point
+                                end
+                            end
+                        end
+                    end
+                    return closestGen, closestPoint, closestDist
+                end
+
+                -- 🔄 Loop หลัก
                 while autoGeneratorEnabledtest do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
 
                     if root then
-                        -- หา generator ที่ใกล้ที่สุด
-                        local generators = getFolderGenerator()
-                        local closestGen, closestPoint, closestDist = nil, nil, 10
+                        local genModel, genPoint, dist = getClosestGeneratorPoint(root)
 
-                        for _, gen in ipairs(generators) do
-                            for i = 1, 4 do
-                                local point = gen:FindFirstChild("GeneratorPoint" .. i)
-                                if point then
-                                    local dist = (root.Position - point.Position).Magnitude
-                                    if dist < closestDist then
-                                        closestDist = dist
-                                        closestGen = gen
-                                        closestPoint = point
-                                    end
-                                end
-                            end
+                        if not lastGenPoint and genPoint and dist < 6 then
+                            lastGenModel = genModel
+                            lastGenPoint = genPoint
                         end
 
-                        -- 🧍 ตรวจจับการขยับ
                         if lastPosition then
                             local moved = (root.Position - lastPosition).Magnitude
                             if moved > stationaryThreshold then
-                                if repairing then
-                                    repairing = false
-                                    lastGenPoint = closestPoint
-                                    task.wait(cancelCooldown)
-                                    if lastGenPoint then
-                                        local args = {lastGenPoint, false}
-                                        repairRemote:FireServer(unpack(args))
-                                    end
-                                end
-                            else
-                                if not repairing and lastGenPoint and closestPoint == lastGenPoint then
-                                    repairing = true
-                                    task.wait(repairCooldown)
-                                    local args = {lastGenPoint, true}
+                                if lastGenPoint then
+                                    local args = { lastGenPoint, false }
                                     repairRemote:FireServer(unpack(args))
+                                    task.wait(cancelCooldown)
+                                    lastGenPoint = nil
+                                    lastGenModel = nil
                                 end
                             end
-                        else
-                            repairing = true
                         end
                         lastPosition = root.Position
 
-                        -- 🎯 รอจนกว่า GUI SkillCheckPromptGui.Check จะปรากฏ
+                        -- 🎯 Auto Perfect SkillCheck
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            if not check then
-                                -- loop รอ GUI โผล่ขึ้น
-                                local timeout = 0
-                                while autoGeneratorEnabledtest and timeout < 5 do
-                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                    check = gui and gui:FindFirstChild("Check")
-                                    if check and check.Visible then break end
-                                    timeout += 0.05
-                                    task.wait(0.05)
-                                end
-                            end
-
-                            -- ถ้า GUI Check โผล่ขึ้นแล้ว -> ยิง remote
-                            if check and check.Visible and closestGen and closestPoint then
-                                local args = {"success", 1, closestGen, closestPoint}
-                                remote:FireServer(unpack(args))
-
-                                -- ซ่อน GUI ทันที
+                            if check and check.Visible and lastGenModel and lastGenPoint then
+                                local args = { "success", 1, lastGenModel, lastGenPoint }
+                                skillRemote:FireServer(unpack(args))
                                 check.Visible = false
                             end
                         end
                     end
-                    task.wait(0.5)
+                    task.wait(0.2)
                 end
             end)
         end
@@ -1556,100 +1514,85 @@ SurTab:Toggle({
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
-                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
+                local skillRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
+
+                local lastGenPoint = nil
+                local lastGenModel = nil
                 local lastPosition = nil
                 local stationaryThreshold = 2
-                local cancelCooldown = 1
-                local repairCooldown = 2
+                local cancelCooldown = 0.2
 
-                local repairing = false
-                local lastGenPoint = nil
+                -- 🧠 หา GeneratorPoint ที่ใกล้ที่สุด
+                local function getClosestGeneratorPoint(root)
+                    local generators = getFolderGenerator()
+                    local closestGen, closestPoint, closestDist = nil, nil, 10
 
+                    for _, gen in ipairs(generators) do
+                        for i = 1, 4 do
+                            local point = gen:FindFirstChild("GeneratorPoint" .. i)
+                            if point then
+                                local dist = (root.Position - point.Position).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestGen = gen
+                                    closestPoint = point
+                                end
+                            end
+                        end
+                    end
+                    return closestGen, closestPoint, closestDist
+                end
+
+                -- 🔄 Loop หลัก
                 while autoGeneratorEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
 
                     if root then
-                        -- หา generator ที่ใกล้ที่สุด
-                        local generators = getFolderGenerator()
-                        local closestGen, closestPoint, closestDist = nil, nil, 10
+                        local genModel, genPoint, dist = getClosestGeneratorPoint(root)
 
-                        for _, gen in ipairs(generators) do
-                            for i = 1, 4 do
-                                local point = gen:FindFirstChild("GeneratorPoint" .. i)
-                                if point then
-                                    local dist = (root.Position - point.Position).Magnitude
-                                    if dist < closestDist then
-                                        closestDist = dist
-                                        closestGen = gen
-                                        closestPoint = point
-                                    end
-                                end
-                            end
+                        if not lastGenPoint and genPoint and dist < 6 then
+                            lastGenModel = genModel
+                            lastGenPoint = genPoint
                         end
 
-                        -- 🧍 ตรวจจับการขยับ
                         if lastPosition then
                             local moved = (root.Position - lastPosition).Magnitude
                             if moved > stationaryThreshold then
-                                if repairing then
-                                    repairing = false
-                                    lastGenPoint = closestPoint
-                                    task.wait(cancelCooldown)
-                                    if lastGenPoint then
-                                        local args = {lastGenPoint, false}
-                                        repairRemote:FireServer(unpack(args))
-                                    end
-                                end
-                            else
-                                if not repairing and lastGenPoint and closestPoint == lastGenPoint then
-                                    repairing = true
-                                    task.wait(repairCooldown)
-                                    local args = {lastGenPoint, true}
+                                if lastGenPoint then
+                                    local args = { lastGenPoint, false }
                                     repairRemote:FireServer(unpack(args))
+                                    task.wait(cancelCooldown)
+                                    lastGenPoint = nil
+                                    lastGenModel = nil
                                 end
                             end
-                        else
-                            repairing = true
                         end
                         lastPosition = root.Position
 
-                        -- 🎯 รอจนกว่า GUI SkillCheckPromptGui.Check จะปรากฏ
+                        -- 🎯 Auto Perfect SkillCheck
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            if not check then
-                                -- loop รอ GUI โผล่ขึ้น
-                                local timeout = 0
-                                while autoGeneratorEnabled and timeout < 5 do
-                                    gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                                    check = gui and gui:FindFirstChild("Check")
-                                    if check and check.Visible then break end
-                                    timeout += 0.05
-                                    task.wait(0.05)
-                                end
-                            end
-
-                            -- ถ้า GUI Check โผล่ขึ้นแล้ว -> ยิง remote
-                            if check and check.Visible and closestGen and closestPoint then
-                                local args = {"success", 1, closestGen, closestPoint}
-                                remote:FireServer(unpack(args))
-
-                                -- ซ่อน GUI ทันที
+                            if check and check.Visible and lastGenModel and lastGenPoint then
+                                local args = { "neutral", 0, lastGenModel, lastGenPoint }
+                                skillRemote:FireServer(unpack(args))
                                 check.Visible = false
                             end
                         end
                     end
-                    task.wait(0.5)
+                    task.wait(0.2)
                 end
             end)
         end
     end
 })
+
+SurTab:Section({ Title = "Feature Exit", Icon = "door-open" })
 
 local autoLeverEnabled = false
 
@@ -1661,29 +1604,55 @@ SurTab:Toggle({
         if autoLeverEnabled then
             task.spawn(function()
                 local Players = game:GetService("Players")
+                local RunService = game:GetService("RunService")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Exit"):WaitForChild("LeverEvent")
                 local player = Players.LocalPlayer
+                local humanoid
+                local root
+                local lastPosition
 
                 while autoLeverEnabled do
                     local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
+                    root = char and char:FindFirstChild("HumanoidRootPart")
+                    humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+                    if root and humanoid then
+                        -- หา Gate ที่ใกล้ที่สุด
+                        local closestGate, closestMain, shortestDist
                         local folders = getMapFolders()
+
                         for _, folder in ipairs(folders) do
                             local gate = folder:FindFirstChild("Gate")
                             if gate and gate:FindFirstChild("ExitLever") then
                                 local main = gate.ExitLever:FindFirstChild("Main")
                                 if main then
                                     local dist = (root.Position - main.Position).Magnitude
-                                    if dist <= 10 then
-                                        remote:FireServer(main, true)
+                                    if not shortestDist or dist < shortestDist then
+                                        shortestDist = dist
+                                        closestGate = gate
+                                        closestMain = main
                                     end
                                 end
                             end
                         end
+
+                        -- ตรวจจับการเคลื่อนไหว
+                        if lastPosition and (root.Position - lastPosition).Magnitude > 1 then
+                            -- เดินหรือขยับ
+                            if closestMain then
+                                remote:FireServer(closestMain, false)
+                            end
+                        else
+                            -- ถ้าอยู่ใกล้พอ และไม่ขยับ
+                            if closestMain and shortestDist <= 10 then
+                                remote:FireServer(closestMain, true)
+                            end
+                        end
+
+                        lastPosition = root.Position
                     end
-                    task.wait(2)
+                    task.wait(0.5)
                 end
             end)
         end
@@ -1695,7 +1664,7 @@ SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 -- Auto Heal
 local autoHealEnabled = false
 SurTab:Toggle({
-    Title = "Auto SkillCheck (Test)",
+    Title = "Auto SkillCheck (DONT USE IT TESTING)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -2294,7 +2263,7 @@ MainTab:Toggle({
 MainTab:Section({ Title = "Misc", Icon = "settings" })
 local AntiAFK = false
 MainTab:Toggle({
-    Title = "Anti-AFK",
+    Title = "Anti AFK",
     Default = false,
     Callback = function(state)
         AntiAFK = state
@@ -2302,9 +2271,9 @@ MainTab:Toggle({
             local vu = game:GetService("VirtualUser")
             while AntiAFK do
                 vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                task.wait(math.random(50,70))
+                task.wait(math.random(150,270))
                 vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                task.wait(math.random(50,70))
+                task.wait(math.random(150,270))
             end
         end)
     end
@@ -2464,6 +2433,127 @@ Hitbox:Toggle({
                         part.Material = Enum.Material.Plastic
                     end)
                 end
+            end
+        end
+    end
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+-- map structure
+local map = {
+    teleport = {
+        Map = {
+            Lobby = CFrame.new(653.552002, 684.317444, 1577.81934),
+            Game = "PlayerWithWeapon" -- special case
+        },
+        Generator = getFolderGenerator(),
+        Pumpkin = getPumkinFolders()
+    }
+}
+
+-- ==============================
+-- Teleport: Map
+-- ==============================
+TeleportTab:Section({ Title = "Teleport: Map", Icon = "map" })
+
+TeleportTab:Dropdown({
+    Title = "Select Teleport (Map)",
+    Values = { "Lobby", "Game" },
+    Multi = false,
+    Callback = function(value)
+        Teleport = value
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if Teleport == "Lobby" then
+            LocalPlayer.Character:PivotTo(map.teleport.Map.Lobby)
+        elseif Teleport == "Game" then
+            -- หา player ที่ถือ Weapon
+            local targetPlayer
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Weapon") then
+                    targetPlayer = p
+                    break
+                end
+            end
+
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character.PrimaryPart then
+                local targetCFrame = targetPlayer.Character.PrimaryPart.CFrame
+                local offsetDistance = 200
+
+                -- คำนวณตำแหน่งห่างประมาณ 200 เมตร
+                local direction = (LocalPlayer.Character.PrimaryPart.Position - targetCFrame.Position).Unit
+                local desiredPos = targetCFrame.Position + direction * offsetDistance
+                local desiredCFrame = CFrame.new(desiredPos.X, targetCFrame.Position.Y, desiredPos.Z)
+
+                -- ตรวจสอบสิ่งกีดขวางด้วย Raycast
+                local rayParams = RaycastParams.new()
+                rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+                rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+                local ray = Workspace:Raycast(targetCFrame.Position, (desiredPos - targetCFrame.Position), rayParams)
+                if ray then
+                    desiredCFrame = CFrame.new(desiredPos.X, ray.Position.Y + 5, desiredPos.Z)
+                end
+
+                LocalPlayer.Character:PivotTo(desiredCFrame)
+            end
+        end
+    end
+})
+
+-- ==============================
+-- Teleport: Generator
+-- ==============================
+TeleportTab:Section({ Title = "Teleport: Generator", Icon = "zap" })
+
+TeleportTab:Dropdown({
+    Title = "Select Teleport (Generator)",
+    Values = map.teleport.Generator,
+    Multi = false,
+    Callback = function(value)
+        Teleport = value
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if Teleport then
+            local part = getPumpkinPart(Teleport)
+            if part then
+                LocalPlayer.Character:PivotTo(part.CFrame)
+            end
+        end
+    end
+})
+
+-- ==============================
+-- Teleport: Pumpkin
+-- ==============================
+TeleportTab:Section({ Title = "Teleport: Pumpkin", Icon = "candy" })
+
+TeleportTab:Dropdown({
+    Title = "Select Teleport (Pumpkin)",
+    Values = map.teleport.Pumpkin,
+    Multi = false,
+    Callback = function(value)
+        Teleport = value
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if Teleport then
+            local part = getPumpkinPart(Teleport)
+            if part then
+                LocalPlayer.Character:PivotTo(part.CFrame)
             end
         end
     end
