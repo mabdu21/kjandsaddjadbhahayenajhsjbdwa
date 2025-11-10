@@ -1,4 +1,4 @@
--- Powered by GPT 5 v697
+-- Powered by GPT 5 v698
 -- ======================
 local version = "4.2.2"
 -- ======================
@@ -441,27 +441,17 @@ local function updateESP(dt)
         for _, obj in pairs(folder:GetChildren()) do
             if obj.Name == "Generator" then
                 if espGenerator then
-                    local progress = getGeneratorProgress(obj)
-                    local isFinished = generatorFinished(obj)
-                    local percentText = math.floor(progress * 100) .. "%"
-                    local baseColor = isFinished and COLOR_GENERATOR_DONE or getProgressColor(progress)
-
-                    createESP(obj, baseColor)
-
-                    local data = espObjects[obj]
-                    if data then
-                        if ShowPercent then
-                            data.nameLabel.Text = "Generator | " .. percentText .. "
-                            data.nameLabel.TextColor3 = isFinished and Color3.fromRGB(0, 255, 0) or baseColor
-                        else
-                            data.nameLabel.Text = obj.Name
-                            data.nameLabel.TextColor3 = baseColor
-                        end
-                        data.nameLabel.Visible = true
+                    local hitbox = obj:FindFirstChild("HitBox")
+                    local pointLight = hitbox and hitbox:FindFirstChildOfClass("PointLight")
+                    local color = COLOR_GENERATOR
+                    if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
+                        color = COLOR_GENERATOR_DONE
+						createESP(obj, COLOR_GENERATOR_DONE)
                     end
+                    createESP(obj, color)
                 else
                     removeESP(obj)
-				end
+                end
 
             elseif obj.Name == "Gate" then
                 if espGate then
@@ -541,30 +531,21 @@ local function updateESP(dt)
                     end
 
                 else
-                    -- Objects (no HP)
+                    -- Object case (no HP)
+
+                    data.hpLabel.Text = ""
                     data.hpLabel.Visible = false
 
-                    if obj.Name == "Generator" and ShowPercent then
-                        if ShowDistance then
-                            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-                            data.distLabel.Text = "[ " .. dist .. " MM ]"
-                            data.distLabel.Position = UDim2.new(0, 0, 0.66, 0)
-                            data.distLabel.Visible = true
-                        else
-                            data.distLabel.Visible = false
-                        end
+                    if ShowDistance then
+                        local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+                        data.distLabel.Text = "[ "..dist.." MM ]"
+                        data.distLabel.Visible = true
+                        data.distLabel.Position = UDim2.new(0,0,0.33,0)
                     else
-                        if ShowDistance then
-                            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-                            data.distLabel.Text = "[ " .. dist .. " MM ]"
-                            data.distLabel.Position = UDim2.new(0, 0, 0.33, 0)
-                            data.distLabel.Visible = true
-                        else
-                            data.distLabel.Visible = false
-                        end
+                        data.distLabel.Text = ""
+                        data.distLabel.Visible = false
                     end
-				end
-                    
+                end
 
                 -- Highlight
                 if data.highlight then
