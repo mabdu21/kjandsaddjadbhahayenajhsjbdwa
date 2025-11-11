@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v713
+-- Powered by GPT 5 | v719
 -- ======================
-local version = "4.2.5"
+local version = "4.2.4"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -163,7 +163,6 @@ local ShowName = true
 local ShowDistance = true
 local ShowHP = true
 local ShowHighlight = true
-local ShowPercent = true
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -222,7 +221,6 @@ local function createESP(obj, baseColor)
     nameLabel.Font = Enum.Font.SourceSansBold
     nameLabel.TextSize = 14
     nameLabel.TextColor3 = baseColor
-	nameLabel.RichText = true
     nameLabel.TextStrokeColor3 = COLOR_OUTLINE
     nameLabel.TextStrokeTransparency = 0
     nameLabel.Text = obj.Name
@@ -405,7 +403,9 @@ local function updatePumkinESP()
     end
 end
 
--- ===== Generator Progress Functions =====
+local ShowPercent = true  -- ใส่ตรงนี้
+
+-- ฟังก์ชันหาค่าความคืบหน้าของ Generator
 local function getGeneratorProgress(gen)
     local progress = 0
     if gen:GetAttribute("Progress") then
@@ -427,21 +427,21 @@ local function getGeneratorProgress(gen)
     return math.clamp(progress, 0, 1)
 end
 
--- สีแบบขาว -> เขียวอ่อน -> เขียวเข้ม
+-- ฟังก์ชันคำนวณสีตามเปอร์เซ็นต์
 local function getProgressColor(percent)
     if percent < 0.5 then
         local t = percent / 0.5
-        return Color3.fromRGB(255 - (255-153)*t, 255, 255 - (255-153)*t)
+        return Color3.fromRGB(255 - (255-153)*t, 255, 255 - (255-153)*t)  -- ขาว → เขียวอ่อน
     else
         local t = (percent - 0.5) / 0.5
-        return Color3.fromRGB(153 * (1-t), 255, 153 * (1-t))
+        return Color3.fromRGB(153 * (1-t), 255, 153 * (1-t))  -- เขียวอ่อน → เขียวเข้ม
     end
 end
 
+-- ตรวจว่า Generator เสร็จหรือยัง
 local function generatorFinished(gen)
     return getGeneratorProgress(gen) >= 0.99 or gen:FindFirstChild("Finished") or gen:FindFirstChild("Repaired")
 end
-
 
 -- Main update function
 local lastUpdate = 0
@@ -479,21 +479,54 @@ local function updateESP(dt)
     -- Object loop
     for _, folder in pairs(getMapFolders()) do
         for _, obj in pairs(folder:GetChildren()) do
-            if obj.Name == "Generator" then
-                if espGenerator then
-                    local progress = getGeneratorProgress(obj)
-		            local progressColor = getProgressColor(progress)
-                    local hitbox = obj:FindFirstChild("HitBox")
-                    local pointLight = hitbox and hitbox:FindFirstChildOfClass("PointLight")
+if obj.Name == "Generator" then
+    if espGenerator then
+        local progress = getGeneratorProgress(obj)
+        local isFinished = generatorFinished(obj)
+        local baseColor = isFinished and COLOR_GENERATOR_DONE or getProgressColor(progress)
 
-		            local color = progressColor
-                    if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
-                        color = COLOR_GENERATOR_DONE
-                    end
-                    createESP(obj, color)
+        createESP(obj, baseColor)
+
+        -- อัปเดต Label
+        local data = espObjects[obj]
+        if data then
+            local targetPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+            if targetPart and hrp then
+                local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+
+                -- ชื่อ + เปอร์เซ็นต์
+                if ShowName and ShowPercent then
+                    data.nameLabel.Text = obj.Name .. " | " .. math.floor(progress * 100) .. "%"
+                    data.nameLabel.Visible = true
+                elseif ShowName then
+                    data.nameLabel.Text = obj.Name
+                    data.nameLabel.Visible = true
                 else
-                    removeESP(obj)
+                    data.nameLabel.Visible = false
                 end
+
+                -- ระยะทาง
+                if ShowDistance then
+                    data.distLabel.Text = "[ " .. dist .. " MM ]"
+                    data.distLabel.Visible = true
+                    data.distLabel.Position = UDim2.new(0, 0, 0.66, 0)
+                else
+                    data.distLabel.Visible = false
+                end
+
+                -- HP ไม่แสดงใน Generator
+                data.hpLabel.Visible = false
+
+                -- ปรับสีข้อความให้ตามสีของ Progress
+                local textColor = isFinished and COLOR_GENERATOR_DONE or getProgressColor(progress)
+                data.nameLabel.TextColor3 = textColor
+                data.distLabel.TextColor3 = textColor
+            end
+        end
+    else
+        removeESP(obj)
+    end
+		    
 
             elseif obj.Name == "Gate" then
                 if espGate then
@@ -578,74 +611,15 @@ local function updateESP(dt)
                     data.hpLabel.Text = ""
                     data.hpLabel.Visible = false
 
--- Generator Progress Display (ชื่อขาว + % สีตาม progress)
-if obj.Name == "Generator" then
-    if ShowPercent then
-        local progress = getGeneratorProgress(obj)
-        local percentText = string.format("%.0f%%", progress * 100)
-        local percentColor = getProgressColor(progress)
-
-        -- ใช้ rich text เพื่อให้ % เป็นสี
-        data.nameLabel.RichText = true
-        data.nameLabel.Text = string.format(
-            '<font color="rgb(255,255,255)">Generator | </font><font color="rgb(%d,%d,%d)">%s</font>',
-            math.floor(percentColor.R * 255),
-            math.floor(percentColor.G * 255),
-            math.floor(percentColor.B * 255),
-            percentText
-        )
-
-        -- อัปเดต Distance Label ให้แสดงและเปลี่ยนสีตาม progress ด้วย
-        if ShowDistance then
-            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-            data.distLabel.Text = string.format(
-                '<font color="rgb(%d,%d,%d)">[ %d MM ]</font>',
-                math.floor(percentColor.R * 255),
-                math.floor(percentColor.G * 255),
-                math.floor(percentColor.B * 255),
-                dist
-            )
-            data.distLabel.RichText = true
-            data.distLabel.Visible = true
-        else
-            data.distLabel.Text = ""
-            data.distLabel.Visible = false
-        end
-
-        -- highlight สีตาม progress
-        if data.highlight then
-            data.highlight.FillColor = percentColor
-            data.highlight.OutlineColor = percentColor
-        end
-    else
-        -- ถ้าไม่แสดง % ให้เป็นปกติ (ขาวทั้งหมด)
-        data.nameLabel.RichText = false
-        data.nameLabel.Text = obj.Name
-        data.nameLabel.TextColor3 = data.color
-
-        if ShowDistance then
-            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-            data.distLabel.RichText = false
-            data.distLabel.Text = "[ " .. dist .. " MM ]"
-            data.distLabel.TextColor3 = data.color
-            data.distLabel.Visible = true
-        else
-            data.distLabel.Text = ""
-            data.distLabel.Visible = false
-        end
-
-        if data.highlight then
-            data.highlight.FillColor = COLOR_GENERATOR
-            data.highlight.OutlineColor = COLOR_GENERATOR
-        end
-    end
-else
-    -- object อื่น
-    data.nameLabel.RichText = false
-    data.nameLabel.Text = obj.Name
-    data.nameLabel.TextColor3 = data.color
-end
-
+                    if ShowDistance then
+                        local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+                        data.distLabel.Text = "[ "..dist.." MM ]"
+                        data.distLabel.Visible = true
+                        data.distLabel.Position = UDim2.new(0,0,0.33,0)
+                    else
+                        data.distLabel.Text = ""
+                        data.distLabel.Visible = false
+                    end
                 end
 
                 -- Highlight
