@@ -1489,7 +1489,8 @@ SurTab:Toggle({
                                     break
                                 end
                             end
-                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton4) or
+							   UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton5) then
                                 cancelDetected = true
                             end
                         end
@@ -1594,7 +1595,8 @@ SurTab:Toggle({
                                     break
                                 end
                             end
-                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton4) or
+							   UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton5) then
                                 cancelDetected = true
                             end
                         end
