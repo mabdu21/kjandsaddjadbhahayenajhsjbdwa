@@ -1,6 +1,6 @@
--- Powered by GPT 5 v709
+-- Powered by GPT 5 | v712
 -- ======================
-local version = "4.2.3"
+local version = "4.2.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -163,6 +163,7 @@ local ShowName = true
 local ShowDistance = true
 local ShowHP = true
 local ShowHighlight = true
+local ShowPercent = true
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -258,6 +259,39 @@ local function createESP(obj, baseColor)
         distLabel = distLabel,
         color = baseColor
     }
+end
+
+-- ==================== Generator Progress System ====================
+
+local function getGeneratorProgress(gen)
+    local progress = 0
+    if gen:GetAttribute("Progress") then
+        progress = gen:GetAttribute("Progress")
+    elseif gen:GetAttribute("RepairProgress") then
+        progress = gen:GetAttribute("RepairProgress")
+    else
+        for _, child in ipairs(gen:GetDescendants()) do
+            if child:IsA("NumberValue") or child:IsA("IntValue") then
+                local n = child.Name:lower()
+                if n:find("progress") or n:find("repair") or n:find("percent") then
+                    progress = child.Value
+                    break
+                end
+            end
+        end
+    end
+    progress = (progress > 1) and progress / 100 or progress
+    return math.clamp(progress, 0, 1)
+end
+
+local function getProgressColor(percent)
+    local r = 255 * (1 - percent)
+    local g = 255 * percent
+    return Color3.fromRGB(r, g, 0)
+end
+
+local function generatorFinished(gen)
+    return getGeneratorProgress(gen) >= 0.99 or gen:FindFirstChild("Finished") or gen:FindFirstChild("Repaired")
 end
 
 -- Get generator all location
@@ -440,18 +474,17 @@ local function updateESP(dt)
     for _, folder in pairs(getMapFolders()) do
         for _, obj in pairs(folder:GetChildren()) do
             if obj.Name == "Generator" then
-                if espGenerator then
-                    local hitbox = obj:FindFirstChild("HitBox")
-                    local pointLight = hitbox and hitbox:FindFirstChildOfClass("PointLight")
-                    local color = COLOR_GENERATOR
-                    if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
-                        color = COLOR_GENERATOR_DONE
-						createESP(obj, COLOR_GENERATOR_DONE)
-                    end
-                    createESP(obj, color)
-                else
-                    removeESP(obj)
-                end
+                if obj.Name == "Generator" then
+    if espGenerator then
+        local progress = getGeneratorProgress(obj)
+        local color = getProgressColor(progress)
+        if generatorFinished(obj) then
+            color = COLOR_GENERATOR_DONE
+        end
+        createESP(obj, color)
+    else
+        removeESP(obj)
+				end
 
             elseif obj.Name == "Gate" then
                 if espGate then
@@ -514,13 +547,16 @@ local function updateESP(dt)
 
                     -- Distance label
                     if ShowDistance then
-                        local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-                        data.distLabel.Text = "[ "..dist.." MM ]"
-                        data.distLabel.Visible = true
-                    else
-                        data.distLabel.Text = ""
-                        data.distLabel.Visible = false
-                    end
+    local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+    data.distLabel.Text = "[ "..dist.." MM ]"
+    data.distLabel.TextColor3 = (obj.Name == "Generator" and ShowPercent)
+        and getProgressColor(getGeneratorProgress(obj))
+        or data.color
+    data.distLabel.Visible = true
+else
+    data.distLabel.Text = ""
+    data.distLabel.Visible = false
+					end
 
                     -- Adjust positions based on visibility
                     if data.hpLabel.Visible then
@@ -532,9 +568,17 @@ local function updateESP(dt)
 
                 else
                     -- Object case (no HP)
-
-                    data.hpLabel.Text = ""
-                    data.hpLabel.Visible = false
+if obj.Name == "Generator" and ShowPercent then
+    local progress = getGeneratorProgress(obj)
+    local percentText = string.format("[ %d%% ]", math.floor(progress * 100))
+    data.hpLabel.Text = percentText
+    data.hpLabel.TextColor3 = getProgressColor(progress)
+    data.hpLabel.Visible = true
+else
+    data.hpLabel.Text = ""
+    data.hpLabel.Visible = false
+						end
+						
 
                     if ShowDistance then
                         local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
@@ -612,7 +656,7 @@ EspTab:Toggle({Title="Show Name", Value=ShowName, Callback=function(v) ShowName=
 EspTab:Toggle({Title="Show Distance", Value=ShowDistance, Callback=function(v) ShowDistance=v end})
 EspTab:Toggle({Title="Show Health", Value=ShowHP, Callback=function(v) ShowHP=v end})
 EspTab:Toggle({Title="Show Highlight", Value=ShowHighlight, Callback=function(v) ShowHighlight=v end})
-
+EspTab:Toggle({Title="Show Percent", Value=ShowPercent, Callback=function(v) ShowPercent=v end})
 
 -- ====================== BYPASS GATE ======================
 local bypassGateEnabled = false
