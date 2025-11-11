@@ -1,6 +1,6 @@
--- Powered by GPT 5 v709
+-- Powered by GPT 5 | v711
 -- ======================
-local version = "4.2.4"
+local version = "4.2.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -222,6 +222,7 @@ local function createESP(obj, baseColor)
     nameLabel.Font = Enum.Font.SourceSansBold
     nameLabel.TextSize = 14
     nameLabel.TextColor3 = baseColor
+	nameLabel.RichText = true
     nameLabel.TextStrokeColor3 = COLOR_OUTLINE
     nameLabel.TextStrokeTransparency = 0
     nameLabel.Text = obj.Name
@@ -480,12 +481,14 @@ local function updateESP(dt)
         for _, obj in pairs(folder:GetChildren()) do
             if obj.Name == "Generator" then
                 if espGenerator then
+                    local progress = getGeneratorProgress(obj)
+		            local progressColor = getProgressColor(progress)
                     local hitbox = obj:FindFirstChild("HitBox")
                     local pointLight = hitbox and hitbox:FindFirstChildOfClass("PointLight")
-                    local color = COLOR_GENERATOR
+
+		            local color = progressColor
                     if pointLight and pointLight.Color == Color3.fromRGB(126,255,126) then
                         color = COLOR_GENERATOR_DONE
-						createESP(obj, COLOR_GENERATOR_DONE)
                     end
                     createESP(obj, color)
                 else
@@ -575,24 +578,42 @@ local function updateESP(dt)
                     data.hpLabel.Text = ""
                     data.hpLabel.Visible = false
 
-                    -- Generator Progress Display
-                    if obj.Name == "Generator" and ShowPercent then
-                        local progress = getGeneratorProgress(obj)
-                        local percentText = string.format("%.0f%%", progress * 100)
-                        data.nameLabel.Text = string.format("Generator | %s", percentText)
-                        data.nameLabel.TextColor3 = getProgressColor(progress)
+                    -- Generator Progress Display (ชื่อขาว + % สีตาม progress)
+                    if obj.Name == "Generator" then
+                        if ShowPercent then
+                            local progress = getGeneratorProgress(obj)
+                            local percentText = string.format("%.0f%%", progress * 100)
+                            local percentColor = getProgressColor(progress)
+
+                            -- ใช้ rich text เพื่อให้ % เป็นสี
+                            data.nameLabel.RichText = true
+                            data.nameLabel.Text = string.format('<font color="rgb(255,255,255)">Generator | </font><font color="rgb(%d,%d,%d)">%s</font>',
+                                math.floor(percentColor.R * 255),
+                                math.floor(percentColor.G * 255),
+                                math.floor(percentColor.B * 255),
+                                percentText
+                            )
+
+                            -- highlight สีตาม progress
+                            if data.highlight then
+                                data.highlight.FillColor = percentColor
+                                data.highlight.OutlineColor = percentColor
+                            end
+                        else
+                            -- ถ้าไม่แสดง % ให้เป็นปกติ
+                            data.nameLabel.RichText = false
+                            data.nameLabel.Text = obj.Name
+                            data.nameLabel.TextColor3 = data.color
+                            if data.highlight then
+                                data.highlight.FillColor = COLOR_GENERATOR
+                                data.highlight.OutlineColor = COLOR_GENERATOR
+                            end
+                        end
                     else
+                        -- object อื่น
+                        data.nameLabel.RichText = false
                         data.nameLabel.Text = obj.Name
                         data.nameLabel.TextColor3 = data.color
-                    end
-                    if ShowDistance then
-                        local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
-                        data.distLabel.Text = "[ "..dist.." MM ]"
-                        data.distLabel.Visible = true
-                        data.distLabel.Position = UDim2.new(0,0,0.33,0)
-                    else
-                        data.distLabel.Text = ""
-                        data.distLabel.Visible = false
                     end
                 end
 
