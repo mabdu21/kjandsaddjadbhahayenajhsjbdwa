@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.3.9"
+local version = "5.4.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -816,6 +816,146 @@ Players.LocalPlayer.CharacterAdded:Connect(function(character)
         applyKorbloxRightLeg()
     end
 end)
+
+FakeTab:Paragraph({
+    Title = "Information: Fake Emote",
+    Desc = "[1] Put name in textbox, You want to use \n[2] Put your name emote for Replace \n[3] Enable Emote and enjoy",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 50,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "info",
+            Title = "Get Name Emote",
+            Callback = function()
+                setclipboard("https://evade-nextbot.fandom.com/wiki/Emotes")
+
+                WindUI:Notify({
+                    Title = "DYHUB",
+                    Content = "Copied link successfully! Paste it in your browser.",
+                    Duration = 2,
+                    Icon = "user-check",
+                })
+            end
+        }
+    }
+})
+
+-- ตัวแปรเก็บชื่ออีโมตที่ผู้ใช้ป้อน
+local CURRENT_EMOTE = "Rockin' Stride"
+local SELECT_EMOTE = "Bold March"
+
+FakeTab:Input({
+    Title = "Set Use Emote (Fake Emote)",
+    Default = "",
+    Placeholder = "Name Emote (Ex: Rockin' Stride)",
+    Callback = function(text)
+        CURRENT_EMOTE = text
+    end
+})
+
+FakeTab:Input({
+    Title = "Set Replace Emote (Your Emote)",
+    Default = "",
+    Placeholder = "Name Emote (Ex: Bold March)",
+    Callback = function(text)
+        SELECT_EMOTE = text
+    end
+})
+
+FakeTab:Toggle({
+    Title = "Enable Emote (Visual)",
+    Default = false,
+    Callback = function(state)
+        if not state then return end
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Workspace = workspace
+        local LocalPlayer = Players.LocalPlayer
+
+        local DELAY = 0
+
+        local Events = ReplicatedStorage:WaitForChild("Events", 10)
+        local CharacterFolder = Events:WaitForChild("Character", 10)
+        local EmoteRemote = CharacterFolder:WaitForChild("Emote", 10)
+        local PassCharacterInfo = CharacterFolder:WaitForChild("PassCharacterInfo", 10)
+        if not (Events and CharacterFolder and EmoteRemote and PassCharacterInfo) then
+            warn("Failed to locate required remotes")
+            return
+        end
+
+        local remoteSignal = PassCharacterInfo.OnClientEvent
+        local waitingForEmote = false
+        local currentTag = nil
+
+        local function readTagFromFolder(f)
+            local a = f:GetAttribute("Tag")
+            if a ~= nil then return a end
+            local o = f:FindFirstChild("Tag")
+            if o and o:IsA("ValueBase") then return o.Value end
+            return nil
+        end
+
+        local function onRespawn()
+            repeat task.wait() until Workspace:FindFirstChild("Game") and Workspace.Game:FindFirstChild("Players")
+            local pf = Workspace.Game.Players:WaitForChild(LocalPlayer.Name, 10)
+            if not pf then 
+                warn("Player folder missing after respawn") 
+                currentTag = nil 
+                return 
+            end
+
+            currentTag = readTagFromFolder(pf)
+            if currentTag then
+                local b = tonumber(currentTag)
+                if b and b >= 0 and b <= 255 then
+                    print(string.format("Respawn to TAG captured: %d", b))
+                else
+                    warn(string.format("Invalid TAG: %s", tostring(currentTag)))
+                    currentTag = nil
+                end
+            else
+                print("No TAG found on respawn")
+                currentTag = nil
+            end
+        end
+
+        onRespawn()
+        LocalPlayer.CharacterAdded:Connect(onRespawn)
+
+        PassCharacterInfo.OnClientEvent:Connect(function()
+            if not waitingForEmote then return end
+            if not currentTag then
+                print("No TAG found, aborting emote selection")
+                waitingForEmote = false
+                return
+            end
+            local b = tonumber(currentTag)
+            local buf = buffer.create(2)
+            buffer.writeu8(buf, 0, b)
+            buffer.writeu8(buf, 1, 17)
+            firesignal(remoteSignal, buf, { SELECT_EMOTE })
+            print(string.format("Fired %s with TAG=%d", SELECT_EMOTE, b))
+            if DELAY > 0 then task.wait(DELAY) end
+            waitingForEmote = false
+        end)
+
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local m = getnamecallmethod()
+            local a = {...}
+            if m == "FireServer" and self == EmoteRemote and a[1] == CURRENT_EMOTE then
+                waitingForEmote = true
+                print("Detected current emote:", CURRENT_EMOTE, "→ waiting for PassCharacterInfo...")
+                return
+            end
+            return oldNamecall(self, ...)
+        end)
+
+        print(string.format("✅ Fake Emote Hook Enabled!\nCurrent Emote: %s → Fake As: %s\nPlayer: %s", CURRENT_EMOTE, SELECT_EMOTE, LocalPlayer.Name))
+    end
+})
 
 -- ===== Esp Tab
 local ActiveEspPlayers = false
