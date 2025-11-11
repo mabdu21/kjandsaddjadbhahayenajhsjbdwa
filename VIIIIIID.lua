@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v711
+-- Powered by GPT 5 | v713
 -- ======================
 local version = "4.2.5"
 -- ======================
@@ -578,43 +578,74 @@ local function updateESP(dt)
                     data.hpLabel.Text = ""
                     data.hpLabel.Visible = false
 
-                    -- Generator Progress Display (ชื่อขาว + % สีตาม progress)
-                    if obj.Name == "Generator" then
-                        if ShowPercent then
-                            local progress = getGeneratorProgress(obj)
-                            local percentText = string.format("%.0f%%", progress * 100)
-                            local percentColor = getProgressColor(progress)
+-- Generator Progress Display (ชื่อขาว + % สีตาม progress)
+if obj.Name == "Generator" then
+    if ShowPercent then
+        local progress = getGeneratorProgress(obj)
+        local percentText = string.format("%.0f%%", progress * 100)
+        local percentColor = getProgressColor(progress)
 
-                            -- ใช้ rich text เพื่อให้ % เป็นสี
-                            data.nameLabel.RichText = true
-                            data.nameLabel.Text = string.format('<font color="rgb(255,255,255)">Generator | </font><font color="rgb(%d,%d,%d)">%s</font>',
-                                math.floor(percentColor.R * 255),
-                                math.floor(percentColor.G * 255),
-                                math.floor(percentColor.B * 255),
-                                percentText
-                            )
+        -- ใช้ rich text เพื่อให้ % เป็นสี
+        data.nameLabel.RichText = true
+        data.nameLabel.Text = string.format(
+            '<font color="rgb(255,255,255)">Generator | </font><font color="rgb(%d,%d,%d)">%s</font>',
+            math.floor(percentColor.R * 255),
+            math.floor(percentColor.G * 255),
+            math.floor(percentColor.B * 255),
+            percentText
+        )
 
-                            -- highlight สีตาม progress
-                            if data.highlight then
-                                data.highlight.FillColor = percentColor
-                                data.highlight.OutlineColor = percentColor
-                            end
-                        else
-                            -- ถ้าไม่แสดง % ให้เป็นปกติ
-                            data.nameLabel.RichText = false
-                            data.nameLabel.Text = obj.Name
-                            data.nameLabel.TextColor3 = data.color
-                            if data.highlight then
-                                data.highlight.FillColor = COLOR_GENERATOR
-                                data.highlight.OutlineColor = COLOR_GENERATOR
-                            end
-                        end
-                    else
-                        -- object อื่น
-                        data.nameLabel.RichText = false
-                        data.nameLabel.Text = obj.Name
-                        data.nameLabel.TextColor3 = data.color
-                    end
+        -- อัปเดต Distance Label ให้แสดงและเปลี่ยนสีตาม progress ด้วย
+        if ShowDistance then
+            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+            data.distLabel.Text = string.format(
+                '<font color="rgb(%d,%d,%d)">[ %d MM ]</font>',
+                math.floor(percentColor.R * 255),
+                math.floor(percentColor.G * 255),
+                math.floor(percentColor.B * 255),
+                dist
+            )
+            data.distLabel.RichText = true
+            data.distLabel.Visible = true
+        else
+            data.distLabel.Text = ""
+            data.distLabel.Visible = false
+        end
+
+        -- highlight สีตาม progress
+        if data.highlight then
+            data.highlight.FillColor = percentColor
+            data.highlight.OutlineColor = percentColor
+        end
+    else
+        -- ถ้าไม่แสดง % ให้เป็นปกติ (ขาวทั้งหมด)
+        data.nameLabel.RichText = false
+        data.nameLabel.Text = obj.Name
+        data.nameLabel.TextColor3 = data.color
+
+        if ShowDistance then
+            local dist = math.floor((hrp.Position - targetPart.Position).Magnitude)
+            data.distLabel.RichText = false
+            data.distLabel.Text = "[ " .. dist .. " MM ]"
+            data.distLabel.TextColor3 = data.color
+            data.distLabel.Visible = true
+        else
+            data.distLabel.Text = ""
+            data.distLabel.Visible = false
+        end
+
+        if data.highlight then
+            data.highlight.FillColor = COLOR_GENERATOR
+            data.highlight.OutlineColor = COLOR_GENERATOR
+        end
+    end
+else
+    -- object อื่น
+    data.nameLabel.RichText = false
+    data.nameLabel.Text = obj.Name
+    data.nameLabel.TextColor3 = data.color
+end
+
                 end
 
                 -- Highlight
