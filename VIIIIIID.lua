@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v719
+-- Powered by GPT 5 | v720
 -- ======================
 local version = "4.2.4"
 -- ======================
@@ -1285,7 +1285,7 @@ local Workspace = game:GetService("Workspace")
 
 -- CONFIG
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.55
+local ACTION_DELAY = 1.69
 local CHECK_INTERVAL = 5 -- วินาทีที่ใช้เช็ค Pumpkin ใหม่ตอนหมดแล้ว
 
 local CPumkin = false
@@ -1382,7 +1382,7 @@ local function autoCollectPumpkins()
 					local pumpkinPart = getPumpkinPart(pumpkin)
 					if pumpkinPart then
 						teleportTo(pumpkinPart)
-						task.wait(0.05)
+						task.wait(0.69)
 
 						local HB = pumpkin:FindFirstChild("HB")
 						if HB then
