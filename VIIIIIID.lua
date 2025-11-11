@@ -1,4 +1,4 @@
--- Powered by GPT 5 v705
+-- Powered by GPT 5 v709
 -- ======================
 local version = "4.2.3"
 -- ======================
@@ -1210,7 +1210,7 @@ local Workspace = game:GetService("Workspace")
 
 -- CONFIG
 local SAFEZONE_HEIGHT = 500
-local ACTION_DELAY = 1.5
+local ACTION_DELAY = 1.55
 local CHECK_INTERVAL = 5 -- วินาทีที่ใช้เช็ค Pumpkin ใหม่ตอนหมดแล้ว
 
 local CPumkin = false
@@ -1307,7 +1307,7 @@ local function autoCollectPumpkins()
 					local pumpkinPart = getPumpkinPart(pumpkin)
 					if pumpkinPart then
 						teleportTo(pumpkinPart)
-						task.wait(0.3)
+						task.wait(0.05)
 
 						local HB = pumpkin:FindFirstChild("HB")
 						if HB then
@@ -1477,23 +1477,29 @@ SurTab:Toggle({
                         local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
                         local cancelDetected = false
 
-                        -- 🖱 ตรวจการกดเมาส์ซ้าย / WASD บน PC
-                        if UserInputService.KeyboardEnabled then
-                            local keysPressed = {
-                                Enum.KeyCode.W, Enum.KeyCode.A,
-                                Enum.KeyCode.S, Enum.KeyCode.D
-                            }
-                            for _, key in ipairs(keysPressed) do
-                                if UserInputService:IsKeyDown(key) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton4) or
-							   UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton5) then
-                                cancelDetected = true
-                            end
-                        end
+if UserInputService.KeyboardEnabled then
+    -- ตรวจจับปุ่มเดิน
+    local keysPressed = {
+        Enum.KeyCode.W, Enum.KeyCode.A,
+        Enum.KeyCode.S, Enum.KeyCode.D
+    }
+
+    for _, key in ipairs(keysPressed) do
+        if UserInputService:IsKeyDown(key) then
+            cancelDetected = true
+            break
+        end
+    end
+end
+
+-- ตรวจจับคลิกซ้าย ขวา (แทน MouseButton4/5)
+if UserInputService.MouseEnabled then
+    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        cancelDetected = true
+    end
+								end
+								
 
                         -- ถ้าเดินเกิน threshold หรือกด input ให้ cancel
                         if moved > stationaryThreshold or cancelDetected then
@@ -1584,22 +1590,29 @@ SurTab:Toggle({
                         local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
                         local cancelDetected = false
 
-                        if UserInputService.KeyboardEnabled then
-                            local keysPressed = {
-                                Enum.KeyCode.W, Enum.KeyCode.A,
-                                Enum.KeyCode.S, Enum.KeyCode.D
-                            }
-                            for _, key in ipairs(keysPressed) do
-                                if UserInputService:IsKeyDown(key) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton4) or
-							   UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton5) then
-                                cancelDetected = true
-                            end
-                        end
+if UserInputService.KeyboardEnabled then
+    -- ตรวจจับปุ่มเดิน
+    local keysPressed = {
+        Enum.KeyCode.W, Enum.KeyCode.A,
+        Enum.KeyCode.S, Enum.KeyCode.D
+    }
+
+    for _, key in ipairs(keysPressed) do
+        if UserInputService:IsKeyDown(key) then
+            cancelDetected = true
+            break
+        end
+    end
+end
+
+-- ตรวจจับคลิกซ้าย ขวา (แทน MouseButton4/5)
+if UserInputService.MouseEnabled then
+    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        cancelDetected = true
+    end
+								end
+								
 
                         if moved > stationaryThreshold or cancelDetected then
                             if lastGenPoint then
