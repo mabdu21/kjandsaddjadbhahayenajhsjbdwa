@@ -1,5 +1,5 @@
 ------------------------------------------
-local version = "5.9.1"
+local version = "5.9.2"
 local status = "Rework"
 ----- =======[ Load WindUI ]
 -------------------------------------------
@@ -618,6 +618,41 @@ end)
 -------------------------------------------
 ----- =======[ LOAD WINDOW ]
 -------------------------------------------
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
+
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success then
+        return FreeVersion
+    end
+
+    local premiumData
+    local func, err = loadstring(response)
+    if func then
+        premiumData = func()
+    else
+        return FreeVersion
+    end
+
+    if premiumData[playerName] then
+        return PremiumVersion
+    else
+        return FreeVersion
+    end
+end
+
+local player = Players.LocalPlayer
+local userversion = checkVersion(player.Name)
 
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
