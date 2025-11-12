@@ -1,4 +1,29 @@
--- 551
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Wait for Game Objects
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Balls = Workspace:WaitForChild("Balls")
+local ParryRemote = Remotes:WaitForChild("ParryButtonPress")
+
+-- Anti-Cheat Bypass (Enhanced)
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local oldNamecall = mt.__namecall
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if method == "FireServer" and (tostring(self):lower():find("anti") or tostring(self):find("cheat") or tostring(self):find("kick") or tostring(self):find("ban") or tostring(self):find("detect")) then
+        return task.wait(math.huge)
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
 local Players = game:GetService('Players')
 local Player = Players.LocalPlayer
 local ContextActionService = game:GetService('ContextActionService')
@@ -3294,6 +3319,7 @@ local VisualizeModule = MicTab:create_module({
 		end
 	end
 })
+
 
 
 
