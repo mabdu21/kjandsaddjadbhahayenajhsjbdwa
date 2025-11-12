@@ -1,10 +1,79 @@
 ------------------------------------------
+local version = "5.9.1"
+local status = "Rework"
 ----- =======[ Load WindUI ]
 -------------------------------------------
 
 local Version = "1.6.53"
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" ..
 Version .. "/main.lua"))()
+
+repeat task.wait() until game:IsLoaded()
+
+local executorName = "Unknown"
+
+pcall(function()
+    -- ✅ ตัวตรวจจับหลักจาก identifyexecutor()
+    if identifyexecutor then
+        local name, ver = identifyexecutor()
+        executorName = ver and (name .. " (" .. ver .. ")") or name
+        return
+    end
+
+    -- ✅ ตัวตรวจจับสำรองจาก getexecutorname()
+    if getexecutorname then
+        executorName = getexecutorname()
+        return
+    end
+
+    -- ✅ ตรวจจาก global flags (สำหรับ executor ยอดนิยม)
+    local globals = getgenv and getgenv() or _G
+    local checkList = {
+        { "Delta", "Delta" },
+        { "Xeno", "Xeno" },
+        { "Solara", "Solara" },	
+        { "Zenith", "Zenith" },
+        { "Wave", "Wave" },
+	    { "Volt", "Volt" },
+	    { "Volcano", "Volcano" },
+        { "Velocity", "Velocity" },
+        { "Seliware", "Seliware" },
+	    { "Valex", "Valex" },
+	    { "Potassium", "Potassium" },
+        { "Bunni", "Bunni" },
+        { "Sirhurt", "Sirhurt" },
+	    { "Delta", "Delta" },
+	    { "Codex", "Codex" },
+	    { "Cryptic", "Cryptic" },
+        { "Krnl", "Krnl" },
+    }
+
+    for _, data in ipairs(checkList) do
+        local key, name = unpack(data)
+        if globals[key] ~= nil or getfenv()[key] ~= nil then
+            executorName = name
+            return
+        end
+    end
+
+    -- ✅ ตรวจชื่อไฟล์ Lua Environment เผื่อบาง executor
+    local info = debug.getinfo(1, "S")
+    if info and info.source then
+        local src = string.lower(info.source)
+        if src:find("synapse") then executorName = "Synapse X" end
+        if src:find("fluxus") then executorName = "Fluxus" end
+        if src:find("krnl") then executorName = "Krnl" end
+        if src:find("delta") then executorName = "Delta" end
+    end
+end)
+
+-- ✅ แจ้งเตือนผ่าน WindUI
+WindUI:Notify({
+    Title = "DYHUB",
+    Content = "Executor: " .. executorName .. " successfully.",
+    Duration = 6,
+    Image = "cpu"
+})
 
 -------------------------------------------
 ----- =======[ MERGED GLOBAL FUNCTION ]
@@ -524,15 +593,15 @@ local function checkStatus()
     if response == "UPDATE" then
         if not CheckData.kicked then
             CheckData.kicked = true
-            LocalPlayer:Kick("NikZzzXit Update Available!.")
+            LocalPlayer:Kick("DYHUB Update Available!.")
         end
     elseif response == "LATEST" then
         if not CheckData.notified then
             CheckData.notified = true
-            warn("[NikZzzXit] Status: Latest version")
+            warn("[DYHUB] Status: Latest version")
         end
     else
-        warn("[NikZzzXit] Status unknown:", response)
+        warn("[DYHUB] Status unknown:", response)
     end
 end
 
@@ -550,35 +619,15 @@ end)
 ----- =======[ LOAD WINDOW ]
 -------------------------------------------
 
-
-WindUI:AddTheme({
-    Name = "Royal Void",
-    Accent = WindUI:Gradient({
-        ["0"]   = { Color = Color3.fromHex("#FF3366"), Transparency = 0 },  -- Merah Cerah
-        ["50"]  = { Color = Color3.fromHex("#1E90FF"), Transparency = 0 },  -- biru Cerah
-        ["100"] = { Color = Color3.fromHex("#9B30FF"), Transparency = 0 },  -- Ungu Terang
-    }, {
-        Rotation = 45,
-    }),
-
-    Dialog = Color3.fromHex("#0A0011"),         -- Latar hitam ke ungu gelap
-    Outline = Color3.fromHex("#1E90FF"),        -- Pinggir biru Cerah
-    Text = Color3.fromHex("#FFE6FF"),           -- Putih ke ungu muda
-    Placeholder = Color3.fromHex("#B34A7F"),    -- Ungu-merah pudar
-    Background = Color3.fromHex("#050008"),     -- Hitam pekat dengan nuansa ungu
-    Button = Color3.fromHex("#FF00AA"),         -- Merah ke ungu neon
-    Icon = Color3.fromHex("#0066CC")            -- Aksen biru
-})
-WindUI.TransparencyValue = 0.2
-
 local Window = WindUI:CreateWindow({
-    Title = "NikZzzXit",
-    Icon = "crown",
-    Author = "Fishit | NewUi",
-    Folder = "NikZzzXit",
-    Size = UDim2.fromOffset(400, 200),
+    Title = "DYHUB",
+    IconThemed = true,
+    Icon = "rbxassetid://104487529937663",
+    Author = "Fish It | " .. userversion,
+    Folder = "DYHUB_FISHIT_V2",
+    Size = UDim2.fromOffset(500, 300),
     Transparent = true,
-    Theme = "Royal Void",
+    Theme = "Dark",
     KeySystem = false,
     ScrollBarEnabled = true,
     HideSearchBar = true,
@@ -590,16 +639,26 @@ local Window = WindUI:CreateWindow({
     }
 })
 
+pcall(function()
+    Window:Tag({
+        Title = version,
+        Color = Color3.fromHex("#30ff6a")
+    })
+end)
+
+pcall(function()
+    Window:Tag({
+        Title = status,
+        Color = Color3.fromHex("#ffea00")
+    })
+end)
+
 Window:EditOpenButton({
-    Title = "NikZzzXit",
-    Icon = "star",
-    CornerRadius = UDim.new(0,30),
+    Title = "DYHUB - Open",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 6),
     StrokeThickness = 2,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("#FF3366")), -- Merah
-        ColorSequenceKeypoint.new(0.5, Color3.fromHex("#1E90FF")), -- biru
-        ColorSequenceKeypoint.new(1, Color3.fromHex("#9B30FF")) -- Ungu
-    }),
+    Color = ColorSequence.new(Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255)),
     Draggable = true,
 })
 
@@ -609,10 +668,10 @@ local myConfig = ConfigManager:CreateConfig("SansXConfig")
 WindUI:SetNotificationLower(true)
 
 WindUI:Notify({
-    Title = "NikZzzXit",
+    Title = "DYHUB",
     Content = "All Features Loaded!",
     Duration = 5,
-    Image = "square-check-big"
+    Image = "info"
 })
 
 -------------------------------------------
@@ -620,8 +679,8 @@ WindUI:Notify({
 -------------------------------------------
 
 local Home = Window:Tab({
-    Title = "Developer Info",
-    Icon = "hard-drive"
+    Title = "Information",
+    Icon = "info"
 })
 
 _G.ServerPage = Window:Tab({
@@ -635,24 +694,24 @@ local AllMenu = Window:Section({
     Opened = true,
 })
 
-local AutoFish = AllMenu:Tab({
-    Title = "Auto Fishing",
+local AutoFarmTab = AllMenu:Tab({
+    Title = "Auto Farm",
     Icon = "fish"
 })
 
+local AutoFish = AllMenu:Tab({
+    Title = "Automation",
+    Icon = "crown"
+})
+
 local X5SpeedTab = AllMenu:Tab({
-    Title = "Ultra Fishing",
+    Title = "Fast Fishing",
     Icon = "zap"
 })
 
 local AutoFav = AllMenu:Tab({
     Title = "Auto Favorite",
     Icon = "star"
-})
-
-local AutoFarmTab = AllMenu:Tab({
-    Title = "Auto Farm",
-    Icon = "leaf"
 })
 
 local AutoFarmArt = AllMenu:Tab({
@@ -689,22 +748,189 @@ local SettingsTab = AllMenu:Tab({
 ----- =======[ HOME TAB ]
 -------------------------------------------
 
-Home:Section({
-	Title = "Developer",
-	TextSize = 22,
-	TextXAlignment = "Center",
+Info = Home
+
+if not ui then ui = {} end
+if not ui.Creator then ui.Creator = {} end
+
+-- Define the Request function that mimics ui.Creator.Request
+ui.Creator.Request = function(requestData)
+    local HttpService = game:GetService("HttpService")
+    
+    -- Try different HTTP methods
+    local success, result = pcall(function()
+        if HttpService.RequestAsync then
+            -- Method 1: Use RequestAsync if available
+            local response = HttpService:RequestAsync({
+                Url = requestData.Url,
+                Method = requestData.Method or "GET",
+                Headers = requestData.Headers or {}
+            })
+            return {
+                Body = response.Body,
+                StatusCode = response.StatusCode,
+                Success = response.Success
+            }
+        else
+            -- Method 2: Fallback to GetAsync
+            local body = HttpService:GetAsync(requestData.Url)
+            return {
+                Body = body,
+                StatusCode = 200,
+                Success = true
+            }
+        end
+    end)
+    
+    if success then
+        return result
+    else
+        error("HTTP Request failed: " .. tostring(result))
+    end
+end
+
+-- Remove this line completely: Info = InfoTab
+-- The Info variable is already correctly set above
+
+local InviteCode = "jWNDPNMmyB"
+local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+
+local function LoadDiscordInfo()
+    local success, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+            Url = DiscordAPI,
+            Method = "GET",
+            Headers = {
+                ["User-Agent"] = "RobloxBot/1.0",
+                ["Accept"] = "application/json"
+            }
+        }).Body)
+    end)
+
+    if success and result and result.guild then
+        local DiscordInfo = Info:Paragraph({
+            Title = result.guild.name,
+            Desc = ' <font color="#52525b">●</font> Member Count : ' .. tostring(result.approximate_member_count) ..
+                '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(result.approximate_presence_count),
+            Image = "https://cdn.discordapp.com/icons/" .. result.guild.id .. "/" .. result.guild.icon .. ".png?size=1024",
+            ImageSize = 42,
+        })
+
+        Info:Button({
+            Title = "Update Info",
+            Callback = function()
+                local updated, updatedResult = pcall(function()
+                    return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+                        Url = DiscordAPI,
+                        Method = "GET",
+                    }).Body)
+                end)
+
+                if updated and updatedResult and updatedResult.guild then
+                    DiscordInfo:SetDesc(
+                        ' <font color="#52525b">●</font> Member Count : ' .. tostring(updatedResult.approximate_member_count) ..
+                        '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(updatedResult.approximate_presence_count)
+                    )
+                    
+                    WindUI:Notify({
+                        Title = "Discord Info Updated",
+                        Content = "Successfully refreshed Discord statistics",
+                        Duration = 2,
+                        Icon = "refresh-cw",
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "Update Failed",
+                        Content = "Could not refresh Discord info",
+                        Duration = 3,
+                        Icon = "alert-triangle",
+                    })
+                end
+            end
+        })
+
+        Info:Button({
+            Title = "Copy Discord Invite",
+            Callback = function()
+                setclipboard("https://discord.gg/" .. InviteCode)
+                WindUI:Notify({
+                    Title = "Copied!",
+                    Content = "Discord invite copied to clipboard",
+                    Duration = 2,
+                    Icon = "clipboard-check",
+                })
+            end
+        })
+    else
+        Info:Paragraph({
+            Title = "Error fetching Discord Info",
+            Desc = "Unable to load Discord information. Check your internet connection.",
+            Image = "triangle-alert",
+            ImageSize = 26,
+            Color = "Red",
+        })
+        print("Discord API Error:", result) -- Debug print
+    end
+end
+
+LoadDiscordInfo()
+
+Info:Divider()
+Info:Section({ 
+    Title = "DYHUB Information",
+    TextXAlignment = "Center",
+    TextSize = 17,
+})
+Info:Divider()
+
+local Owner = Info:Paragraph({
+    Title = "Main Owner",
+    Desc = "@dyumraisgoodguy#8888",
+    Image = "rbxassetid://119789418015420",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
 })
 
-Home:Paragraph({
-	Title = "NikZzzXit",
-	Color = "Red",
-	Desc = [[
-Developer : NikZz
-Game Script : Fish it
-Version : Lattest Update
-Framework : Wind Ui
-free script (not sell) 
-]]
+local Social = Info:Paragraph({
+    Title = "Social",
+    Desc = "Copy link social media for follow!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://guns.lol/DYHUB")
+                print("Copied social media link to clipboard!")
+            end,
+        }
+    }
+})
+
+local Discord = Info:Paragraph({
+    Title = "Discord",
+    Desc = "Join our discord for more scripts!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://discord.gg/jWNDPNMmyB")
+                print("Copied discord link to clipboard!")
+            end,
+        }
+    }
 })
 
 Home:Space()
@@ -741,7 +967,7 @@ _G.ServerListAll = _G.ServerPage:Section({
 
 _G.ShowServersButton = _G.ServerListAll:Button({
     Title = "Show Server List",
-    Desc = "Klik untuk menampilkan daftar server yang tersedia.",
+    Desc = "Click to display a list of available servers.",
     Locked = false,
     Icon = "",
     Callback = function()
@@ -773,7 +999,7 @@ _G.ShowServersButton = _G.ServerListAll:Button({
         if #_G.ButtonList == 0 then
             _G.ServerListAll:Button({
                 Title = "No Servers Found",
-                Desc = "Tidak ada server yang ditemukan.",
+                Desc = "No servers found here.",
                 Locked = true,
                 Callback = function() end
             })
@@ -3882,7 +4108,7 @@ end
 _G.Keybind = SettingsTab:Keybind({
     Title = "Keybind",
     Desc = "Keybind to open UI",
-    Value = "G",
+    Value = "K",
     Callback = function(v)
         Window:SetToggleKey(Enum.KeyCode[v])
     end
@@ -4008,31 +4234,31 @@ function _G.SembunyikanNotifikasiIkan()
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local notifPath = ReplicatedStorage:FindFirstChild("Packages")
         if not notifPath then
-            warn("⚠️ Struktur Packages tidak ditemukan.")
+            warn("⚠️ Packages structure not found.")
             return
         end
 
         local NetFolder = notifPath:FindFirstChild("_Index")
         if not NetFolder then
-            warn("⚠️ Folder _Index tidak ditemukan di Packages.")
+            warn("⚠️ Folder _Index not found in Packages.")
             return
         end
 
         local sleitnickNet = NetFolder:FindFirstChild("sleitnick_net@0.2.0")
         if not sleitnickNet then
-            warn("⚠️ sleitnick_net@0.2.0 tidak ditemukan.")
+            warn("⚠️ sleitnick_net@0.2.0 not found.")
             return
         end
 
         local net = sleitnickNet:FindFirstChild("net")
         if not net then
-            warn("⚠️ Folder net tidak ditemukan.")
+            warn("⚠️ Folder net not found.")
             return
         end
 
         local REObtainedNewFishNotification = net:FindFirstChild("RE/ObtainedNewFishNotification")
         if not REObtainedNewFishNotification then
-            warn("⚠️ RemoteEvent notifikasi ikan tidak ditemukan.")
+            warn("⚠️ RemoteEvent fish not found notification.")
             return
         end
 
@@ -4041,7 +4267,7 @@ function _G.SembunyikanNotifikasiIkan()
             connection:Disable()
         end
 
-        print("✅ Notifikasi ikan berhasil disembunyikan.")
+        print("✅ Fish notification successfully hidden.")
     end)
 end
 
@@ -4055,9 +4281,9 @@ function _G.TampilkanNotifikasiIkan()
             for _, connection in pairs(getconnections(REObtainedNewFishNotification.OnClientEvent)) do
                 connection:Enable()
             end
-            print("✅ Notifikasi ikan diaktifkan kembali.")
+            print("✅ Fish notifications reactivated.")
         else
-            warn("⚠️ Tidak dapat menemukan event notifikasi ikan.")
+            warn("⚠️ Could not find fish notification event.")
         end
     end)
 end
