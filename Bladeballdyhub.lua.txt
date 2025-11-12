@@ -1,3 +1,46 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+-- Anti-Cheat Bypass (Enhanced)
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local oldNamecall = mt.__namecall
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if method == "FireServer" and (tostring(self):lower():find("anti") or tostring(self):find("cheat") or tostring(self):find("kick") or tostring(self):find("ban") or tostring(self):find("detect")) then
+        return task.wait(math.huge)
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+task.wait(0.5)
+local DYHUB_mt = getrawmetatable(game)
+setreadonly(DYHUB_mt, false)
+
+local DYHUB_oldNamecall = DYHUB_mt.__namecall
+DYHUB_mt.__namecall = newcclosure(function(self, ...)
+    local DYHUB_method = getnamecallmethod()
+    local DYHUB_args = {...}
+
+    if DYHUB_method == "FireServer" and (
+        tostring(self):lower():find("anti") or
+        tostring(self):find("cheat") or
+        tostring(self):find("kick") or
+        tostring(self):find("ban") or
+        tostring(self):find("detect")
+    ) then
+        return task.wait(math.huge)
+    end
+
+    return DYHUB_oldNamecall(self, ...)
+end)
+
+setreadonly(DYHUB_mt, true)
+task.wait(0.5)
+
 local Players = game:GetService('Players')
 local Player = Players.LocalPlayer
 local ContextActionService = game:GetService('ContextActionService')
@@ -3282,6 +3325,7 @@ local VisualizeModule = MicTab:create_module({
 		end
 	end
 })
+
 
 
 
