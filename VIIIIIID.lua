@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v720
+-- Powered by GPT 5 | v725
 -- ======================
 local version = "4.2.4"
 -- ======================
@@ -1449,6 +1449,44 @@ MainTab:Toggle({
 SurTab:Section({ Title = "Feature Survivor", Icon = "user" })
 
 local autoparry = false
+local autoShoot = false
+
+SurTab:Toggle({
+    Title = "Auto Shoot (DONT USE IN DEV)",
+    Value = false,
+    Callback = function(v)
+        autoShoot = v
+        if autoShoot then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Items"):WaitForChild("Parrying Dagger"):WaitForChild("parry")
+
+                while autoShoot do
+                    local char = LocalPlayer.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        for _, plr in ipairs(Players:GetPlayers()) do
+                            if plr ~= LocalPlayer and plr.Character then
+                                if plr.Character:FindFirstChild("Weapon") then
+                                    local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
+                                    if targetRoot then
+                                        local dist = (root.Position - targetRoot.Position).Magnitude
+                                        if dist <= 10 then
+                                            remote:FireServer()
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.001)
+                end
+            end)
+        end
+    end
+})
 
 SurTab:Toggle({
     Title = "Auto Parry (DONT USE IN DEV)",
@@ -1487,14 +1525,133 @@ SurTab:Toggle({
     end
 })
 
+-- ==============================================
 SurTab:Section({ Title = "Feature Generator", Icon = "zap" })
 
+-- ==============================================
 local UserInputService = game:GetService("UserInputService")
+-- ==============================================
 
+local autoGeneratorEnabledtest1 = false
 local autoGeneratorEnabledtest = false
 
 SurTab:Toggle({
     Title = "Auto SkillCheck (Perfect)",
+    Value = false,
+    Callback = function(v)
+        autoGeneratorEnabledtest1 = v
+        if autoGeneratorEnabledtest1 then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+
+                local skillRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
+                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
+
+                local lastGenPoint = nil
+                local lastGenModel = nil
+                local lastPosition = nil
+                local stationaryThreshold = 2
+                local cancelCooldown = 0.2
+                local isRepairing = false
+
+                -- 🧩 ฟังก์ชันหา GeneratorPoint ที่ใกล้ที่สุด
+                local function getFolderGenerator()
+                    local folder = workspace:FindFirstChild("Generators") or workspace:FindFirstChild("GeneratorFolder")
+                    return folder and folder:GetChildren() or {}
+                end
+
+                local function getClosestGeneratorPoint(root)
+                    local generators = getFolderGenerator()
+                    local closestGen, closestPoint, closestDist = nil, nil, 10
+
+                    for _, gen in ipairs(generators) do
+                        for i = 1, 4 do
+                            local point = gen:FindFirstChild("GeneratorPoint" .. i)
+                            if point then
+                                local dist = (root.Position - point.Position).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestGen = gen
+                                    closestPoint = point
+                                end
+                            end
+                        end
+                    end
+                    return closestGen, closestPoint, closestDist
+                end
+
+                -- 🎮 ระบบ input สำหรับซ่อม
+                UserInputService.InputBegan:Connect(function(input, processed)
+                    if processed then return end
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if lastGenPoint then
+                            isRepairing = true
+                            repairRemote:FireServer(lastGenPoint, true)
+                        end
+                    end
+                end)
+
+                UserInputService.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if isRepairing and lastGenPoint then
+                            isRepairing = false
+                            repairRemote:FireServer(lastGenPoint, false)
+                            task.wait(cancelCooldown)
+                            lastGenPoint = nil
+                            lastGenModel = nil
+                        end
+                    end
+                end)
+
+                -- 🔄 Loop หลัก
+                while autoGeneratorEnabledtest1 do
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+
+                    if root then
+                        local genModel, genPoint, dist = getClosestGeneratorPoint(root)
+
+                        if not lastGenPoint and genPoint and dist < 6 then
+                            lastGenModel = genModel
+                            lastGenPoint = genPoint
+                        end
+
+                        -- ตรวจว่าผู้เล่นเดินหรือไม่
+                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
+                        if moved > stationaryThreshold and isRepairing then
+                            isRepairing = false
+                            repairRemote:FireServer(lastGenPoint, false)
+                            task.wait(cancelCooldown)
+                            lastGenPoint = nil
+                            lastGenModel = nil
+                        end
+                        lastPosition = root.Position
+
+                        -- 🎯 Auto Perfect SkillCheck
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+                            if check and check.Visible and lastGenModel and lastGenPoint then
+                                local args = { "success", 1, lastGenModel, lastGenPoint }
+                                skillRemote:FireServer(unpack(args))
+                                check.Visible = false
+                            end
+                        end
+                    end
+
+                    task.wait(0.2)
+                end
+            end)
+        end
+    end
+})
+
+-- ===============================================
+SurTab:Toggle({
+    Title = "Auto SkillCheck (Not Perfect)",
     Value = false,
     Callback = function(v)
         autoGeneratorEnabledtest = v
@@ -1513,8 +1670,14 @@ SurTab:Toggle({
                 local lastPosition = nil
                 local stationaryThreshold = 2
                 local cancelCooldown = 0.2
+                local isRepairing = false
 
-                -- 🧠 หา GeneratorPoint ที่ใกล้ที่สุด
+                -- 🧩 ฟังก์ชันหา GeneratorPoint ที่ใกล้ที่สุด
+                local function getFolderGenerator()
+                    local folder = workspace:FindFirstChild("Generators") or workspace:FindFirstChild("GeneratorFolder")
+                    return folder and folder:GetChildren() or {}
+                end
+
                 local function getClosestGeneratorPoint(root)
                     local generators = getFolderGenerator()
                     local closestGen, closestPoint, closestDist = nil, nil, 10
@@ -1534,6 +1697,29 @@ SurTab:Toggle({
                     end
                     return closestGen, closestPoint, closestDist
                 end
+
+                -- 🎮 ระบบ input สำหรับซ่อม
+                UserInputService.InputBegan:Connect(function(input, processed)
+                    if processed then return end
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if lastGenPoint then
+                            isRepairing = true
+                            repairRemote:FireServer(lastGenPoint, true)
+                        end
+                    end
+                end)
+
+                UserInputService.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if isRepairing and lastGenPoint then
+                            isRepairing = false
+                            repairRemote:FireServer(lastGenPoint, false)
+                            task.wait(cancelCooldown)
+                            lastGenPoint = nil
+                            lastGenModel = nil
+                        end
+                    end
+                end)
 
                 -- 🔄 Loop หลัก
                 while autoGeneratorEnabledtest do
@@ -1548,158 +1734,18 @@ SurTab:Toggle({
                             lastGenPoint = genPoint
                         end
 
-                        -- ตรวจการเคลื่อนที่
+                        -- ตรวจว่าผู้เล่นเดินหรือไม่
                         local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
-                        local cancelDetected = false
-
-if UserInputService.KeyboardEnabled then
-    -- ตรวจจับปุ่มเดิน
-    local keysPressed = {
-        Enum.KeyCode.W, Enum.KeyCode.A,
-        Enum.KeyCode.S, Enum.KeyCode.D
-    }
-
-    for _, key in ipairs(keysPressed) do
-        if UserInputService:IsKeyDown(key) then
-            cancelDetected = true
-            break
-        end
-    end
-end
-
--- ตรวจจับคลิกซ้าย ขวา (แทน MouseButton4/5)
-if UserInputService.MouseEnabled then
-    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        cancelDetected = true
-    end
-								end
-								
-
-                        -- ถ้าเดินเกิน threshold หรือกด input ให้ cancel
-                        if moved > stationaryThreshold or cancelDetected then
-                            if lastGenPoint then
-                                repairRemote:FireServer(lastGenPoint, false)
-                                task.wait(cancelCooldown)
-                                lastGenPoint = nil
-                                lastGenModel = nil
-                            end
+                        if moved > stationaryThreshold and isRepairing then
+                            isRepairing = false
+                            repairRemote:FireServer(lastGenPoint, false)
+                            task.wait(cancelCooldown)
+                            lastGenPoint = nil
+                            lastGenModel = nil
                         end
-
                         lastPosition = root.Position
 
                         -- 🎯 Auto Perfect SkillCheck
-                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                        if gui then
-                            local check = gui:FindFirstChild("Check")
-                            if check and check.Visible and lastGenModel and lastGenPoint then
-                                local args = { "success", 1, lastGenModel, lastGenPoint }
-                                skillRemote:FireServer(unpack(args))
-                                check.Visible = false
-                            end
-                        end
-                    end
-                    task.wait(0.2)
-                end
-            end)
-        end
-    end
-})
-
--- ===============================================
-local autoGeneratorEnabled = false
-
-SurTab:Toggle({
-    Title = "Auto SkillCheck (Not Perfect)",
-    Value = false,
-    Callback = function(v)
-        autoGeneratorEnabled = v
-        if autoGeneratorEnabled then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local player = Players.LocalPlayer
-                local playerGui = player:WaitForChild("PlayerGui")
-
-                local skillRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("SkillCheckResultEvent")
-                local repairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
-
-                local lastGenPoint = nil
-                local lastGenModel = nil
-                local lastPosition = nil
-                local stationaryThreshold = 2
-                local cancelCooldown = 0.2
-
-                local function getClosestGeneratorPoint(root)
-                    local generators = getFolderGenerator()
-                    local closestGen, closestPoint, closestDist = nil, nil, 10
-
-                    for _, gen in ipairs(generators) do
-                        for i = 1, 4 do
-                            local point = gen:FindFirstChild("GeneratorPoint" .. i)
-                            if point then
-                                local dist = (root.Position - point.Position).Magnitude
-                                if dist < closestDist then
-                                    closestDist = dist
-                                    closestGen = gen
-                                    closestPoint = point
-                                end
-                            end
-                        end
-                    end
-                    return closestGen, closestPoint, closestDist
-                end
-
-                while autoGeneratorEnabled do
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-
-                    if root then
-                        local genModel, genPoint, dist = getClosestGeneratorPoint(root)
-
-                        if not lastGenPoint and genPoint and dist < 6 then
-                            lastGenModel = genModel
-                            lastGenPoint = genPoint
-                        end
-
-                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
-                        local cancelDetected = false
-
-if UserInputService.KeyboardEnabled then
-    -- ตรวจจับปุ่มเดิน
-    local keysPressed = {
-        Enum.KeyCode.W, Enum.KeyCode.A,
-        Enum.KeyCode.S, Enum.KeyCode.D
-    }
-
-    for _, key in ipairs(keysPressed) do
-        if UserInputService:IsKeyDown(key) then
-            cancelDetected = true
-            break
-        end
-    end
-end
-
--- ตรวจจับคลิกซ้าย ขวา (แทน MouseButton4/5)
-if UserInputService.MouseEnabled then
-    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-    or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        cancelDetected = true
-    end
-								end
-								
-
-                        if moved > stationaryThreshold or cancelDetected then
-                            if lastGenPoint then
-                                repairRemote:FireServer(lastGenPoint, false)
-                                task.wait(cancelCooldown)
-                                lastGenPoint = nil
-                                lastGenModel = nil
-                            end
-                        end
-
-                        lastPosition = root.Position
-
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
@@ -1710,6 +1756,7 @@ if UserInputService.MouseEnabled then
                             end
                         end
                     end
+
                     task.wait(0.2)
                 end
             end)
@@ -1717,8 +1764,10 @@ if UserInputService.MouseEnabled then
     end
 })
 
+
 SurTab:Section({ Title = "Feature Exit", Icon = "door-open" })
 
+local UserInputService = game:GetService("UserInputService")
 local autoLeverEnabled = false
 
 SurTab:Toggle({
@@ -1729,25 +1778,42 @@ SurTab:Toggle({
         if autoLeverEnabled then
             task.spawn(function()
                 local Players = game:GetService("Players")
-                local RunService = game:GetService("RunService")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Exit"):WaitForChild("LeverEvent")
                 local player = Players.LocalPlayer
-                local humanoid
-                local root
-                local lastPosition
+                local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Exit"):WaitForChild("LeverEvent")
+
+                local lastPosition = nil
+                local isTouching = false -- สำหรับมือถือ
+
+                -- ตรวจจับการแตะหน้าจอ (มือถือ)
+                UserInputService.TouchStarted:Connect(function()
+                    isTouching = true
+                end)
+                UserInputService.TouchEnded:Connect(function()
+                    isTouching = false
+                end)
+
+                -- 🧩 ฟังก์ชันหาโฟลเดอร์ของแมพ
+                local function getMapFolders()
+                    local maps = {}
+                    for _, obj in ipairs(workspace:GetChildren()) do
+                        if obj:FindFirstChild("Gate") then
+                            table.insert(maps, obj)
+                        end
+                    end
+                    return maps
+                end
 
                 while autoLeverEnabled do
                     local char = player.Character
-                    root = char and char:FindFirstChild("HumanoidRootPart")
-                    humanoid = char and char:FindFirstChildOfClass("Humanoid")
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 
                     if root and humanoid then
                         -- หา Gate ที่ใกล้ที่สุด
-                        local closestGate, closestMain, shortestDist
-                        local folders = getMapFolders()
-
-                        for _, folder in ipairs(folders) do
+                        local closestMain
+                        local shortestDist
+                        for _, folder in ipairs(getMapFolders()) do
                             local gate = folder:FindFirstChild("Gate")
                             if gate and gate:FindFirstChild("ExitLever") then
                                 local main = gate.ExitLever:FindFirstChild("Main")
@@ -1755,29 +1821,43 @@ SurTab:Toggle({
                                     local dist = (root.Position - main.Position).Magnitude
                                     if not shortestDist or dist < shortestDist then
                                         shortestDist = dist
-                                        closestGate = gate
                                         closestMain = main
                                     end
                                 end
                             end
                         end
 
-                        -- ตรวจจับการเคลื่อนไหว
-                        if lastPosition and (root.Position - lastPosition).Magnitude > 1 then
-                            -- เดินหรือขยับ
-                            if closestMain then
-                                remote:FireServer(closestMain, false)
+                        -- ตรวจจับว่าผู้เล่นพยายามขยับหรือกด input
+                        local moved = lastPosition and (root.Position - lastPosition).Magnitude > 0.5
+                        local tryingToMove = false
+
+                        if UserInputService.KeyboardEnabled then
+                            for _, key in ipairs({Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D, Enum.KeyCode.Space}) do
+                                if UserInputService:IsKeyDown(key) then
+                                    tryingToMove = true
+                                    break
+                                end
                             end
-                        else
-                            -- ถ้าอยู่ใกล้พอ และไม่ขยับ
-                            if closestMain and shortestDist <= 10 then
-                                remote:FireServer(closestMain, true)
-                            end
+                        end
+
+                        -- สำหรับมือถือ (แตะหน้าจอ = เคลื่อนไหว)
+                        if UserInputService.TouchEnabled and isTouching then
+                            tryingToMove = true
+                        end
+
+                        -- ถ้าผู้เล่นขยับหรือกด input → ยกเลิกการดึง
+                        if (moved or tryingToMove) and closestMain then
+                            remote:FireServer(closestMain, false)
+
+                        -- ถ้าอยู่ใกล้พอและไม่ขยับ → ดึงอัตโนมัติ
+                        elseif closestMain and shortestDist and shortestDist <= 10 then
+                            remote:FireServer(closestMain, true)
                         end
 
                         lastPosition = root.Position
                     end
-                    task.wait(0.5)
+
+                    task.wait(0.2)
                 end
             end)
         end
@@ -1810,7 +1890,7 @@ SurTab:Toggle({
                     if root then
                         -- 🔍 หา “ผู้เล่นที่ใกล้ที่สุด”
                         local closestPlayer
-                        local closestDist = math.huge
+                        local closestDist = 6
 
                         for _, other in ipairs(Players:GetPlayers()) do
                             if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
@@ -2136,15 +2216,12 @@ killerTab:Toggle({
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Attacks"):WaitForChild("BasicAttack")
 
-                -- บันทึกตำแหน่งเริ่มต้นของเรา
                 local startCFrame = nil
-                local index = 1
 
                 while killallEnabled do
                     local char = LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
-                        -- บันทึกตำแหน่งก่อนเริ่มครั้งแรก
                         if not startCFrame then
                             startCFrame = root.CFrame
                         end
@@ -2161,41 +2238,39 @@ killerTab:Toggle({
                             end
                         end
 
-                        -- ถ้ามีเป้าหมาย
-                        if #targets > 0 then
-                            -- ยิงใส่ทุกคนทีละคน
-                            for _, entry in ipairs(targets) do
-                                if not killallEnabled then break end
-                                local targetRoot = entry.root
-                                if targetRoot and targetRoot.Parent then
+                        -- ยิงใส่เป้าหมายแต่ละคน (เฉพาะคนที่เลือด > 20)
+                        for _, entry in ipairs(targets) do
+                            if not killallEnabled then break end
+                            local targetRoot = entry.root
+                            local humanoid = entry.humanoid
+
+                            -- ❌ ข้ามเป้าหมายที่เลือด <= 20
+                            if humanoid and humanoid.Health > 20 and targetRoot and targetRoot.Parent then
+                                pcall(function()
                                     -- วาร์ปไปใกล้เป้าหมาย
                                     root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
                                     -- ยิง Remote
-                                    pcall(function()
-                                        remote:FireServer()
-                                    end)
-                                    task.wait(0.15)
-                                end
+                                    remote:FireServer()
+                                end)
+                                task.wait(0.15)
                             end
+                        end
 
-                            -- เช็คว่าผู้เล่นทุกคนเลือด <= 20 หรือไม่
-                            local allLowHealth = true
-                            for _, entry in ipairs(targets) do
-                                if entry.humanoid.Health > 20 then
-                                    allLowHealth = false
-                                    break
-                                end
+                        -- เช็คว่าผู้เล่นทุกคนเลือด <= 20 หรือไม่
+                        local allLowHealth = true
+                        for _, entry in ipairs(targets) do
+                            if entry.humanoid.Health > 20 then
+                                allLowHealth = false
+                                break
                             end
+                        end
 
-                            -- ถ้าทุกคนเลือด <= 20 ให้กลับไปตำแหน่งเดิม
-                            if allLowHealth and startCFrame then
-                                root.CFrame = startCFrame
-                                task.wait(1)
-                            else
-                                task.wait(0.2)
-                            end
+                        -- ถ้าทุกคนเลือด <= 20 ให้กลับตำแหน่งเดิม
+                        if allLowHealth and startCFrame then
+                            root.CFrame = startCFrame
+                            task.wait(1)
                         else
-                            task.wait(0.5)
+                            task.wait(0.2)
                         end
                     else
                         task.wait(0.2)
@@ -2227,6 +2302,7 @@ killerTab:Toggle({
                 while nocooldownskillEnabled do
                     local char = LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
+
                     if root then
                         local closestTarget = nil
                         local closestDist = 10
@@ -2234,9 +2310,12 @@ killerTab:Toggle({
                         for _, plr in ipairs(Players:GetPlayers()) do
                             if plr ~= LocalPlayer and plr.Character then
                                 local targetRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-                                if targetRoot then
+                                local targetHumanoid = plr.Character:FindFirstChildOfClass("Humanoid")
+
+                                if targetRoot and targetHumanoid then
                                     local dist = (root.Position - targetRoot.Position).Magnitude
-                                    if dist <= closestDist then
+                                    -- เลือกเป้าหมายที่ใกล้สุดและยังมีเลือดมากกว่า 20
+                                    if dist <= closestDist and targetHumanoid.Health > 20 then
                                         closestDist = dist
                                         closestTarget = plr.Character
                                     end
@@ -2244,6 +2323,7 @@ killerTab:Toggle({
                             end
                         end
 
+                        -- ยิง remote เฉพาะถ้ามีเป้าหมายที่เลือดมากกว่า 20
                         if closestTarget then
                             remote:FireServer()
                         end
