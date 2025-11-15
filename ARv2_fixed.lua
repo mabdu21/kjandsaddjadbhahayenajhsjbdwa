@@ -1,3 +1,31 @@
+-- =========================
+local version = "3.6.3"
+
+local ver2 = "Bypass Detected"
+-- =========================
+
+repeat task.wait() until game:IsLoaded()
+
+-- FPS Unlock
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
+end
+
 -- ================================
 --        LOAD WIND UI
 -- ================================
@@ -70,6 +98,13 @@ pcall(function()
     Window:Tag({
         Title = version,
         Color = Color3.fromHex("#30ff6a")
+    })
+end)
+
+pcall(function()
+    Window:Tag({
+        Title = ver2,
+        Color = Color3.fromHex("#ff0000")
     })
 end)
 
