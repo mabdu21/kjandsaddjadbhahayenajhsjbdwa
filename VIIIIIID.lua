@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v735
 -- ======================
-local version = "4.2.7"
+local version = "4.2.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2447,14 +2447,14 @@ killerTab:Toggle({
 local Autocarry = false
 
 killerTab:Toggle({
-    Title = "Auto Carry (Nearby Survivor)",
+    Title = "Auto Carry (Nearby Survivor / 2.5s)",
     Value = false,
     Callback = function(v)
         Autocarry = v
 
         task.spawn(function()
             while Autocarry do
-                task.wait(0.2)
+                task.wait(2.5)
 
                 local player = game.Players.LocalPlayer
                 local char = player.Character
@@ -2501,7 +2501,7 @@ killerTab:Toggle({
                             :WaitForChild("CarrySurvivorEvent")
                             :FireServer(unpack(args))
 
-                        task.wait(1.5) -- cooldown ป้องกันยิงซ้ำ
+                        task.wait(5) -- cooldown ป้องกันยิงซ้ำ
                     end
                 end
             end
@@ -2512,14 +2512,14 @@ killerTab:Toggle({
 local AutoHook = false
 
 killerTab:Toggle({
-    Title = "Auto Hook (Nearby Hook)",
+    Title = "Auto Hook (Nearby Hook / 2.5s)",
     Value = false,
     Callback = function(v)
         AutoHook = v
 
         task.spawn(function()
             while AutoHook do
-                task.wait(0.15)
+                task.wait(2.5)
 
                 local plr = game.Players.LocalPlayer
                 local char = plr.Character
@@ -2579,76 +2579,60 @@ killerTab:Toggle({
                 local args = { nearestHook }
                 game:GetService("ReplicatedStorage").Remotes.Carry.HookEvent:FireServer(unpack(args))
 
-                task.wait(1.5) -- cooldown กันยิงซ้ำเร็วเกินไป
+                task.wait(5) -- cooldown กันยิงซ้ำเร็วเกินไป
             end
         end)
     end
 })
 
-local GrabPlayer = false
-
-killerTab:Toggle({
+killerTab:Button({
     Title = "Grab (Nearby Survivor/Killer)",
-    Value = false,
-    Callback = function(v)
-        GrabPlayer = v
+    Callback = function()
+        local plr = game.Players.LocalPlayer
+        local char = plr.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-        task.spawn(function()
-            while GrabPlayer do
-                task.wait(0.2)
+        --------------------------------------------------------------
+        -- 1) หาเป้าหมายใกล้ที่สุดภายใน 10 stud
+        --------------------------------------------------------------
+        local candidates = {}
 
-                local plr = game.Players.LocalPlayer
-                local char = plr.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if not hrp then continue end
+        for _, target in ipairs(game.Players:GetPlayers()) do
+            if target ~= plr and target.Character then
+                local hum = target.Character:FindFirstChild("Humanoid")
+                local thrp = target.Character:FindFirstChild("HumanoidRootPart")
 
-                --------------------------------------------------------------
-                -- 1) หาเป้าหมายใกล้ที่สุดภายใน 10 stud
-                --------------------------------------------------------------
-                local candidates = {}
+                if hum and thrp then
+                    local dist = (hrp.Position - thrp.Position).Magnitude
 
-                for _, target in ipairs(game.Players:GetPlayers()) do
-                    if target ~= plr and target.Character then
-                        local hum = target.Character:FindFirstChild("Humanoid")
-                        local thrp = target.Character:FindFirstChild("HumanoidRootPart")
-
-                        if hum and thrp then
-                            local dist = (hrp.Position - thrp.Position).Magnitude
-
-                            -- อยู่ในระยะ 10 และ เลือดต้องไม่ใช่ 20
-                            if dist <= 10 and hum.Health ~= 20 then
-                                table.insert(candidates, target)
-                            end
-                        end
+                    -- อยู่ในระยะ 10 และ เลือดต้องไม่ใช่ 20
+                    if dist <= 20 and hum.Health ~= 20 then
+                        table.insert(candidates, target)
                     end
                 end
-
-                -- ถ้าเป้าหมายมากกว่า 1 → ไม่ยิง (กันบัค)
-                if #candidates ~= 1 then
-                    continue
-                end
-
-                local target = candidates[1]
-
-                --------------------------------------------------------------
-                -- 2) ยิง grab ใส่เป้าหมายเดียวที่เข้าเงื่อนไข
-                --------------------------------------------------------------
-                local args = { target.Character }
-
-                game:GetService("ReplicatedStorage")
-                    :WaitForChild("Remotes")
-                    :WaitForChild("Killers")
-                    :WaitForChild("Stalker")
-                    :WaitForChild("grab")
-                    :FireServer(unpack(args))
-
-                task.wait(1.11) -- cooldown กัน spam
             end
-        end)
+        end
+
+        -- ถ้าเป้าหมายมากกว่า 1 → ไม่ยิง (กันบัค)
+        if #candidates ~= 1 then return end
+
+        local target = candidates[1]
+
+        --------------------------------------------------------------
+        -- 2) ยิง grab ใส่เป้าหมายเดียวที่เข้าเงื่อนไข
+        --------------------------------------------------------------
+        local args = { target.Character }
+
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Remotes")
+            :WaitForChild("Killers")
+            :WaitForChild("Stalker")
+            :WaitForChild("grab")
+            :FireServer(unpack(args))
     end
 })
 
-killerTab:Toggle({Title="Anti Parry (In development)", Value=false, Callback=function(v) noFlashlightEnabled=v end})
 
 killerTab:Section({ Title = "Feature No-Cooldown", Icon = "crown" })
 
