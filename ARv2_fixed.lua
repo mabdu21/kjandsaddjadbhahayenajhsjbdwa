@@ -138,6 +138,25 @@ local function getDataNames()
     return names
 end
 
+MainTab:Section({ Title = "Dupe All", Icon = "copy" })
+
+MainTab:Button({
+    Title = "Dupe All (Fixed)",
+    Icon = "atom",
+    Callback = function()
+        for _, name in ipairs(getDataNames()) do
+            local value = data:FindFirstChild(name)
+
+            if value and not value.Value then
+                event:FireServer("SetMorphBuy", name, 0)
+                task.wait(0.25)
+            end
+        end
+
+        print("[DYHUB] All Morphs, Classes and Auras unlocked!")
+    end,
+})
+
 -- ================================
 --         DUPE SELECT
 -- ================================
