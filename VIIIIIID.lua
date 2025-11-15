@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v730
+-- Powered by GPT 5 | v731
 -- ======================
 local version = "4.2.5"
 -- ======================
@@ -156,7 +156,7 @@ local espGate = false
 local espHook = false
 local espPallet = false
 local espWindowEnabled = false
-local espPumkin = false
+--local espPumkin = false
 
 -- Label toggles
 local ShowName = true
@@ -368,7 +368,7 @@ local function updateWindowESP()
     end
 end
 
-local function getPumkinFolders()
+--[[ local function getPumkinFolders()
     local folders = {}
     -- ค้นหา Map และ Rooftop
     local mainMap = workspace:FindFirstChild("Map")
@@ -401,7 +401,7 @@ local function updatePumkinESP()
             end
         end
     end
-end
+end ]]
 
 local ShowPercent = true  -- ใส่ตรงนี้
 
@@ -676,11 +676,11 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
     updateWindowESP()
 end})
 
-EspTab:Section({ Title = "Esp Event", Icon = "candy" })
+--[[ EspTab:Section({ Title = "Esp Event", Icon = "candy" })
 EspTab:Toggle({Title="ESP Pumpkin", Value=false, Callback=function(v)
     espPumkin=v
     updatePumkinESP()
-end})
+end}) ]]
 
 EspTab:Section({ Title = "Esp Settings", Icon = "settings" })
 EspTab:Toggle({Title="Show Name", Value=ShowName, Callback=function(v) ShowName=v end})
@@ -1276,23 +1276,20 @@ MainTab:Toggle({
     end
 })
 
--- ========== Auto-Collect =============
-
+--[[ g
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
--- CONFIG
 local SAFEZONE_HEIGHT = 500
 local ACTION_DELAY = 1.69
-local CHECK_INTERVAL = 5 -- วินาทีที่ใช้เช็ค Pumpkin ใหม่ตอนหมดแล้ว
+local CHECK_INTERVAL = 5
 
 local CPumkin = false
 local collected = {}
 local collecting = false
 
--- 🧱 สร้าง Safe Zone
 local function createSafeZone()
 	local part = Instance.new("Part")
 	part.Name = "DYHUB | SAFEZONE"
@@ -1308,7 +1305,6 @@ end
 
 local safeZone = Workspace:FindFirstChild("DYHUB | SAFEZONE") or createSafeZone()
 
--- 🧭 Helper Functions
 local function getRoot()
 	local character = LocalPlayer.Character
 	if not character then return nil end
@@ -1339,7 +1335,6 @@ local function teleportTo(target)
 	end
 end
 
--- 🎃 ค้นหา Pumpkin ทั้งหมดใน Map และ Rooftop
 local function getPumpkins()
 	local pumpkins = {}
 	local paths = {
@@ -1360,7 +1355,6 @@ local function getPumpkins()
 	return pumpkins
 end
 
--- 🔁 ระบบเก็บ Pumpkin อัตโนมัติ
 local function autoCollectPumpkins()
 	if collecting then return end
 	collecting = true
@@ -1432,7 +1426,7 @@ MainTab:Toggle({
 			print("[🛑] Auto collect stopped.")
 		end
 	end
-})
+}) ]]
 
 
 MainTab:Section({ Title = "Feature Bypass", Icon = "lock-open" })
@@ -2817,36 +2811,58 @@ TeleportTab:Button({
 -- ==============================
 -- Teleport: Generator
 -- ==============================
-local generatorList = getAllGenerators()
+--===== GET GENERATOR LIST =====--
+local generatorList = {}
 
-local function refreshGenerators()
-    generatorList = getAllGenerators()
-    local values = {}
+local function updateGeneratorList()
+    generatorList = getAllGenerators() or {}
+    local list = {}
+
     for _, g in ipairs(generatorList) do
-        table.insert(values, g.Name)
+        table.insert(list, g.Name)
     end
-    GeneratorDropdown:Update(values)
-    Teleport = nil
+
+    return list
 end
 
+-- โหลดรอบแรก
+generatorList = getAllGenerators() or {}
+
+--===== UI SECTION =====--
 TeleportTab:Section({ Title = "Teleport: Generator", Icon = "zap" })
+
+--===== GENERATOR DROPDOWN =====--
+local Teleport = nil
 
 local GeneratorDropdown = TeleportTab:Dropdown({
     Title = "Select Generator",
-    Values = (function() local t={} for _,g in ipairs(generatorList) do table.insert(t,g.Name) end return t end)(),
+    Values = updateGeneratorList(),  -- โหลดครั้งแรก
     Multi = false,
     Callback = function(value)
+        -- ใช้ generatorList ใหม่ทุกครั้ง
         for _, g in ipairs(generatorList) do
             if g.Name == value then
                 Teleport = g.Object
-                break
+                return
             end
         end
+
+        Teleport = nil
+        warn("[Teleport] Selected generator not found after refresh!")
     end
 })
 
--- เลือกทิศทางวาร์ป
+--===== REFRESH FUNCTION =====--
+local function refreshGenerators()
+    local newValues = updateGeneratorList()
+
+    GeneratorDropdown:Update(newValues)
+    Teleport = nil
+end
+
+--===== TELEPORT DIRECTION =====--
 local TeleportDirection = "Front"
+
 TeleportTab:Dropdown({
     Title = "Teleport Direction (D: Front)",
     Values = { "Front", "Back", "Left", "Right" },
@@ -2856,42 +2872,44 @@ TeleportTab:Dropdown({
     end
 })
 
+--===== TELEPORT BUTTON =====--
 TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
-        if Teleport then
-            local cframe = getCFrame(Teleport)
-            if cframe then
-                local dirVector
-                if TeleportDirection == "Front" then
-                    dirVector = cframe.LookVector
-                elseif TeleportDirection == "Back" then
-                    dirVector = -cframe.LookVector
-                elseif TeleportDirection == "Left" then
-                    dirVector = -cframe.RightVector
-                elseif TeleportDirection == "Right" then
-                    dirVector = cframe.RightVector
-                else
-                    dirVector = cframe.LookVector
-                end
-
-                local safeCF = safeCFrame(cframe, dirVector)
-                LocalPlayer.Character:PivotTo(safeCF)
-            else
-                warn("[Teleport] Cannot get CFrame from selected Generator!")
-            end
-        else
-            warn("[Teleport] No Generator selected!")
+        if not Teleport then
+            warn("[Teleport] No generator selected!")
+            return
         end
+
+        local cframe = getCFrame(Teleport)
+        if not cframe then
+            warn("[Teleport] Cannot get CFrame from generator!")
+            return
+        end
+
+        -- กำหนดทิศทาง
+        local dirVector = ({
+            Front =  cframe.LookVector,
+            Back  = -cframe.LookVector,
+            Left  = -cframe.RightVector,
+            Right =  cframe.RightVector
+        })[TeleportDirection] or cframe.LookVector
+
+        -- ทำ CFrame ปลอดภัย
+        local safeCF = safeCFrame(cframe, dirVector)
+
+        -- วาร์ปตัวละคร
+        LocalPlayer.Character:PivotTo(safeCF)
     end
 })
 
+--===== REFRESH BUTTON =====--
 TeleportTab:Button({
     Title = "Refresh Generators",
     Callback = refreshGenerators
 })
 
--- ==============================
+--[[ ==============================
 -- Teleport: Pumpkin
 -- ==============================
 local pumpkinList = getAllPumpkins()
@@ -2941,7 +2959,7 @@ TeleportTab:Button({
 TeleportTab:Button({
     Title = "Refresh Pumpkins",
     Callback = refreshPumpkins
-})
+}) ]]
 
 -- ==============================
 -- Refresh All
@@ -2952,7 +2970,7 @@ TeleportTab:Button({
     Title = "Refresh All",
     Callback = function()
         refreshGenerators()
-        refreshPumpkins()
+        --refreshPumpkins()
     end
 })
 
