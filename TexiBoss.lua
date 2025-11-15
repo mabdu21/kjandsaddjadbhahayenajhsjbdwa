@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v735
 -- ======================
-local version = "1.0.0"
+local version = "DUPE"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -67,8 +67,8 @@ local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "Violence District | " .. userversion,
-    Folder = "DYHUB_VD_config",
+    Author = "Taxi Boss | " .. userversion,
+    Folder = "DYHUB_TaxiBoss",
     Size = UDim2.fromOffset(500, 400),
     Transparent = true,
     Theme = "Dark",
@@ -84,7 +84,7 @@ Window:SetToggleKey(Enum.KeyCode.K)
 pcall(function()
     Window:Tag({
         Title = version,
-        Color = Color3.fromHex("#30ff6a")
+        Color = Color3.fromHex("#ff0000")
     })
 end)
 
