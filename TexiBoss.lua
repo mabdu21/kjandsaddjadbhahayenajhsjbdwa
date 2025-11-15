@@ -69,7 +69,7 @@ local Window = WindUI:CreateWindow({
     Icon = "rbxassetid://104487529937663",
     Author = "Taxi Boss | " .. userversion,
     Folder = "DYHUB_TaxiBoss",
-    Size = UDim2.fromOffset(500, 400),
+    Size = UDim2.fromOffset(300, 200),
     Transparent = true,
     Theme = "Dark",
     BackgroundImageTransparency = 0.8,
@@ -105,6 +105,7 @@ local Main = Window:Tab({ Title = "Main", Icon = "rocket" })
 Window:SelectTab(1)
 
 -- ======= Main Features =======
+Main:Section({ Title = "Feature Dupe", Icon = "crown" })
 Main:Toggle({
     Title = "Dupe Money (Quests)",
     Value = false,
@@ -121,7 +122,7 @@ Main:Toggle({
         local function StartDupe()
             task.spawn(function()
                 while Dupe do
-                    task.wait(0.5)
+                    task.wait(0.05)
                     pcall(function()
                         local v = LocalPlayer.ActiveQuests:FindFirstChildOfClass("StringValue")
                         if v then
@@ -137,7 +138,7 @@ Main:Toggle({
                     local quest = LocalPlayer.ActiveQuests:FindFirstChild("contractBuildMaterial")
                     if quest then
                         repeat
-                            task.wait(0.2)
+                            task.wait(0.02)
                             pcall(function()
                                 Deliver:InvokeServer("contractMaterial")
                             end)
