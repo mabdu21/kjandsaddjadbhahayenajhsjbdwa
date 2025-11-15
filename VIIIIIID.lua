@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v731
+-- Powered by GPT 5 | v735
 -- ======================
-local version = "4.2.5"
+local version = "4.2.7"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -142,7 +142,7 @@ local COLOR_GENERATOR      = Color3.fromRGB(255,255,255)
 local COLOR_GENERATOR_DONE = Color3.fromRGB(0,255,0)
 local COLOR_GATE           = Color3.fromRGB(255,255,255)
 local COLOR_PALLET         = Color3.fromRGB(255,255,0)
-local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
+--local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
 local COLOR_OUTLINE        = Color3.fromRGB(0,0,0)
 local COLOR_WINDOW         = Color3.fromRGB(175, 215, 230)
 local COLOR_HOOK           = Color3.fromRGB(255,0,0)
@@ -561,7 +561,7 @@ if obj.Name == "Generator" then
     end
 
     updateWindowESP()
-    updatePumkinESP()
+    --updatePumkinESP()
 
     -- Update labels
     for obj, data in pairs(espObjects) do
@@ -656,7 +656,7 @@ EspTab:Toggle({Title="Enable ESP", Value=false, Callback=function(v)
     else
         updateESP(0)
         updateWindowESP()
-        updatePumkinESP()
+        --updatePumkinESP()
     end
 end})
 
@@ -1523,10 +1523,9 @@ SurTab:Toggle({
 SurTab:Section({ Title = "Feature Generator", Icon = "zap" })
 
 local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ===============================================
--- Auto SkillCheck (Perfect)
--- ===============================================
 local autoGeneratorEnabledtest = false
 
 SurTab:Toggle({
@@ -1534,10 +1533,9 @@ SurTab:Toggle({
     Value = false,
     Callback = function(v)
         autoGeneratorEnabledtest = v
+        
         if autoGeneratorEnabledtest then
             task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -1547,7 +1545,7 @@ SurTab:Toggle({
                 local lastGenPoint = nil
                 local lastGenModel = nil
                 local lastPosition = nil
-                local stationaryThreshold = 2
+                local stationaryThreshold = 1.5
                 local cancelCooldown = 0.2
 
                 local function getClosestGeneratorPoint(root)
@@ -1573,8 +1571,10 @@ SurTab:Toggle({
                 while autoGeneratorEnabledtest do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChild("Humanoid")
 
-                    if root then
+                    if root and hum then
+                        local isMoving = hum.MoveDirection.Magnitude > 0.05
                         local genModel, genPoint, dist = getClosestGeneratorPoint(root)
 
                         if not lastGenPoint and genPoint and dist < 6 then
@@ -1582,33 +1582,8 @@ SurTab:Toggle({
                             lastGenPoint = genPoint
                         end
 
-                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
-                        local cancelDetected = false
-
-                        if UserInputService.KeyboardEnabled then
-                            -- ตรวจจับปุ่มเดิน (WASD)
-                            local keysPressed = {Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D}
-                            for _, key in ipairs(keysPressed) do
-                                if UserInputService:IsKeyDown(key) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                        end
-
-                        if UserInputService.MouseEnabled then
-                            -- ตรวจจับคลิกขวา และ MouseButton4/5
-                            local mouseButtons = {Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton4, Enum.UserInputType.MouseButton5}
-                            for _, button in ipairs(mouseButtons) do
-                                if UserInputService:IsMouseButtonPressed(button) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                        end
-
-                        -- ถ้าเดินเกิน threshold หรือกด input ให้ cancel
-                        if moved > stationaryThreshold or cancelDetected then
+                        -- Cancel เมื่อ “ตัวขยับจริง ๆ” ไม่ใช่ input
+                        if isMoving then
                             if lastGenPoint then
                                 repairRemote:FireServer(lastGenPoint, false)
                                 task.wait(cancelCooldown)
@@ -1623,23 +1598,35 @@ SurTab:Toggle({
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            if check and check.Visible and lastGenModel and lastGenPoint then
-                                local args = {"success", 1, lastGenModel, lastGenPoint}
-                                skillRemote:FireServer(unpack(args))
-                                check.Visible = false
+                            if check and check.Visible then
+                                
+                                -- เช็คว่าอยู่ใกล้ generator จริงไหม
+                                local stillClose = false
+                                if lastGenPoint and root then
+                                    local d = (root.Position - lastGenPoint.Position).Magnitude
+                                    if d < 6 then
+                                        stillClose = true
+                                    end
+                                end
+
+                                -- ถ้าเราไม่ได้อยู่ใกล้ gen → ไม่ยิง / ไม่ปิด GUI
+                                if stillClose then
+                                    if lastGenModel and lastGenPoint then
+                                        skillRemote:FireServer("success", 1, lastGenModel, lastGenPoint)
+                                        check.Visible = false
+                                    end
+                                end
                             end
                         end
                     end
-                    task.wait(0.2)
+
+                    task.wait(0.15)
                 end
             end)
         end
     end
 })
 
--- ===============================================
--- Auto SkillCheck (Not Perfect)
--- ===============================================
 local autoGeneratorEnabled = false
 
 SurTab:Toggle({
@@ -1647,10 +1634,9 @@ SurTab:Toggle({
     Value = false,
     Callback = function(v)
         autoGeneratorEnabled = v
+        
         if autoGeneratorEnabled then
             task.spawn(function()
-                local Players = game:GetService("Players")
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -1660,7 +1646,7 @@ SurTab:Toggle({
                 local lastGenPoint = nil
                 local lastGenModel = nil
                 local lastPosition = nil
-                local stationaryThreshold = 2
+                local stationaryThreshold = 1.5
                 local cancelCooldown = 0.2
 
                 local function getClosestGeneratorPoint(root)
@@ -1686,8 +1672,10 @@ SurTab:Toggle({
                 while autoGeneratorEnabled do
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChild("Humanoid")
 
-                    if root then
+                    if root and hum then
+                        local isMoving = hum.MoveDirection.Magnitude > 0.05
                         local genModel, genPoint, dist = getClosestGeneratorPoint(root)
 
                         if not lastGenPoint and genPoint and dist < 6 then
@@ -1695,30 +1683,8 @@ SurTab:Toggle({
                             lastGenPoint = genPoint
                         end
 
-                        local moved = lastPosition and (root.Position - lastPosition).Magnitude or 0
-                        local cancelDetected = false
-
-                        if UserInputService.KeyboardEnabled then
-                            local keysPressed = {Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D}
-                            for _, key in ipairs(keysPressed) do
-                                if UserInputService:IsKeyDown(key) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                        end
-
-                        if UserInputService.MouseEnabled then
-                            local mouseButtons = {Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton4, Enum.UserInputType.MouseButton5}
-                            for _, button in ipairs(mouseButtons) do
-                                if UserInputService:IsMouseButtonPressed(button) then
-                                    cancelDetected = true
-                                    break
-                                end
-                            end
-                        end
-
-                        if moved > stationaryThreshold or cancelDetected then
+                        -- Cancel เมื่อ “ตัวขยับจริง ๆ” ไม่ใช่ input
+                        if isMoving then
                             if lastGenPoint then
                                 repairRemote:FireServer(lastGenPoint, false)
                                 task.wait(cancelCooldown)
@@ -1729,22 +1695,39 @@ SurTab:Toggle({
 
                         lastPosition = root.Position
 
+                        -- Auto Perfect SkillCheck
                         local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
                         if gui then
                             local check = gui:FindFirstChild("Check")
-                            if check and check.Visible and lastGenModel and lastGenPoint then
-                                local args = {"neutral", 0, lastGenModel, lastGenPoint}
-                                skillRemote:FireServer(unpack(args))
-                                check.Visible = false
+                            if check and check.Visible then
+                                
+                                -- เช็คว่าอยู่ใกล้ generator จริงไหม
+                                local stillClose = false
+                                if lastGenPoint and root then
+                                    local d = (root.Position - lastGenPoint.Position).Magnitude
+                                    if d < 6 then
+                                        stillClose = true
+                                    end
+                                end
+
+                                -- ถ้าเราไม่ได้อยู่ใกล้ gen → ไม่ยิง / ไม่ปิด GUI
+                                if stillClose then
+                                    if lastGenModel and lastGenPoint then
+                                        skillRemote:FireServer("neutral", 0, lastGenModel, lastGenPoint)
+                                        check.Visible = false
+                                    end
+                                end
                             end
                         end
                     end
-                    task.wait(0.2)
+
+                    task.wait(0.15)
                 end
             end)
         end
     end
 })
+
 
 SurTab:Section({ Title = "Feature Exit", Icon = "door-open" })
 
@@ -1845,72 +1828,226 @@ SurTab:Toggle({
     end
 })
 
-SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
+SurTab:Section({ Title = "Feature Heal (TESTING)", Icon = "cross" })
 
 -- Auto Heal
+local UserInputService = game:GetService("UserInputService")
+
 local autoHealEnabled = false
+
 SurTab:Toggle({
-    Title = "Auto SkillCheck (DONT USE IT TESTING)",
+    Title = "Auto SkillCheck (Perfect)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
+        
         if autoHealEnabled then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local SkillCheckResultEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
                 local player = Players.LocalPlayer
                 local playerGui = player:WaitForChild("PlayerGui")
 
-                print("[AutoSkillCheck] Enabled")
+                local healRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
 
-                while autoHealEnabled do
-                    local char = player.Character or player.CharacterAdded:Wait()
-                    local root = char:WaitForChild("HumanoidRootPart", 2)
+                local lastHealTarget = nil
 
-                    if root then
-                        -- 🔍 หา “ผู้เล่นที่ใกล้ที่สุด”
-                        local closestPlayer
-                        local closestDist = 6
+                -- ฟังก์ชันเช็คเลือดของ player
+                local function getHealth(plr)
+                    if not plr.Character then return 100 end
 
-                        for _, other in ipairs(Players:GetPlayers()) do
-                            if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
-                                local dist = (root.Position - other.Character.HumanoidRootPart.Position).Magnitude
-                                if dist < closestDist then
-                                    closestDist = dist
-                                    closestPlayer = other
+                    local hum = plr.Character:FindFirstChild("Humanoid")
+                    if hum then return hum.Health end
+
+                    local h = plr.Character:FindFirstChild("Health")
+                    if h and h.Value then return h.Value end
+
+                    return 100
+                end
+
+                -- หา player ใกล้สุด + เลือด ≤ 60
+                local function getClosestPlayer(root)
+                    local closest = nil
+                    local closestDist = 6
+
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= player and plr.Character then
+                            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                local hp = getHealth(plr)
+                                if hp <= 60 then
+                                    local dist = (root.Position - hrp.Position).Magnitude
+                                    if dist < closestDist then
+                                        closest = plr
+                                        closestDist = dist
+                                    end
                                 end
-                            end
-                        end
-
-                        if closestPlayer then
-                            print("[AutoSkillCheck] Closest player:", closestPlayer.Name)
-                        else
-                            print("[AutoSkillCheck] No nearby player found.")
-                        end
-
-                        -- 🎯 ตรวจจับ SkillCheck GUI
-                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
-                        if gui then
-                            local check = gui:FindFirstChild("Check")
-                            if check and check.Visible then
-                                print("[AutoSkillCheck] SkillCheck visible — firing remote...")
-                                -- 🔥 ยิง remote
-                                SkillCheckResultEvent:FireServer("fail", 50, closestPlayer.Name or player.Name)
-                                task.wait(0.1)
                             end
                         end
                     end
 
-                    task.wait(0.25)
+                    return closest
+                end
+
+                while autoHealEnabled do
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChild("Humanoid")
+
+                    if root and hum then
+                        -- ตรวจว่าขยับจริงไหม
+                        local isMoving = hum.MoveDirection.Magnitude > 0.05
+
+                        -- หาเป้าหมาย heal ใกล้สุด
+                        local target = getClosestPlayer(root)
+
+                        if not lastHealTarget and target then
+                            lastHealTarget = target
+                        end
+
+                        -- ถ้าเดิน ยกเลิก
+                        if isMoving then
+                            lastHealTarget = nil
+                        end
+
+                        -- ทำงานกับ SkillCheck GUI
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+
+                            if check and check.Visible then
+                                
+                                -- ไม่มีคนอยู่ใกล้ → ห้ามยิง ห้ามปิด GUI
+                                if not lastHealTarget then
+                                    -- do nothing
+                                else
+                                    -- ตรวจสอบอีกครั้งว่าเลือด ≤ 60
+                                    if getHealth(lastHealTarget) <= 60 then
+                                        local targetChar = lastHealTarget.Character
+                                        if targetChar then
+                                            healRemote:FireServer("success", 1, targetChar)
+                                        end
+                                        check.Visible = false
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(0.15)
                 end
             end)
-        else
-            print("[AutoSkillCheck] Disabled")
         end
     end
 })
 
+local autoHealEnabled2 = false
+
+SurTab:Toggle({
+    Title = "Auto SkillCheck (Not Perfect)",
+    Value = false,
+    Callback = function(v)
+        autoHealEnabled2 = v
+        
+        if autoHealEnabled2 then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local player = Players.LocalPlayer
+                local playerGui = player:WaitForChild("PlayerGui")
+
+                local healRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Healing"):WaitForChild("SkillCheckResultEvent")
+
+                local lastHealTarget = nil
+
+                -- ฟังก์ชันเช็คเลือดของ player
+                local function getHealth(plr)
+                    if not plr.Character then return 100 end
+
+                    local hum = plr.Character:FindFirstChild("Humanoid")
+                    if hum then return hum.Health end
+
+                    local h = plr.Character:FindFirstChild("Health")
+                    if h and h.Value then return h.Value end
+
+                    return 100
+                end
+
+                -- หา player ใกล้สุด + เลือด ≤ 60
+                local function getClosestPlayer(root)
+                    local closest = nil
+                    local closestDist = 6
+
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= player and plr.Character then
+                            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                local hp = getHealth(plr)
+                                if hp <= 60 then
+                                    local dist = (root.Position - hrp.Position).Magnitude
+                                    if dist < closestDist then
+                                        closest = plr
+                                        closestDist = dist
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    return closest
+                end
+
+                while autoHealEnabled2 do
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChild("Humanoid")
+
+                    if root and hum then
+                        -- ตรวจว่าขยับจริงไหม
+                        local isMoving = hum.MoveDirection.Magnitude > 0.05
+
+                        -- หาเป้าหมาย heal ใกล้สุด
+                        local target = getClosestPlayer(root)
+
+                        if not lastHealTarget and target then
+                            lastHealTarget = target
+                        end
+
+                        -- ถ้าเดิน ยกเลิก
+                        if isMoving then
+                            lastHealTarget = nil
+                        end
+
+                        -- ทำงานกับ SkillCheck GUI
+                        local gui = playerGui:FindFirstChild("SkillCheckPromptGui")
+                        if gui then
+                            local check = gui:FindFirstChild("Check")
+
+                            if check and check.Visible then
+                                
+                                -- ไม่มีคนอยู่ใกล้ → ห้ามยิง ห้ามปิด GUI
+                                if not lastHealTarget then
+                                    -- do nothing
+                                else
+                                    -- ตรวจสอบอีกครั้งว่าเลือด ≤ 60
+                                    if getHealth(lastHealTarget) <= 60 then
+                                        local targetChar = lastHealTarget.Character
+                                        if targetChar then
+                                            healRemote:FireServer("success", 1, targetChar)
+                                        end
+                                        check.Visible = false
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait(0.15)
+                end
+            end)
+        end
+    end
+})
 
 SurTab:Section({ Title = "Feature Cheat", Icon = "bug" })
 
@@ -2181,6 +2318,51 @@ killerTab:Button({
     end
 })
 
+killerTab:Section({ Title = "Killer: The Stalker", Icon = "eye-off" })
+
+local Stalker = false
+
+killerTab:Toggle({
+    Title = "Start Stalker (Raycast)",
+    Value = false,
+    Callback = function(v)
+        Stalker = v
+
+        task.spawn(function()
+            while Stalker do
+                task.wait(0.2)
+
+                local lp = game.Players.LocalPlayer
+                local char = lp.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not root then continue end
+
+                for _, plr in ipairs(game.Players:GetPlayers()) do
+                    if plr ~= lp and plr.Character then
+                        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                        local humanoid = plr.Character:FindFirstChild("Humanoid")
+
+                        if hrp and humanoid then
+                            local dist = (root.Position - hrp.Position).Magnitude
+
+                            -- เงื่อนไข: ระยะ 30–70 และ เลือด > 20
+                            if dist >= 30 and dist <= 70 and humanoid.Health > 20 then
+                                game:GetService("ReplicatedStorage")
+                                :WaitForChild("Remotes")
+                                :WaitForChild("Killers")
+                                :WaitForChild("Stalker")
+                                :WaitForChild("StartStalking")
+                                :FireServer(plr)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+
+
 killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
 
 local killallEnabled = false
@@ -2259,6 +2441,210 @@ killerTab:Toggle({
                 end
             end)
         end
+    end
+})
+
+local Autocarry = false
+
+killerTab:Toggle({
+    Title = "Auto Carry (Nearby Survivor)",
+    Value = false,
+    Callback = function(v)
+        Autocarry = v
+
+        task.spawn(function()
+            while Autocarry do
+                task.wait(0.2)
+
+                local player = game.Players.LocalPlayer
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then continue end
+
+                local nearest = nil
+                local nearestDist = 10
+                local candidates = {}
+
+                -- หาเพื่อนในระยะ 10 stud + เลือด 20
+                for _, plr in pairs(game.Players:GetPlayers()) do
+                    if plr ~= player and plr.Character then
+                        local hum = plr.Character:FindFirstChild("Humanoid")
+                        local otherHrp = plr.Character:FindFirstChild("HumanoidRootPart")
+
+                        if hum and otherHrp and hum.Health == 20 then
+                            local dist = (hrp.Position - otherHrp.Position).Magnitude
+                            if dist <= 10 then
+                                table.insert(candidates, plr)
+                            end
+                        end
+                    end
+                end
+
+                -- มีมากกว่า 1 คน → ไม่ยิง
+                if #candidates ~= 1 then
+                    continue
+                end
+
+                -- มีแค่คนเดียว → เลือกเป้าหมาย
+                local target = candidates[1]
+                if target and target.Character then
+                    -- safety check
+                    local tHum = target.Character:FindFirstChild("Humanoid")
+                    if tHum and tHum.Health == 20 then
+
+                        -- ยิง Carry
+                        local args = { target.Character }
+
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Remotes")
+                            :WaitForChild("Carry")
+                            :WaitForChild("CarrySurvivorEvent")
+                            :FireServer(unpack(args))
+
+                        task.wait(1.5) -- cooldown ป้องกันยิงซ้ำ
+                    end
+                end
+            end
+        end)
+    end
+})
+
+local AutoHook = false
+
+killerTab:Toggle({
+    Title = "Auto Hook (Nearby Hook)",
+    Value = false,
+    Callback = function(v)
+        AutoHook = v
+
+        task.spawn(function()
+            while AutoHook do
+                task.wait(0.15)
+
+                local plr = game.Players.LocalPlayer
+                local char = plr.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then continue end
+
+                ----------------------------------------------------------------
+                -- 1) หาเป้าหมายเลือด 20 ใกล้เรา (≤ 10 stud)
+                ----------------------------------------------------------------
+                local candidates = {}
+
+                for _, target in ipairs(game.Players:GetPlayers()) do
+                    if target ~= plr and target.Character then
+                        local hum = target.Character:FindFirstChild("Humanoid")
+                        local thrp = target.Character:FindFirstChild("HumanoidRootPart")
+
+                        if hum and thrp and hum.Health == 20 then
+                            local dist = (hrp.Position - thrp.Position).Magnitude
+                            if dist <= 10 then
+                                table.insert(candidates, target)
+                            end
+                        end
+                    end
+                end
+
+                -- ถ้าไม่มีเป้าหมาย หรือมีมากกว่า 1 → ไม่ยิง (กันบัค)
+                if #candidates ~= 1 then
+                    continue
+                end
+
+                ----------------------------------------------------------------
+                -- 2) หา Hook ใกล้ที่สุดแบบอัปเดตตลอดเวลา
+                ----------------------------------------------------------------
+                local nearestHook = nil
+                local nearestDist = 10 -- ระยะต้อง ≤ 10 stud เท่านั้น
+
+                local hookFolder = workspace:WaitForChild("Map"):WaitForChild("Hook")
+
+                for _, hookObj in ipairs(hookFolder:GetChildren()) do
+                    local hookPoint = hookObj:FindFirstChild("HookPoint")
+                    if hookPoint then
+                        local dist = (hrp.Position - hookPoint.Position).Magnitude
+                        if dist <= nearestDist then
+                            nearestDist = dist
+                            nearestHook = hookPoint
+                        end
+                    end
+                end
+
+                if not nearestHook then
+                    continue
+                end
+
+                ----------------------------------------------------------------
+                -- 3) มีผู้เล่นเลือด 20 + เราอยู่ใกล้ Hook → ยิง HookEvent ทันที
+                ----------------------------------------------------------------
+                local args = { nearestHook }
+                game:GetService("ReplicatedStorage").Remotes.Carry.HookEvent:FireServer(unpack(args))
+
+                task.wait(1.5) -- cooldown กันยิงซ้ำเร็วเกินไป
+            end
+        end)
+    end
+})
+
+local GrabPlayer = false
+
+killerTab:Toggle({
+    Title = "Grab (Nearby Survivor/Killer)",
+    Value = false,
+    Callback = function(v)
+        GrabPlayer = v
+
+        task.spawn(function()
+            while GrabPlayer do
+                task.wait(0.2)
+
+                local plr = game.Players.LocalPlayer
+                local char = plr.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then continue end
+
+                --------------------------------------------------------------
+                -- 1) หาเป้าหมายใกล้ที่สุดภายใน 10 stud
+                --------------------------------------------------------------
+                local candidates = {}
+
+                for _, target in ipairs(game.Players:GetPlayers()) do
+                    if target ~= plr and target.Character then
+                        local hum = target.Character:FindFirstChild("Humanoid")
+                        local thrp = target.Character:FindFirstChild("HumanoidRootPart")
+
+                        if hum and thrp then
+                            local dist = (hrp.Position - thrp.Position).Magnitude
+
+                            -- อยู่ในระยะ 10 และ เลือดต้องไม่ใช่ 20
+                            if dist <= 10 and hum.Health ~= 20 then
+                                table.insert(candidates, target)
+                            end
+                        end
+                    end
+                end
+
+                -- ถ้าเป้าหมายมากกว่า 1 → ไม่ยิง (กันบัค)
+                if #candidates ~= 1 then
+                    continue
+                end
+
+                local target = candidates[1]
+
+                --------------------------------------------------------------
+                -- 2) ยิง grab ใส่เป้าหมายเดียวที่เข้าเงื่อนไข
+                --------------------------------------------------------------
+                local args = { target.Character }
+
+                game:GetService("ReplicatedStorage")
+                    :WaitForChild("Remotes")
+                    :WaitForChild("Killers")
+                    :WaitForChild("Stalker")
+                    :WaitForChild("grab")
+                    :FireServer(unpack(args))
+
+                task.wait(1.11) -- cooldown กัน spam
+            end
+        end)
     end
 })
 
