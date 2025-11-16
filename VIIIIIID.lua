@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v735
+-- Powered by GPT 5 | v778
 -- ======================
-local version = "4.2.9"
+local version = "4.3.0"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2596,56 +2596,89 @@ killerTab:Toggle({
     end
 })
 
-killerTab:Button({
-    Title = "Grab (Nearby Survivor/Killer)",
-    Callback = function()
-        local plr = game.Players.LocalPlayer
-        local char = plr.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
+killerTab:Section({ Title = "Feature Fun", Icon = "crown" })
 
-        --------------------------------------------------------------
-        -- 1) หาเป้าหมายใกล้ที่สุดภายใน 10 stud
-        --------------------------------------------------------------
-        local candidates = {}
+-- ตัวแปรเก็บปุ่ม
+local GrabKey = nil
+local UserInputService = game:GetService("UserInputService")
 
-        for _, target in ipairs(game.Players:GetPlayers()) do
-            if target ~= plr and target.Character then
-                local hum = target.Character:FindFirstChild("Humanoid")
-                local thrp = target.Character:FindFirstChild("HumanoidRootPart")
-
-                if hum and thrp then
-                    local dist = (hrp.Position - thrp.Position).Magnitude
-
-                    -- อยู่ในระยะ 10 และ เลือดต้องไม่ใช่ 20
-                    if dist <= 20 and hum.Health ~= 20 then
-                        table.insert(candidates, target)
-                    end
-                end
-            end
+---------------------------------------------------------
+-- Input: ตั้งค่าปุ่ม Grab
+---------------------------------------------------------
+killerTab:Input({
+    Title = "Set Keybind Grab (PC ONLY)",
+    Default = tostring(auraRange),
+    Placeholder = "Grab (Ex: X)",
+    Callback = function(text)
+        if typeof(text) == "string" and #text > 0 then
+            GrabKey = text:upper()  -- เก็บเป็นตัวใหญ่
         end
-
-        -- ถ้าเป้าหมายมากกว่า 1 → ไม่ยิง (กันบัค)
-        if #candidates ~= 1 then return end
-
-        local target = candidates[1]
-
-        --------------------------------------------------------------
-        -- 2) ยิง grab ใส่เป้าหมายเดียวที่เข้าเงื่อนไข
-        --------------------------------------------------------------
-        local args = { target.Character }
-
-        game:GetService("ReplicatedStorage")
-            :WaitForChild("Remotes")
-            :WaitForChild("Killers")
-            :WaitForChild("Stalker")
-            :WaitForChild("grab")
-            :FireServer(unpack(args))
     end
 })
 
+---------------------------------------------------------
+-- ฟังก์ชัน Grab เดิมที่คุณใช้
+---------------------------------------------------------
+local function DoGrab()
+    local plr = game.Players.LocalPlayer
+    local char = plr.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-killerTab:Section({ Title = "Feature No-Cooldown", Icon = "crown" })
+    local candidates = {}
+
+    for _, target in ipairs(game.Players:GetPlayers()) do
+        if target ~= plr and target.Character then
+            local hum = target.Character:FindFirstChild("Humanoid")
+            local thrp = target.Character:FindFirstChild("HumanoidRootPart")
+
+            if hum and thrp then
+                local dist = (hrp.Position - thrp.Position).Magnitude
+
+                -- อยู่ในระยะ 20 และ เลือดต้องไม่ใช่ 20
+                if dist <= 20 and hum.Health ~= 20 then
+                    table.insert(candidates, target)
+                end
+            end
+        end
+    end
+
+    -- ป้องกันบัค → ต้องมีแค่ 1 คนเท่านั้น
+    if #candidates ~= 1 then return end
+
+    local target = candidates[1]
+
+    local args = { target.Character }
+
+    game:GetService("ReplicatedStorage")
+        :WaitForChild("Remotes")
+        :WaitForChild("Killers")
+        :WaitForChild("Stalker")
+        :WaitForChild("grab")
+        :FireServer(unpack(args))
+end
+
+---------------------------------------------------------
+-- Button เดิม: กดปุ่มในเมนูเพื่อ Grab
+---------------------------------------------------------
+killerTab:Button({
+    Title = "Grab (Nearby Survivor/Killer)",
+    Callback = function()
+        DoGrab()
+    end
+})
+
+---------------------------------------------------------
+-- Keybind: กดคีย์บอร์ดเรียก Grab
+---------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if not GrabKey then return end
+
+    if input.KeyCode == Enum.KeyCode[GrabKey] then
+        DoGrab()
+    end
+end)
 
 local nocooldownskillEnabled = false
 
