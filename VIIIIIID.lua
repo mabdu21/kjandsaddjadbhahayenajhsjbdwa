@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v735
 -- ======================
-local version = "4.2.8"
+local version = "4.2.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2323,7 +2323,7 @@ killerTab:Section({ Title = "Killer: The Stalker", Icon = "eye-off" })
 local Stalker = false
 
 killerTab:Toggle({
-    Title = "Start Stalker (Raycast)",
+    Title = "Start Stalker (Raycast / Remote)",
     Value = false,
     Callback = function(v)
         Stalker = v
@@ -2337,6 +2337,14 @@ killerTab:Toggle({
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 if not root then continue end
 
+                -- เช็คว่าเรามี weapon จริงหรือไม่ (อัปเดทตลอด)
+                local weapon = char:FindFirstChild("Weapon") or workspace:FindFirstChild(lp.Name) and workspace[lp.Name]:FindFirstChild("Weapon")
+                if not weapon then
+                    -- ไม่มี weapon = ไม่ทำงานข้อนี้
+                    continue
+                end
+
+                -- เริ่ม Loop หา Player เป้าหมาย
                 for _, plr in ipairs(game.Players:GetPlayers()) do
                     if plr ~= lp and plr.Character then
                         local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
@@ -2345,14 +2353,18 @@ killerTab:Toggle({
                         if hrp and humanoid then
                             local dist = (root.Position - hrp.Position).Magnitude
 
-                            -- เงื่อนไข: ระยะ 30–70 และ เลือด > 20
+                            -- เงื่อนไข ยิงสโตก:
+                            -- ระยะ 30–70
+                            -- เลือด > 20
+                            -- และมี weapon (เช็คไว้ด้านบนแล้ว)
                             if dist >= 30 and dist <= 70 and humanoid.Health > 20 then
-                                game:GetService("ReplicatedStorage")
-                                :WaitForChild("Remotes")
-                                :WaitForChild("Killers")
-                                :WaitForChild("Stalker")
-                                :WaitForChild("StartStalking")
-                                :FireServer(plr)
+                                local rs = game:GetService("ReplicatedStorage")
+                                local remote = rs:WaitForChild("Remotes")
+                                    :WaitForChild("Killers")
+                                    :WaitForChild("Stalker")
+                                    :WaitForChild("StartStalking")
+
+                                remote:FireServer(plr)
                             end
                         end
                     end
@@ -2361,7 +2373,6 @@ killerTab:Toggle({
         end)
     end
 })
-
 
 killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
 
