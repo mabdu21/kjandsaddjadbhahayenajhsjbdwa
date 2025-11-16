@@ -1,5 +1,5 @@
 -- =========================
-local verison = "3.5.9"
+local verison = "3.6.0"
 -- =========================
 
 if setfpscap then
@@ -1326,9 +1326,9 @@ PlayerTab:Toggle({
 })
 
 PlayerTab:Button({
-    Title = "Fly (Beta)",
+    Title = "Fly (V3)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/dyumrascript-/refs/heads/main/Flua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
     end
 })
 
