@@ -89,6 +89,12 @@ Window:EditOpenButton({
 
 -- Tabs
 local MainTab = Window:Tab({ Title = "Test", Icon = "crown" })
+local Main1Divider = Window:Divider()
+local Main2Tab = Window:Tab({ Title = "Test", Icon = "award" })
+local Main3Tab = Window:Tab({ Title = "Test", Icon = "baby" })
+local Main4Tab = Window:Tab({ Title = "Test", Icon = "beef" })
+local Main5Tab = Window:Tab({ Title = "Test", Icon = "church" })
+Window:SelectTab(1)
 
 -------------------------------------------------------
 -- Aimbot Config
@@ -146,14 +152,6 @@ MainTab:Input({
     Callback = function(text)
         local num = tonumber(text)
         if num then MAX_PITCH = num end
-    end
-})
-
-MainTab:Toggle({
-    Title = "Enable Aimbot (Toggle GUI)",
-    Default = AimbotToggleGUIVisible2,
-    Callback = function(state)
-        AimbotToggleGUIVisible2 = state
     end
 })
 
@@ -386,6 +384,19 @@ task.spawn(function()
         end
     end
 end)
+
+MainTab:Section({ Title = "Killer: The Veil GUI", Icon = "settings" })
+
+MainTab:Toggle({
+    Title = "Enable Aimbot (Toggle GUI)",
+    Default = AimbotToggleGUIVisible2,
+    Callback = function(state)
+        AimbotToggleGUIVisible2 = state
+        if mobileButton then
+            mobileButton.Visible = state
+        end
+    end
+})
 
 MainTab:Toggle({
     Title = "Custom Position Drag (Toggle GUI)",
