@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v799
+-- Powered by GPT 5 | v717
 -- ======================
 local version = "DEV"
 -- ======================
@@ -113,270 +113,210 @@ Window:EditOpenButton({
 -- Tabs
 local MainTab = Window:Tab({ Title = "Test", Icon = "crown" })
 
-MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
-
---// Services
+-- // Aimbot FULL SYSTEM (Prediction + Distance Pitch + Tough Wall + Weapon Check)
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local ContextActionService = game:GetService("ContextActionService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
 
---// Settings
-local Settings = {
-    Aimbot = {
-        Enable = false,
-        EnableUI = false,
-        CrossHairUI = false,
-        TWallUI = false,
-        DragUI = false,
-        Part = { "Head", "Torso", "HumanoidRootPart" },
-        Target = { "Killer", "Survivor" },
-        SelectedParts = { "Head" },
-        SelectedTargets = { "Killer" },
-        Mode = { "Normal", "The Veil" },
-        SelectedMode = { "Normal" },
-        SetKeybindLock = "V",
-        MobileButtonPosition = UDim2.new(1, -40, 1, -40),
-        Distance = 400,
-        MIN_PITCH = -1,
-        MAX_PITCH = 15,
-    }
-}
-
---// Variables
-local AimbotEnabled = Settings.Aimbot.Enable
-local CrosshairVisible = Settings.Aimbot.CrossHairUI
-local AimbotToggleGUIVisible = Settings.Aimbot.EnableUI
-local ToughWallEnabled = Settings.Aimbot.TWallUI
+-------------------------------------------------------
+-- CONFIG
+-------------------------------------------------------
+local AimbotEnabled = false
 local LockedTarget = nil
-local LockPart = "Head"
-local KeybindLock = Enum.KeyCode.V
-local guiFolder, crosshair, mobileButton
-local dragging = false
-local dragStart, startPos
-local dragConn, dragMoveConn
+local CloseDistance = 10
+local PredictionTime = 0.14
 
---// GUI
-local function CreateCrosshair()
-    if crosshair then crosshair:Destroy() end
-    crosshair = Instance.new("Frame")
-    crosshair.Name = "Crosshair"
-    crosshair.Size = UDim2.new(0, 5, 0, 5)
-    crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-    crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
-    crosshair.BackgroundColor3 = Color3.new(1, 1, 1)
-    crosshair.BackgroundTransparency = 0.3
-    crosshair.BorderSizePixel = 0
-    crosshair.Visible = CrosshairVisible
-    crosshair.ZIndex = 999
-    crosshair.Parent = guiFolder
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = crosshair
+local MIN_DISTANCE = 1
+local MAX_DISTANCE = 250
+local MIN_PITCH = -1
+local MAX_PITCH = 15
+
+-- NEW SYSTEM
+local ToughWall = false     -- aimlock ทะลุกำแพง
+-------------------------------------------------------
+
+-------------------------------------------------------
+-- CHECK OUR WEAPON
+-------------------------------------------------------
+local function HasWeapon()
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChild("Weapon") ~= nil
 end
 
-local function CreateMobileButton()
-    if mobileButton then mobileButton:Destroy() end
-    mobileButton = Instance.new("TextButton")
-    mobileButton.Name = "AimbotBTNForMB"
-    mobileButton.Size = UDim2.new(0, 90, 0, 90)
-    mobileButton.AnchorPoint = Vector2.new(1, 1)
-    mobileButton.Position = Settings.Aimbot.MobileButtonPosition
-    mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
-    mobileButton.Text = "🎯"
-    mobileButton.TextSize = 36
-    mobileButton.TextColor3 = Color3.new(1, 1, 1)
-    mobileButton.Font = Enum.Font.GothamBold
-    mobileButton.Visible = AimbotToggleGUIVisible
-    mobileButton.ZIndex = 999
-    mobileButton.Parent = guiFolder
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 20)
-    corner.Parent = mobileButton
-
-    mobileButton.MouseButton1Click:Connect(function()
-        AimbotEnabled = not AimbotEnabled
-        Settings.Aimbot.Enable = AimbotEnabled
-        if not AimbotEnabled then LockedTarget = nil end
-        mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(255, 60, 60)
-    end)
-end
-
-local function EnsureGui()
-    if PlayerGui:FindFirstChild("เขมรกาก") then
-        guiFolder = PlayerGui:FindFirstChild("เขมรกาก")
-    else
-        guiFolder = Instance.new("ScreenGui")
-        guiFolder.Name = "เขมรกาก"
-        guiFolder.ResetOnSpawn = false
-        guiFolder.IgnoreGuiInset = true
-        guiFolder.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        guiFolder.Parent = PlayerGui
+-------------------------------------------------------
+-- GUI OPTIONS
+-------------------------------------------------------
+MainTab:Toggle({
+    Title = "Tough Wall",
+    Default = false,
+    Callback = function(state)
+        ToughWall = state
     end
-    if not crosshair or not crosshair.Parent then CreateCrosshair() end
-    if not mobileButton or not mobileButton.Parent then CreateMobileButton() end
-    if crosshair then crosshair.Visible = CrosshairVisible end
-    if mobileButton then mobileButton.Visible = AimbotToggleGUIVisible end
-end
+})
 
-EnsureGui()
-LocalPlayer.CharacterAdded:Connect(function() task.wait(1); EnsureGui() end)
-task.spawn(function() while task.wait(1) do if not PlayerGui:FindFirstChild("เขมรกาก") then EnsureGui() end end end)
-RunService.Heartbeat:Connect(function() if crosshair and crosshair.Parent then crosshair.Position = UDim2.new(0.5,0,0.5,0) end end)
-
---// Keybind
-local KEYBIND_ACTION_NAME = "AimbotPCKeybind"
-local function UpdateKeybindAction()
-    ContextActionService:UnbindAction(KEYBIND_ACTION_NAME)
-    local keyCode = Enum.KeyCode[Settings.Aimbot.SetKeybindLock:upper()]
-    if not keyCode then warn("Invalid keybind") return end
-    KeybindLock = keyCode
-    ContextActionService:BindAction(KEYBIND_ACTION_NAME, function(name, state)
-        if state == Enum.UserInputState.Begin and AimbotEnabled then
-            if LockedTarget then
-                LockedTarget = nil
-            else
-                LockedTarget = FindNearestTarget()
-            end
-            return Enum.ContextActionResult.Sink
+MainTab:Toggle({
+    Title = "Enable Aimbot (The Veil)",
+    Default = false,
+    Callback = function(state)
+        AimbotEnabled = state
+        if not AimbotEnabled then
+            LockedTarget = nil
         end
-        return Enum.ContextActionResult.Pass
-    end, false, keyCode)
-end
-UpdateKeybindAction()
-
--- GUI Controls
-MainTab:Dropdown({ Title = "Select Mode", Values = Settings.Aimbot.Mode, Multi=false, Callback=function(val) Settings.Aimbot.SelectedMode={val} end })
-MainTab:Input({ Title = "Set Pitch Min (Value)", Default=tostring(Settings.Aimbot.MIN_PITCH), Placeholder="Ex: -1", Callback=function(txt) local n=tonumber(txt); if n then Settings.Aimbot.MIN_PITCH=n end end })
-MainTab:Input({ Title = "Set Pitch Max (Value)", Default=tostring(Settings.Aimbot.MAX_PITCH), Placeholder="Ex: 15", Callback=function(txt) local n=tonumber(txt); if n then Settings.Aimbot.MAX_PITCH=n end end })
-
-MainTab:Dropdown({ Title="Select Target", Values=Settings.Aimbot.Target, Multi=false, Callback=function(val) Settings.Aimbot.SelectedTargets={val} end })
-MainTab:Dropdown({ Title="Select Part", Values=Settings.Aimbot.Part, Multi=false, Callback=function(val) Settings.Aimbot.SelectedParts={val} LockPart=val end })
-MainTab:Input({ Title="Set Distance Aimbot (Value)", Default=tostring(Settings.Aimbot.Distance), Placeholder="Ex: 400", Callback=function(txt) local n=tonumber(txt); if n and n>0 then Settings.Aimbot.Distance=n end end })
-MainTab:Toggle({ Title="Enable Aimbot", Default=Settings.Aimbot.Enable, Callback=function(state) AimbotEnabled=state; Settings.Aimbot.Enable=state; if not state then LockedTarget=nil end; if mobileButton then mobileButton.BackgroundColor3=state and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60) end end })
-MainTab:Toggle({ Title="Enable Crosshair", Default=Settings.Aimbot.CrossHairUI, Callback=function(state) CrosshairVisible=state; Settings.Aimbot.CrossHairUI=state; if crosshair then crosshair.Visible=state end end })
-MainTab:Toggle({ Title="Enable Aimbot (Toggle GUI)", Default=Settings.Aimbot.EnableUI, Callback=function(state) AimbotToggleGUIVisible=state; Settings.Aimbot.EnableUI=state; if mobileButton then mobileButton.Visible=state end end })
-MainTab:Toggle({ Title="Tough Wall (Aimbot)", Default=Settings.Aimbot.TWallUI, Callback=function(state) ToughWallEnabled=state; Settings.Aimbot.TWallUI=state end })
-MainTab:Toggle({ Title="Custom Position Drag (Toggle GUI)", Default=Settings.Aimbot.DragUI, Callback=function(state) Settings.Aimbot.DragUI=state; EnableDrag(state) end })
-
---// Drag
-function EnableDrag(state)
-    if not mobileButton then return end
-    if dragConn then dragConn:Disconnect() end
-    if dragMoveConn then dragMoveConn:Disconnect() end
-    if state then
-        dragConn = mobileButton.InputBegan:Connect(function(input)
-            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                dragging=true; dragStart=input.Position; startPos=mobileButton.Position
-                input.Changed:Connect(function() if input.UserInputState==Enum.UserInputState.End then dragging=false; Settings.Aimbot.MobileButtonPosition=mobileButton.Position end end)
-            end
-        end)
-        dragMoveConn = UserInputService.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
-                local delta=input.Position-dragStart
-                mobileButton.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
-            end
-        end)
-    else
-        Settings.Aimbot.MobileButtonPosition=mobileButton.Position
     end
-end
+})
 
---// Core Functions
-local function GetCameraPosition()
-    if Workspace.CurrentCamera.CameraType==Enum.CameraType.Scriptable then
-        return Workspace.CurrentCamera.CFrame.Position
-    else
-        local head = LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("Head") or LocalPlayer.Character:FindFirstChild("HumanoidRootPart"))
-        return head and head.Position or Workspace.CurrentCamera.CFrame.Position
+MainTab:Input({
+    Title = "Set Pitch Min (Value)",
+    Default = tostring(MIN_PITCH),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then MIN_PITCH = num end
     end
+})
+
+MainTab:Input({
+    Title = "Set Pitch Max (Value)",
+    Default = tostring(MAX_PITCH),
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then MAX_PITCH = num end
+    end
+})
+
+-------------------------------------------------------
+-- FUNCTIONS
+-------------------------------------------------------
+local function GetLocalRoot()
+    local c = LocalPlayer.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
 end
 
-local function IsTargetType(plr)
-    if not plr.Character then return false end
-    local hasWeapon=plr.Character:FindFirstChild("Weapon")~=nil
-    local isKiller=table.find(Settings.Aimbot.SelectedTargets,"Killer") and hasWeapon
-    local isSurvivor=table.find(Settings.Aimbot.SelectedTargets,"Survivor") and not hasWeapon
-    return isKiller or isSurvivor
+-- เช็คเลือด > 20 เท่านั้น
+local function IsTargetValid(plr)
+    if not plr or plr == LocalPlayer then return false end
+    local c = plr.Character
+    if not c then return false end
+    local hum = c:FindFirstChild("Humanoid")
+    return hum and hum.Health > 20
 end
 
-local function IsValidTarget(plr)
-    if not plr or plr==LocalPlayer or not plr.Character then return false end
-    if not IsTargetType(plr) then return false end
-    local char=plr.Character
-    if not char:FindFirstChild("Humanoid") or char.Humanoid.Health<=20 then return false end
-    local root=LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character:FindFirstChild("Torso"))
+-- ตรวจสอบหลังกำแพง
+local function IsVisible(head)
+    if ToughWall then return true end
+
+    local root = GetLocalRoot()
     if not root then return false end
-    local targetPart=nil
-    for _,p in ipairs(Settings.Aimbot.SelectedParts) do
-        if char:FindFirstChild(p) then targetPart=char[p]; break end
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {LocalPlayer.Character}
+
+    local result = workspace:Raycast(root.Position, (head.Position - root.Position), params)
+    if not result then
+        return true
     end
-    if not targetPart then return false end
-    local dist=(targetPart.Position-root.Position).Magnitude
-    if dist>Settings.Aimbot.Distance then return false end
-    if not ToughWallEnabled then
-        local ray=RaycastParams.new()
-        ray.FilterDescendantsInstances={LocalPlayer.Character,char}
-        ray.FilterType=Enum.RaycastFilterType.Exclude
-        local result=Workspace:Raycast(GetCameraPosition(),targetPart.Position-GetCameraPosition(),ray)
-        if result and result.Instance and not result.Instance:IsDescendantOf(char) then return false end
-    end
-    return true,targetPart
+
+    return result.Instance:IsDescendantOf(head.Parent)
 end
 
-function FindNearestTarget()
-    local root=LocalPlayer.Character and (LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character:FindFirstChild("Torso"))
+local function GetClosestInScreen()
+    local closest = nil
+    local minDist = math.huge
+    local mouse = UserInputService:GetMouseLocation()
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if IsTargetValid(plr) then
+            local head = plr.Character:FindFirstChild("Head")
+            if head and IsVisible(head) then
+                local pos, visible = Camera:WorldToViewportPoint(head.Position)
+                if visible then
+                    local dist = (Vector2.new(pos.X, pos.Y) - mouse).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closest = plr
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function GetClosestByDistance()
+    local root = GetLocalRoot()
     if not root then return nil end
-    local closestPlayer=nil
-    local closestDist=math.huge
-    local bestPart=nil
-    for _,plr in ipairs(Players:GetPlayers()) do
-        local valid, part = IsValidTarget(plr)
-        if valid then
-            local dist=(part.Position-root.Position).Magnitude
-            if dist<closestDist then closestDist=dist; closestPlayer=plr; bestPart=part.Name end
+
+    local closest = nil
+    local distMin = math.huge
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if IsTargetValid(plr) then
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            local head = plr.Character:FindFirstChild("Head")
+            if hrp and head and IsVisible(head) then
+                local dist = (root.Position - hrp.Position).Magnitude
+                if dist < distMin then
+                    distMin = dist
+                    closest = plr
+                end
+            end
         end
     end
-    if closestPlayer then LockPart=bestPart; return closestPlayer end
-    return nil
+    return closest, distMin
 end
 
--- The Veil Prediction + Pitch
-local function PredictPosition(targetPart)
-    local hrp=targetPart.Parent:FindFirstChild("HumanoidRootPart")
-    if not hrp then return targetPart.Position end
-    local velocity=hrp.Velocity
-    local predicted=targetPart.Position+velocity*0.12
-    local camPos=Workspace.CurrentCamera.CFrame.Position
-    local dir=(predicted-camPos).Unit
-    local distance=(predicted-camPos).Magnitude
-    local pitch = math.clamp(-math.asin(dir.Y)*(180/math.pi),Settings.Aimbot.MIN_PITCH,Settings.Aimbot.MAX_PITCH)
-    local predictedWithPitch=predicted+Vector3.new(0,pitch/10,0)
-    return predictedWithPitch
+local function TargetAlive()
+    return IsTargetValid(LockedTarget)
 end
 
---// Main Loop
+local function AimAt(target)
+    local c = target.Character
+    if not c then return end
+    local head = c:FindFirstChild("Head")
+    local hrp = c:FindFirstChild("HumanoidRootPart")
+    local root = GetLocalRoot()
+    if not head or not hrp or not root then return end
+
+    local predictedPos = head.Position + (hrp.Velocity * PredictionTime)
+    local distance = (root.Position - predictedPos).Magnitude
+
+    local alpha = math.clamp((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1)
+    local pitch = MIN_PITCH + (MAX_PITCH - MIN_PITCH) * alpha
+
+    local dir = (predictedPos - Camera.CFrame.Position).Unit
+    local yaw = math.atan2(dir.X, dir.Z)
+    local pitchRad = math.rad(pitch)
+
+    local look = Vector3.new(
+        math.sin(yaw) * math.cos(pitchRad),
+        math.sin(pitchRad),
+        math.cos(yaw) * math.cos(pitchRad)
+    )
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + look)
+end
+
+-------------------------------------------------------
+-- MAIN LOOP
+-------------------------------------------------------
 RunService.RenderStepped:Connect(function()
-    if not AimbotEnabled then LockedTarget=nil; return end
-    local cam=Workspace.CurrentCamera
-    if not cam then return end
-    local target=LockedTarget
-    if not target or not IsValidTarget(target) then
-        target=FindNearestTarget()
-        LockedTarget=target
+    if not AimbotEnabled then return end
+    if not HasWeapon() then return end   -- ต้องมี weapon เท่านั้น
+
+    local root = GetLocalRoot()
+    if not root then return end
+
+    local closePlr, dist = GetClosestByDistance()
+    if closePlr and dist <= CloseDistance then
+        LockedTarget = closePlr
     end
-    if target and target.Character and target.Character:FindFirstChild(LockPart) then
-        local aimPart=target.Character[LockPart]
-        local mode=Settings.Aimbot.SelectedMode[1]
-        if mode=="Normal" then
-            cam.CFrame=CFrame.new(cam.CFrame.Position, aimPart.Position)
-        elseif mode=="The Veil" then
-            local predicted=PredictPosition(aimPart)
-            cam.CFrame=CFrame.lookAt(cam.CFrame.Position, predicted)
-        end
+
+    if not TargetAlive() then
+        LockedTarget = GetClosestInScreen()
+    end
+
+    if LockedTarget then
+        AimAt(LockedTarget)
     end
 end)
