@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v805
+-- Powered by GPT 5 | v809
 -- ======================
 local version = "Early Access"
 -- ======================
@@ -2398,7 +2398,7 @@ killerTab:Section({Title="Killer: The Veil",Icon="target"})
 killerTab:Toggle({Title="Enable Aimbot (The Veil)",Default=false,Callback=function(state)DYHUB_AimbotEnabled=state if not state then DYHUB_LockedTarget=nil end end})
 killerTab:Section({Title="Killer: The Veil Setting",Icon="settings"})
 killerTab:Input({Title="Set Pitch Min (Value)",Default=tostring(DYHUB_MIN_PITCH),Placeholder="Default (Ex: -1)",Callback=function(text)local num=tonumber(text) if num then DYHUB_MIN_PITCH=num end end})
-killerTab:Input({Title="Set Pitch Max (Value)",Default=tostring(DYHUB_MAX_PITCH),Placeholder="Default (Ex: 15)",Callback=function(text)local num=tonumber(text) if num then DYHUB_MAX_PITCH=num end end})
+killerTab:Input({Title="Set Pitch Max (Value)",Default=tostring(DYHUB_MAX_PITCH),Placeholder="Default (Ex: 30)",Callback=function(text)local num=tonumber(text) if num then DYHUB_MAX_PITCH=num end end})
 killerTab:Toggle({Title="Tough Wall (The Veil)",Default=false,Callback=function(state)DYHUB_ToughWall=state end})
 killerTab:Input({Title="Set Keybind Aimbot (PC ONLY)",Default=DYHUB_Settings.Aimbot.SetKeybindLock,Placeholder="Lock (Ex: Z)",Callback=function(text)if typeof(text)=="string" and #text==1 then DYHUB_Settings.Aimbot.SetKeybindLock=string.upper(text) end end})
 -------------------------------------------------------
