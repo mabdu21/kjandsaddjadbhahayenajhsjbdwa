@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v799
+-- Powered by GPT 5 | v801
 -- ======================
-local version = "Pre-4.3.5"
+local version = "Pre-4.3.6"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -790,7 +790,6 @@ local Settings = {
         SelectedParts = { "Head" },
         SelectedTargets = { "Killer" },
         SetKeybindLock = "V",
-		SetKeybindLockTV = "Z"
         MobileButtonPosition = UDim2.new(1, -40, 1, -40)
     }
 }
