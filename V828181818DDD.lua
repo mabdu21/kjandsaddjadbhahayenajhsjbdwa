@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v800
+-- Powered by GPT 5 | v805
 -- ======================
 local version = "Early Access"
 -- ======================
@@ -2385,7 +2385,7 @@ local DYHUB_PredictionTime=0.14
 local DYHUB_MIN_DISTANCE=1
 local DYHUB_MAX_DISTANCE=250
 local DYHUB_MIN_PITCH=-1
-local DYHUB_MAX_PITCH=15
+local DYHUB_MAX_PITCH=30
 local DYHUB_LOW_HP_IGNORE=20
 local DYHUB_ToughWall=false
 local DYHUB_AimbotToggleGUIVisible2=false
