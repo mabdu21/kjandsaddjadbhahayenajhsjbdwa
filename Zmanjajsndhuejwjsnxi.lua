@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v717
+-- Powered by GPT 5 | v791
 -- ======================
 local version = "DEV"
 -- ======================
@@ -28,53 +28,30 @@ end
 -- Services
 local RunService = game:GetService("RunService")
 local Workspace = game.Workspace
-local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- WindUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 -- ====================== WINDOW ======================
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-
 local FreeVersion = "Free Version"
 local PremiumVersion = "Premium Version"
 
 local function checkVersion(playerName)
     local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
-
-    local success, response = pcall(function()
-        return game:HttpGet(url)
-    end)
-
-    if not success then
-        return FreeVersion
-    end
-
+    local success, response = pcall(function() return game:HttpGet(url) end)
+    if not success then return FreeVersion end
     local premiumData
     local func, err = loadstring(response)
-    if func then
-        premiumData = func()
-    else
-        return FreeVersion
-    end
-
-    if premiumData[playerName] then
-        return PremiumVersion
-    else
-        return FreeVersion
-    end
+    if func then premiumData = func() else return FreeVersion end
+    if premiumData[playerName] then return PremiumVersion else return FreeVersion end
 end
 
-local player = Players.LocalPlayer
-local userversion = checkVersion(player.Name)
+local userversion = checkVersion(LocalPlayer.Name)
 
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
@@ -113,75 +90,91 @@ Window:EditOpenButton({
 -- Tabs
 local MainTab = Window:Tab({ Title = "Test", Icon = "crown" })
 
--- // Aimbot FULL SYSTEM (Prediction + Distance Pitch + Tough Wall + Weapon Check)
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
 -------------------------------------------------------
--- CONFIG
+-- Aimbot Config
 -------------------------------------------------------
 local AimbotEnabled = false
 local LockedTarget = nil
 local CloseDistance = 10
 local PredictionTime = 0.14
-
 local MIN_DISTANCE = 1
 local MAX_DISTANCE = 250
 local MIN_PITCH = -1
 local MAX_PITCH = 15
+local LOW_HP_IGNORE = 20
+local ToughWall = false
 
--- NEW SYSTEM
-local ToughWall = false     -- aimlock ทะลุกำแพง
--------------------------------------------------------
+local AimbotToggleGUIVisible2 = false
+local crosshair, mobileButton, guiFolder
+
+-- PC Keybind
+local Settings = {
+    Aimbot = { 
+        DragUI = false, 
+        MobileButtonPosition = UDim2.new(1, -40, 1, -40),
+        SetKeybindLock = "Z"
+    }
+}
 
 -------------------------------------------------------
--- CHECK OUR WEAPON
+-- GUI Section
 -------------------------------------------------------
-local function HasWeapon()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChild("Weapon") ~= nil
-end
-
--------------------------------------------------------
--- GUI OPTIONS
--------------------------------------------------------
+MainTab:Section({ Title = "Killer: The Veil", Icon = "target" })
 MainTab:Toggle({
-    Title = "Tough Wall",
+    Title = "Enable Aimbot (The Veil)",
+    Default = false,
+    Callback = function(state)
+        AimbotEnabled = state
+        if not state then LockedTarget = nil end
+    end
+})
+
+MainTab:Section({ Title = "Killer: The Veil Setting", Icon = "settings" })
+MainTab:Input({
+    Title = "Set Pitch Min (Value)",
+    Default = tostring(MIN_PITCH),
+    Placeholder = "Default (Ex: -1)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then MIN_PITCH = num end
+    end
+})
+MainTab:Input({
+    Title = "Set Pitch Max (Value)",
+    Default = tostring(MAX_PITCH),
+    Placeholder = "Default (Ex: 15)",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num then MAX_PITCH = num end
+    end
+})
+
+MainTab:Toggle({
+    Title = "Enable Aimbot (Toggle GUI)",
+    Default = AimbotToggleGUIVisible2,
+    Callback = function(state)
+        AimbotToggleGUIVisible2 = state
+    end
+})
+
+-- NEW: Toggle Tough Wall
+MainTab:Toggle({
+    Title = "Tough Wall (The Veil)",
     Default = false,
     Callback = function(state)
         ToughWall = state
     end
 })
 
-MainTab:Toggle({
-    Title = "Enable Aimbot (The Veil)",
-    Default = false,
-    Callback = function(state)
-        AimbotEnabled = state
-        if not AimbotEnabled then
-            LockedTarget = nil
+-- NEW: PC Keybind
+MainTab:Input({
+    Title = "Set Keybind Aimbot (PC ONLY)",
+    Default = Settings.Aimbot.SetKeybindLock,
+    Placeholder = "Lock (Ex: Z)",
+    Callback = function(text)
+        if typeof(text) == "string" and #text == 1 then
+            Settings.Aimbot.SetKeybindLock = string.upper(text)
         end
-    end
-})
-
-MainTab:Input({
-    Title = "Set Pitch Min (Value)",
-    Default = tostring(MIN_PITCH),
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then MIN_PITCH = num end
-    end
-})
-
-MainTab:Input({
-    Title = "Set Pitch Max (Value)",
-    Default = tostring(MAX_PITCH),
-    Callback = function(text)
-        local num = tonumber(text)
-        if num then MAX_PITCH = num end
     end
 })
 
@@ -193,32 +186,9 @@ local function GetLocalRoot()
     return c and c:FindFirstChild("HumanoidRootPart")
 end
 
--- เช็คเลือด > 20 เท่านั้น
-local function IsTargetValid(plr)
-    if not plr or plr == LocalPlayer then return false end
-    local c = plr.Character
-    if not c then return false end
-    local hum = c:FindFirstChild("Humanoid")
-    return hum and hum.Health > 20
-end
-
--- ตรวจสอบหลังกำแพง
-local function IsVisible(head)
-    if ToughWall then return true end
-
-    local root = GetLocalRoot()
-    if not root then return false end
-
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Blacklist
-    params.FilterDescendantsInstances = {LocalPlayer.Character}
-
-    local result = workspace:Raycast(root.Position, (head.Position - root.Position), params)
-    if not result then
-        return true
-    end
-
-    return result.Instance:IsDescendantOf(head.Parent)
+local function HP_OK(plr)
+    local hum = plr.Character and plr.Character:FindFirstChild("Humanoid")
+    return hum and hum.Health > LOW_HP_IGNORE
 end
 
 local function GetClosestInScreen()
@@ -227,16 +197,14 @@ local function GetClosestInScreen()
     local mouse = UserInputService:GetMouseLocation()
 
     for _, plr in ipairs(Players:GetPlayers()) do
-        if IsTargetValid(plr) then
+        if plr ~= LocalPlayer and plr.Character and HP_OK(plr) then
             local head = plr.Character:FindFirstChild("Head")
-            if head and IsVisible(head) then
-                local pos, visible = Camera:WorldToViewportPoint(head.Position)
-                if visible then
-                    local dist = (Vector2.new(pos.X, pos.Y) - mouse).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        closest = plr
-                    end
+            local pos, visible = Camera:WorldToViewportPoint(head.Position)
+            if visible then
+                local dist = (Vector2.new(pos.X, pos.Y) - mouse).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    closest = plr
                 end
             end
         end
@@ -247,16 +215,13 @@ end
 local function GetClosestByDistance()
     local root = GetLocalRoot()
     if not root then return nil end
-
-    local closest = nil
-    local distMin = math.huge
+    local closest, distMin = nil, math.huge
 
     for _, plr in ipairs(Players:GetPlayers()) do
-        if IsTargetValid(plr) then
-            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-            local head = plr.Character:FindFirstChild("Head")
-            if hrp and head and IsVisible(head) then
-                local dist = (root.Position - hrp.Position).Magnitude
+        if plr ~= LocalPlayer and plr.Character and HP_OK(plr) then
+            local r = plr.Character:FindFirstChild("HumanoidRootPart")
+            if r then
+                local dist = (root.Position - r.Position).Magnitude
                 if dist < distMin then
                     distMin = dist
                     closest = plr
@@ -268,41 +233,193 @@ local function GetClosestByDistance()
 end
 
 local function TargetAlive()
-    return IsTargetValid(LockedTarget)
+    if not LockedTarget then return false end
+    if not LockedTarget.Character then return false end
+    local h = LockedTarget.Character:FindFirstChild("Humanoid")
+    return h and h.Health > LOW_HP_IGNORE
+end
+
+-- NEW: Raycast Check for Tough Wall
+local function CanSeeTarget(target)
+    if ToughWall then
+        return true
+    end
+
+    if not target.Character then return false end
+    local head = target.Character:FindFirstChild("Head")
+    local root = GetLocalRoot()
+    if not head or not root then return false end
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = { LocalPlayer.Character, target.Character }
+
+    local result = workspace:Raycast(root.Position, (head.Position - root.Position), params)
+
+    if result then
+        return false
+    end
+
+    return true
 end
 
 local function AimAt(target)
-    local c = target.Character
-    if not c then return end
-    local head = c:FindFirstChild("Head")
-    local hrp = c:FindFirstChild("HumanoidRootPart")
-    local root = GetLocalRoot()
-    if not head or not hrp or not root then return end
+    if not target.Character then return end
+    local head = target.Character:FindFirstChild("Head")
+    local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+    local localRoot = GetLocalRoot()
+    if not head or not hrp or not localRoot then return end
 
-    local predictedPos = head.Position + (hrp.Velocity * PredictionTime)
-    local distance = (root.Position - predictedPos).Magnitude
+    local velocity = hrp.Velocity
+    local predictedPos = head.Position + (velocity * PredictionTime)
 
+    local distance = (localRoot.Position - predictedPos).Magnitude
     local alpha = math.clamp((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1)
     local pitch = MIN_PITCH + (MAX_PITCH - MIN_PITCH) * alpha
 
     local dir = (predictedPos - Camera.CFrame.Position).Unit
     local yaw = math.atan2(dir.X, dir.Z)
     local pitchRad = math.rad(pitch)
-
-    local look = Vector3.new(
+    local newLook = Vector3.new(
         math.sin(yaw) * math.cos(pitchRad),
         math.sin(pitchRad),
         math.cos(yaw) * math.cos(pitchRad)
     )
-    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + look)
+
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + newLook)
 end
+
+-------------------------------------------------------
+-- MOBILE GUI FUNCTIONS
+-------------------------------------------------------
+local dragging, dragStart, startPos, dragConn, dragMoveConn
+
+local function CreateMobileButton()
+    if mobileButton then mobileButton:Destroy() end
+    mobileButton = Instance.new("TextButton")
+    mobileButton.Name = "AimbotBTNForVEIL"
+    mobileButton.Size = UDim2.new(0, 90, 0, 90)
+    mobileButton.AnchorPoint = Vector2.new(1,1)
+    mobileButton.Position = Settings.Aimbot.MobileButtonPosition
+    mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+    mobileButton.Text = "🗡️"
+    mobileButton.TextSize = 36
+    mobileButton.TextColor3 = Color3.new(1,1,1)
+    mobileButton.Font = Enum.Font.GothamBold
+    mobileButton.Visible = AimbotToggleGUIVisible2
+    mobileButton.ZIndex = 999
+    mobileButton.Parent = guiFolder
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,20)
+    corner.Parent = mobileButton
+
+    mobileButton.MouseButton1Click:Connect(function()
+        AimbotEnabled = not AimbotEnabled
+        LockedTarget = AimbotEnabled and LockedTarget or nil
+        mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+    end)
+end
+
+local function EnableDrag(state)
+    if not mobileButton then return end
+    if dragConn then dragConn:Disconnect() end
+    if dragMoveConn then dragMoveConn:Disconnect() end
+    dragging = false
+
+    if state then
+        dragConn = mobileButton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = mobileButton.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                        Settings.Aimbot.MobileButtonPosition = mobileButton.Position
+                    end
+                end)
+            end
+        end)
+
+        dragMoveConn = UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                mobileButton.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    else
+        Settings.Aimbot.MobileButtonPosition = mobileButton.Position
+    end
+end
+
+local function EnsureGui()
+    if PlayerGui:FindFirstChild("เขมรกาก") then
+        guiFolder = PlayerGui:FindFirstChild("เขมรกาก")
+    else
+        guiFolder = Instance.new("ScreenGui")
+        guiFolder.Name = "เขมรกาก"
+        guiFolder.ResetOnSpawn = false
+        guiFolder.IgnoreGuiInset = true
+        guiFolder.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        guiFolder.Parent = PlayerGui
+    end
+    CreateMobileButton()
+end
+
+EnsureGui()
+EnableDrag(Settings.Aimbot.DragUI)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    EnsureGui()
+end)
+task.spawn(function()
+    while task.wait(1) do
+        if not PlayerGui:FindFirstChild("เขมรกาก") then
+            EnsureGui()
+        end
+    end
+end)
+
+MainTab:Toggle({
+    Title = "Custom Position Drag (Toggle GUI)",
+    Default = Settings.Aimbot.DragUI,
+    Callback = function(state)
+        Settings.Aimbot.DragUI = state
+        EnableDrag(state)
+    end
+})
+
+-------------------------------------------------------
+-- Keybind Toggle (PC)
+-------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode.Name == Settings.Aimbot.SetKeybindLock then
+            AimbotEnabled = not AimbotEnabled
+            if not AimbotEnabled then
+                LockedTarget = nil
+            end
+
+            if mobileButton then
+                mobileButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+            end
+        end
+    end
+end)
 
 -------------------------------------------------------
 -- MAIN LOOP
 -------------------------------------------------------
 RunService.RenderStepped:Connect(function()
     if not AimbotEnabled then return end
-    if not HasWeapon() then return end   -- ต้องมี weapon เท่านั้น
 
     local root = GetLocalRoot()
     if not root then return end
@@ -316,7 +433,7 @@ RunService.RenderStepped:Connect(function()
         LockedTarget = GetClosestInScreen()
     end
 
-    if LockedTarget then
+    if LockedTarget and CanSeeTarget(LockedTarget) then
         AimAt(LockedTarget)
     end
 end)
