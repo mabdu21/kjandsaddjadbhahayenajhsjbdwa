@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v809
+-- Powered by GPT 5 | v810
 -- ======================
 local version = "Early Access"
 -- ======================
@@ -2387,7 +2387,7 @@ local DYHUB_MAX_DISTANCE=250
 local DYHUB_MIN_PITCH=-1
 local DYHUB_MAX_PITCH=30
 local DYHUB_LOW_HP_IGNORE=20
-local DYHUB_ToughWall=false
+local DYHUB_ToughWall=true
 local DYHUB_AimbotToggleGUIVisible2=false
 local DYHUB_crosshair,DYHUB_mobileButton,DYHUB_guiFolder
 local DYHUB_Settings={Aimbot={DragUI=false,MobileButtonPosition=UDim2.new(1,-40,1,-40),SetKeybindLock="Z"}}
