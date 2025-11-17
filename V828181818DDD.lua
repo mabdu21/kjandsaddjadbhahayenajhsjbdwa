@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v799
+-- Powered by GPT 5 | v800
 -- ======================
-local version = "4.3.6"
+local version = "Early Access"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -44,7 +44,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 
-local FreeVersion = "Free Version"
+local FreeVersion = "Fake Premium??"
 local PremiumVersion = "Premium Version"
 
 local function checkVersion(playerName)
@@ -97,7 +97,7 @@ Window:SetToggleKey(Enum.KeyCode.K)
 pcall(function()
     Window:Tag({
         Title = version,
-        Color = Color3.fromHex("#30ff6a")
+        Color = Color3.fromHex("#FFD700")
     })
 end)
 
@@ -114,7 +114,7 @@ Window:EditOpenButton({
 local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
 local Main1Divider = Window:Divider()
 local SurTab = Window:Tab({ Title = "Survivor", Icon = "user-check" })
-local killerTab = Window:Tab({ Title = "Killer", Icon = "swords" })
+local killerTab = Window:Tab({ Title = "Killer (NEW)", Icon = "swords" })
 local Main2Divider = Window:Divider()
 local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
 local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
