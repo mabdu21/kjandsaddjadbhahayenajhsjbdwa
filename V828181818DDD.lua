@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v810
+-- Powered by GPT 5 | v815
 -- ======================
 local version = "Early Access"
 -- ======================
@@ -2374,65 +2374,556 @@ killerTab:Toggle({
     end
 })
 
+--[[
+Full Aimbot script (DYHUB) with:
+- Normal Aimbot (pitch chosen by distance bins)
+- 28° Aimbot (override pitch = 28)
+- Mobile GUI: two buttons (🗡️ normal, ⚔️ 28°)
+- Mutual exclusion for "The Veil" toggles (when toggling under "The Veil" section)
+- Keybinds: default Z (normal), C (28)
+- Drag support for mobile buttons, persistent positions in DYHUB_Settings
+- Uses same Camera.CFrame aiming style as original
+--]]
+
+-- Services
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 -------------------------------------------------------
+-- Aimbot Config (DYHUB_ prefix)
 -------------------------------------------------------
--- Aimbot Config
+local DYHUB_AimbotEnabled = false                 -- Normal aimbot active
+local DYHUB_Aimbot28Enabled = false               -- 28° aimbot active
+local DYHUB_LockedTarget = nil
+local DYHUB_CloseDistance = 10
+local DYHUB_PredictionTime = 0.14
+local DYHUB_MIN_DISTANCE = 1
+local DYHUB_MAX_DISTANCE = 250
+local DYHUB_LOW_HP_IGNORE = 20
+local DYHUB_ToughWall = false
+
+-- GUI flags for visibility of mobile buttons
+local DYHUB_AimbotToggleGUIVisible2 = false       -- normal mobile GUI visible
+local DYHUB_Aimbot28ToggleGUIVisible = false      -- 28° mobile GUI visible
+
+-- UI instances (created later)
+local DYHUB_crosshair, DYHUB_mobileButton, DYHUB_mobileButton28, DYHUB_guiFolder
+
+-- Settings (persistent-ish)
+local DYHUB_Settings = {
+    Aimbot = {
+        DragUI = false,
+        MobileButtonPosition = UDim2.new(1, -40, 1, -40),
+        MobileButton28Position = UDim2.new(1, -140, 1, -40),
+        SetKeybindLock = "Z",
+        SetKeybindLock28 = "C",
+    }
+}
+
 -------------------------------------------------------
-local DYHUB_AimbotEnabled=false
-local DYHUB_LockedTarget=nil
-local DYHUB_CloseDistance=10
-local DYHUB_PredictionTime=0.14
-local DYHUB_MIN_DISTANCE=1
-local DYHUB_MAX_DISTANCE=250
-local DYHUB_MIN_PITCH=-1
-local DYHUB_MAX_PITCH=30
-local DYHUB_LOW_HP_IGNORE=20
-local DYHUB_ToughWall=true
-local DYHUB_AimbotToggleGUIVisible2=false
-local DYHUB_crosshair,DYHUB_mobileButton,DYHUB_guiFolder
-local DYHUB_Settings={Aimbot={DragUI=false,MobileButtonPosition=UDim2.new(1,-40,1,-40),SetKeybindLock="Z"}}
+-- GUI Section (assumes MainTab exists in your UI framework)
+-- NOTE: If your UI builder expects different calls, adapt accordingly.
 -------------------------------------------------------
--- GUI Section
+-- Example of how you might add toggles/inputs to your menu - adjust to your menu API:
+-- (If you already have MainTab variable and API, the following lines assume it.)
+-- If not, keep these calls as references; the important part is the logic below.
+
+if typeof(killerTab) == "table" and killerTab.Section and killerTab.Toggle and killerTab.Input then
+    killerTab:Section({Title="Killer: The Veil", Icon="target"})
+    killerTab:Toggle({
+        Title="Enable Aimbot (The Veil)",
+        Default=false,
+        Callback=function(state)
+            DYHUB_AimbotEnabled = state
+            if state then
+                -- if enabling normal under The Veil, disable 28° The Veil
+                DYHUB_Aimbot28Enabled = false
+            else
+                DYHUB_LockedTarget = nil
+            end
+            -- update mobile button colors if exists
+            if DYHUB_mobileButton then
+                DYHUB_mobileButton.BackgroundColor3 = DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+            end
+            if DYHUB_mobileButton28 then
+                -- reflect that 28 is off (but keep its color as red unless 28 active)
+                if not DYHUB_Aimbot28Enabled then
+                    DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(255,60,60)
+                end
+            end
+        end
+    })
+
+    killerTab:Section({Title="Killer: The Veil Setting", Icon="settings"})
+    -- Removed Set Pitch Min/Max inputs per request
+
+    killerTab:Toggle({
+        Title="Tough Wall (The Veil)",
+        Default=false,
+        Callback=function(state)
+            DYHUB_ToughWall = state
+        end
+    })
+
+    killerTab:Input({
+        Title="Set Keybind Aimbot (PC ONLY)",
+        Default=DYHUB_Settings.Aimbot.SetKeybindLock,
+        Placeholder="Lock (Ex: Z)",
+        Callback=function(text)
+            if typeof(text)=="string" and #text==1 then
+                DYHUB_Settings.Aimbot.SetKeybindLock = string.upper(text)
+            end
+        end
+    })
+
+    -- Add toggle and keybind input for 28° The Veil
+    killerTab:Toggle({
+        Title="Enable Aimbot 28° (The Veil)",
+        Default=false,
+        Callback=function(state)
+            DYHUB_Aimbot28Enabled = state
+            if state then
+                -- enabling 28° under The Veil should disable normal The Veil aimbot
+                DYHUB_AimbotEnabled = false
+            else
+                DYHUB_LockedTarget = nil
+            end
+            if DYHUB_mobileButton28 then
+                DYHUB_mobileButton28.BackgroundColor3 = DYHUB_Aimbot28Enabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+            end
+            if DYHUB_mobileButton then
+                if not DYHUB_AimbotEnabled then
+                    DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(255,60,60)
+                end
+            end
+        end
+    })
+
+    killerTab:Input({
+        Title="Set Keybind Aimbot 28° (PC ONLY)",
+        Default=DYHUB_Settings.Aimbot.SetKeybindLock28,
+        Placeholder="Lock (Ex: C)",
+        Callback=function(text)
+            if typeof(text)=="string" and #text==1 then
+                DYHUB_Settings.Aimbot.SetKeybindLock28 = string.upper(text)
+            end
+        end
+    })
+
+    -- GUI toggles for visibility of mobile buttons
+    killerTab:Section({Title="Killer: The Veil GUI", Icon="settings"})
+    killerTab:Toggle({
+        Title="Enable Aimbot (Toggle GUI)",
+        Default=DYHUB_AimbotToggleGUIVisible2,
+        Callback=function(state)
+            DYHUB_AimbotToggleGUIVisible2 = state
+            if DYHUB_mobileButton then
+                DYHUB_mobileButton.Visible = state
+            end
+        end
+    })
+    killerTab:Toggle({
+        Title="Enable Aimbot 28° (Toggle GUI)",
+        Default=DYHUB_Aimbot28ToggleGUIVisible,
+        Callback=function(state)
+            DYHUB_Aimbot28ToggleGUIVisible = state
+            if DYHUB_mobileButton28 then
+                DYHUB_mobileButton28.Visible = state
+            end
+        end
+    })
+    killerTab:Toggle({
+        Title="Custom Position Drag (Toggle GUI)",
+        Default=DYHUB_Settings.Aimbot.DragUI,
+        Callback=function(state)
+            DYHUB_Settings.Aimbot.DragUI = state
+            DYHUB_EnableDrag(state) -- will handle both buttons
+        end
+    })
+end
+
 -------------------------------------------------------
-killerTab:Section({Title="Killer: The Veil",Icon="target"})
-killerTab:Toggle({Title="Enable Aimbot (The Veil)",Default=false,Callback=function(state)DYHUB_AimbotEnabled=state if not state then DYHUB_LockedTarget=nil end end})
-killerTab:Section({Title="Killer: The Veil Setting",Icon="settings"})
-killerTab:Input({Title="Set Pitch Min (Value)",Default=tostring(DYHUB_MIN_PITCH),Placeholder="Default (Ex: -1)",Callback=function(text)local num=tonumber(text) if num then DYHUB_MIN_PITCH=num end end})
-killerTab:Input({Title="Set Pitch Max (Value)",Default=tostring(DYHUB_MAX_PITCH),Placeholder="Default (Ex: 30)",Callback=function(text)local num=tonumber(text) if num then DYHUB_MAX_PITCH=num end end})
-killerTab:Toggle({Title="Tough Wall (The Veil)",Default=false,Callback=function(state)DYHUB_ToughWall=state end})
-killerTab:Input({Title="Set Keybind Aimbot (PC ONLY)",Default=DYHUB_Settings.Aimbot.SetKeybindLock,Placeholder="Lock (Ex: Z)",Callback=function(text)if typeof(text)=="string" and #text==1 then DYHUB_Settings.Aimbot.SetKeybindLock=string.upper(text) end end})
+-- FUNCTIONS: Utility
 -------------------------------------------------------
--- FUNCTIONS
+local function DYHUB_GetLocalRoot()
+    local c = LocalPlayer.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function DYHUB_HP_OK(plr)
+    local hum = plr.Character and plr.Character:FindFirstChild("Humanoid")
+    return hum and hum.Health > DYHUB_LOW_HP_IGNORE
+end
+
+-- Choose closest in screen (for locking when no distance target)
+local function DYHUB_GetClosestInScreen()
+    local closest = nil
+    local minDist = math.huge
+    local mouse = UserInputService:GetMouseLocation()
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and DYHUB_HP_OK(plr) then
+            local head = plr.Character:FindFirstChild("Head")
+            if head then
+                local pos, visible = Camera:WorldToViewportPoint(head.Position)
+                if visible then
+                    local dist = (Vector2.new(pos.X, pos.Y) - mouse).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closest = plr
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- Closest by 3D distance
+local function DYHUB_GetClosestByDistance()
+    local root = DYHUB_GetLocalRoot()
+    if not root then return nil end
+    local closest, distMin = nil, math.huge
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and DYHUB_HP_OK(plr) then
+            local r = plr.Character:FindFirstChild("HumanoidRootPart")
+            if r then
+                local dist = (root.Position - r.Position).Magnitude
+                if dist < distMin then
+                    distMin = dist
+                    closest = plr
+                end
+            end
+        end
+    end
+    return closest, distMin
+end
+
+local function DYHUB_TargetAlive()
+    if not DYHUB_LockedTarget then return false end
+    if not DYHUB_LockedTarget.Character then return false end
+    local h = DYHUB_LockedTarget.Character:FindFirstChild("Humanoid")
+    return h and h.Health > DYHUB_LOW_HP_IGNORE
+end
+
+-- Visibility check (ToughWall bypasses line-of-sight)
+local function DYHUB_CanSeeTarget(target)
+    if DYHUB_ToughWall then return true end
+    if not target.Character then return false end
+    local head = target.Character:FindFirstChild("Head")
+    local root = DYHUB_GetLocalRoot()
+    if not head or not root then return false end
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {LocalPlayer.Character, target.Character}
+    local result = workspace:Raycast(root.Position, (head.Position - root.Position), params)
+    if result then return false end
+    return true
+end
+
+-- Compute pitch based on distance for normal aimbot
+-- Distance (stud) bins as requested:
+-- >=190 => 45, 150-189 => 40, 90-149 => 36, 0-89 => 30
+local function DYHUB_GetPitchForDistance(distance)
+    if distance >= 190 then
+        return 45
+    elseif distance >= 150 then
+        return 40
+    elseif distance >= 90 then
+        return 36
+    else
+        return 30
+    end
+end
+
+-- AimAt function: supports both normal and 28° override
+local function DYHUB_AimAt(target, use28)
+    if not target or not target.Character then return end
+    local head = target.Character:FindFirstChild("Head")
+    local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+    local localRoot = DYHUB_GetLocalRoot()
+    if not head or not hrp or not localRoot then return end
+
+    local velocity = hrp.Velocity or Vector3.new(0,0,0)
+    local predictedPos = head.Position + (velocity * DYHUB_PredictionTime)
+    local distance = (localRoot.Position - predictedPos).Magnitude
+
+    local pitchDeg
+    if use28 then
+        pitchDeg = 28
+    else
+        pitchDeg = DYHUB_GetPitchForDistance(distance)
+    end
+
+    -- convert pitch & yaw to direction vector (same approach as original)
+    local dir = (predictedPos - Camera.CFrame.Position).Unit
+    local yaw = math.atan2(dir.X, dir.Z)
+    local pitchRad = math.rad(pitchDeg)
+    local newLook = Vector3.new(math.sin(yaw) * math.cos(pitchRad), math.sin(pitchRad), math.cos(yaw) * math.cos(pitchRad))
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + newLook)
+end
+
 -------------------------------------------------------
-local function DYHUB_GetLocalRoot() local c=LocalPlayer.Character return c and c:FindFirstChild("HumanoidRootPart") end
-local function DYHUB_HP_OK(plr) local hum=plr.Character and plr.Character:FindFirstChild("Humanoid") return hum and hum.Health>DYHUB_LOW_HP_IGNORE end
-local function DYHUB_GetClosestInScreen() local closest=nil local minDist=math.huge local mouse=UserInputService:GetMouseLocation() for _,plr in ipairs(Players:GetPlayers()) do if plr~=LocalPlayer and plr.Character and DYHUB_HP_OK(plr) then local head=plr.Character:FindFirstChild("Head") local pos,visible=Camera:WorldToViewportPoint(head.Position) if visible then local dist=(Vector2.new(pos.X,pos.Y)-mouse).Magnitude if dist<minDist then minDist=dist closest=plr end end end end return closest end
-local function DYHUB_GetClosestByDistance() local root=DYHUB_GetLocalRoot() if not root then return nil end local closest,distMin=nil,math.huge for _,plr in ipairs(Players:GetPlayers()) do if plr~=LocalPlayer and plr.Character and DYHUB_HP_OK(plr) then local r=plr.Character:FindFirstChild("HumanoidRootPart") if r then local dist=(root.Position-r.Position).Magnitude if dist<distMin then distMin=dist closest=plr end end end end return closest,distMin end
-local function DYHUB_TargetAlive() if not DYHUB_LockedTarget then return false end if not DYHUB_LockedTarget.Character then return false end local h=DYHUB_LockedTarget.Character:FindFirstChild("Humanoid") return h and h.Health>DYHUB_LOW_HP_IGNORE end
-local function DYHUB_CanSeeTarget(target) if DYHUB_ToughWall then return true end if not target.Character then return false end local head=target.Character:FindFirstChild("Head") local root=DYHUB_GetLocalRoot() if not head or not root then return false end local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Blacklist params.FilterDescendantsInstances={LocalPlayer.Character,target.Character} local result=workspace:Raycast(root.Position,(head.Position-root.Position),params) if result then return false end return true end
-local function DYHUB_AimAt(target) if not target.Character then return end local head=target.Character:FindFirstChild("Head") local hrp=target.Character:FindFirstChild("HumanoidRootPart") local localRoot=DYHUB_GetLocalRoot() if not head or not hrp or not localRoot then return end local velocity=hrp.Velocity local predictedPos=head.Position+(velocity*DYHUB_PredictionTime) local distance=(localRoot.Position-predictedPos).Magnitude local alpha=math.clamp((distance-DYHUB_MIN_DISTANCE)/(DYHUB_MAX_DISTANCE-DYHUB_MIN_DISTANCE),0,1) local pitch=DYHUB_MIN_PITCH+(DYHUB_MAX_PITCH-DYHUB_MIN_PITCH)*alpha local dir=(predictedPos-Camera.CFrame.Position).Unit local yaw=math.atan2(dir.X,dir.Z) local pitchRad=math.rad(pitch) local newLook=Vector3.new(math.sin(yaw)*math.cos(pitchRad),math.sin(pitchRad),math.cos(yaw)*math.cos(pitchRad)) Camera.CFrame=CFrame.new(Camera.CFrame.Position,Camera.CFrame.Position+newLook) end
+-- MOBILE GUI FUNCTIONS (two buttons)
 -------------------------------------------------------
--- MOBILE GUI FUNCTIONS
--------------------------------------------------------
-local DYHUB_dragging,DYHUB_dragStart,DYHUB_startPos,DYHUB_dragConn,DYHUB_dragMoveConn
-local function DYHUB_CreateMobileButton() if DYHUB_mobileButton then DYHUB_mobileButton:Destroy() end DYHUB_mobileButton=Instance.new("TextButton") DYHUB_mobileButton.Name="AimbotBTNForVEIL" DYHUB_mobileButton.Size=UDim2.new(0,90,0,90) DYHUB_mobileButton.AnchorPoint=Vector2.new(1,1) DYHUB_mobileButton.Position=DYHUB_Settings.Aimbot.MobileButtonPosition DYHUB_mobileButton.BackgroundColor3=DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60) DYHUB_mobileButton.Text="🗡️" DYHUB_mobileButton.TextSize=36 DYHUB_mobileButton.TextColor3=Color3.new(1,1,1) DYHUB_mobileButton.Font=Enum.Font.GothamBold DYHUB_mobileButton.Visible=DYHUB_AimbotToggleGUIVisible2 DYHUB_mobileButton.ZIndex=999 DYHUB_mobileButton.Parent=DYHUB_guiFolder local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,20) corner.Parent=DYHUB_mobileButton DYHUB_mobileButton.MouseButton1Click:Connect(function() DYHUB_AimbotEnabled=not DYHUB_AimbotEnabled DYHUB_LockedTarget=DYHUB_AimbotEnabled and DYHUB_LockedTarget or nil DYHUB_mobileButton.BackgroundColor3=DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60) end) end
-local function DYHUB_EnableDrag(state) if not DYHUB_mobileButton then return end if DYHUB_dragConn then DYHUB_dragConn:Disconnect() end if DYHUB_dragMoveConn then DYHUB_dragMoveConn:Disconnect() end DYHUB_dragging=false if state then DYHUB_dragConn=DYHUB_mobileButton.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then DYHUB_dragging=true DYHUB_dragStart=input.Position DYHUB_startPos=DYHUB_mobileButton.Position input.Changed:Connect(function() if input.UserInputState==Enum.UserInputState.End then DYHUB_dragging=false DYHUB_Settings.Aimbot.MobileButtonPosition=DYHUB_mobileButton.Position end end) end end) DYHUB_dragMoveConn=UserInputService.InputChanged:Connect(function(input) if DYHUB_dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then local delta=input.Position-DYHUB_dragStart DYHUB_mobileButton.Position=UDim2.new(DYHUB_startPos.X.Scale,DYHUB_startPos.X.Offset+delta.X,DYHUB_startPos.Y.Scale,DYHUB_startPos.Y.Offset+delta.Y) end end) else DYHUB_Settings.Aimbot.MobileButtonPosition=DYHUB_mobileButton.Position end end
-local function DYHUB_EnsureGui() if PlayerGui:FindFirstChild("เขมรกาก") then DYHUB_guiFolder=PlayerGui:FindFirstChild("เขมรกาก") else DYHUB_guiFolder=Instance.new("ScreenGui") DYHUB_guiFolder.Name="เขมรกาก" DYHUB_guiFolder.ResetOnSpawn=false DYHUB_guiFolder.IgnoreGuiInset=true DYHUB_guiFolder.ZIndexBehavior=Enum.ZIndexBehavior.Sibling DYHUB_guiFolder.Parent=PlayerGui end DYHUB_CreateMobileButton() end
-DYHUB_EnsureGui() DYHUB_EnableDrag(DYHUB_Settings.Aimbot.DragUI)
-LocalPlayer.CharacterAdded:Connect(function() task.wait(1) DYHUB_EnsureGui() end)
-task.spawn(function() while task.wait(1) do if not PlayerGui:FindFirstChild("เขมรกาก") then DYHUB_EnsureGui() end end end)
-killerTab:Section({Title="Killer: The Veil GUI",Icon="settings"})
-killerTab:Toggle({Title="Enable Aimbot (Toggle GUI)",Default=DYHUB_AimbotToggleGUIVisible2,Callback=function(state) DYHUB_AimbotToggleGUIVisible2=state if DYHUB_mobileButton then DYHUB_mobileButton.Visible=state end end})
-killerTab:Toggle({Title="Custom Position Drag (Toggle GUI)",Default=DYHUB_Settings.Aimbot.DragUI,Callback=function(state) DYHUB_Settings.Aimbot.DragUI=state DYHUB_EnableDrag(state) end})
+local DYHUB_dragging, DYHUB_dragStart, DYHUB_startPos, DYHUB_dragConn, DYHUB_dragMoveConn
+
+-- Create or refresh the normal mobile button
+local function DYHUB_CreateMobileButton()
+    if DYHUB_mobileButton then
+        DYHUB_mobileButton:Destroy()
+    end
+    DYHUB_mobileButton = Instance.new("TextButton")
+    DYHUB_mobileButton.Name = "AimbotBTNForVEIL_Normal"
+    DYHUB_mobileButton.Size = UDim2.new(0, 90, 0, 90)
+    DYHUB_mobileButton.AnchorPoint = Vector2.new(1,1)
+    DYHUB_mobileButton.Position = DYHUB_Settings.Aimbot.MobileButtonPosition
+    DYHUB_mobileButton.BackgroundColor3 = DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+    DYHUB_mobileButton.Text = "🗡️"
+    DYHUB_mobileButton.TextSize = 36
+    DYHUB_mobileButton.TextColor3 = Color3.new(1,1,1)
+    DYHUB_mobileButton.Font = Enum.Font.GothamBold
+    DYHUB_mobileButton.Visible = DYHUB_AimbotToggleGUIVisible2
+    DYHUB_mobileButton.ZIndex = 999
+    DYHUB_mobileButton.Parent = DYHUB_guiFolder
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,20)
+    corner.Parent = DYHUB_mobileButton
+
+    DYHUB_mobileButton.MouseButton1Click:Connect(function()
+        -- toggle normal aimbot
+        DYHUB_AimbotEnabled = not DYHUB_AimbotEnabled
+        if DYHUB_AimbotEnabled then
+            -- enabling normal should disable 28° (mutual exclusion under The Veil)
+            DYHUB_Aimbot28Enabled = false
+            DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(60,255,60)
+            if DYHUB_mobileButton28 then
+                DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        else
+            DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(255,60,60)
+        end
+        if not DYHUB_AimbotEnabled then DYHUB_LockedTarget = nil end
+    end)
+end
+
+-- Create or refresh the 28° mobile button
+local function DYHUB_CreateMobileButton28()
+    if DYHUB_mobileButton28 then
+        DYHUB_mobileButton28:Destroy()
+    end
+    DYHUB_mobileButton28 = Instance.new("TextButton")
+    DYHUB_mobileButton28.Name = "AimbotBTNForVEIL_28"
+    DYHUB_mobileButton28.Size = UDim2.new(0, 90, 0, 90)
+    DYHUB_mobileButton28.AnchorPoint = Vector2.new(1,1)
+    DYHUB_mobileButton28.Position = DYHUB_Settings.Aimbot.MobileButton28Position
+    DYHUB_mobileButton28.BackgroundColor3 = DYHUB_Aimbot28Enabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+    DYHUB_mobileButton28.Text = "⚔️"
+    DYHUB_mobileButton28.TextSize = 36
+    DYHUB_mobileButton28.TextColor3 = Color3.new(1,1,1)
+    DYHUB_mobileButton28.Font = Enum.Font.GothamBold
+    DYHUB_mobileButton28.Visible = DYHUB_Aimbot28ToggleGUIVisible
+    DYHUB_mobileButton28.ZIndex = 999
+    DYHUB_mobileButton28.Parent = DYHUB_guiFolder
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,20)
+    corner.Parent = DYHUB_mobileButton28
+
+    DYHUB_mobileButton28.MouseButton1Click:Connect(function()
+        -- toggle 28° aimbot
+        DYHUB_Aimbot28Enabled = not DYHUB_Aimbot28Enabled
+        if DYHUB_Aimbot28Enabled then
+            -- enabling 28° should disable normal The Veil aimbot
+            DYHUB_AimbotEnabled = false
+            DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(60,255,60)
+            if DYHUB_mobileButton then
+                DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        else
+            DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(255,60,60)
+        end
+        if not DYHUB_Aimbot28Enabled then DYHUB_LockedTarget = nil end
+    end)
+end
+
+-- Enable drag for both buttons (if DragUI true)
+local function DYHUB_EnableDrag(state)
+    -- disconnect existing
+    if DYHUB_dragConn then
+        DYHUB_dragConn:Disconnect()
+        DYHUB_dragConn = nil
+    end
+    if DYHUB_dragMoveConn then
+        DYHUB_dragMoveConn:Disconnect()
+        DYHUB_dragMoveConn = nil
+    end
+    DYHUB_dragging = false
+
+    if state then
+        -- Add InputBegan and InputChanged handlers for both buttons (if present)
+        local function createConnFor(btn, posSettingName)
+            if not btn then return end
+            local conn1
+            conn1 = btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    DYHUB_dragging = true
+                    DYHUB_dragStart = input.Position
+                    DYHUB_startPos = btn.Position
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            DYHUB_dragging = false
+                            -- save position
+                            if btn == DYHUB_mobileButton then
+                                DYHUB_Settings.Aimbot.MobileButtonPosition = btn.Position
+                            elseif btn == DYHUB_mobileButton28 then
+                                DYHUB_Settings.Aimbot.MobileButton28Position = btn.Position
+                            end
+                        end
+                    end)
+                end
+            end)
+            return conn1
+        end
+
+        DYHUB_dragConn = createConnFor(DYHUB_mobileButton, "MobileButtonPosition")
+        -- InputChanged global
+        DYHUB_dragMoveConn = UserInputService.InputChanged:Connect(function(input)
+            if DYHUB_dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - DYHUB_dragStart
+                -- move both buttons separately if they were being dragged
+                if DYHUB_mobileButton and DYHUB_mobileButton.Visible and DYHUB_mobileButton:IsDescendantOf(PlayerGui) then
+                    DYHUB_mobileButton.Position = UDim2.new(DYHUB_startPos.X.Scale, DYHUB_startPos.X.Offset + delta.X, DYHUB_startPos.Y.Scale, DYHUB_startPos.Y.Offset + delta.Y)
+                end
+                if DYHUB_mobileButton28 and DYHUB_mobileButton28.Visible and DYHUB_mobileButton28:IsDescendantOf(PlayerGui) then
+                    -- if the user started dragging mobileButton28 later, the start pos won't match - this is a basic drag implementation
+                    DYHUB_mobileButton28.Position = UDim2.new(DYHUB_startPos.X.Scale, DYHUB_startPos.X.Offset + delta.X, DYHUB_startPos.Y.Scale, DYHUB_startPos.Y.Offset + delta.Y)
+                end
+            end
+        end)
+    else
+        -- save current positions
+        if DYHUB_mobileButton then
+            DYHUB_Settings.Aimbot.MobileButtonPosition = DYHUB_mobileButton.Position
+        end
+        if DYHUB_mobileButton28 then
+            DYHUB_Settings.Aimbot.MobileButton28Position = DYHUB_mobileButton28.Position
+        end
+    end
+end
+
+-- Ensure GUI folder exists and create buttons
+local function DYHUB_EnsureGui()
+    if PlayerGui:FindFirstChild("เขมรกาก") then
+        DYHUB_guiFolder = PlayerGui:FindFirstChild("เขมรกาก")
+    else
+        DYHUB_guiFolder = Instance.new("ScreenGui")
+        DYHUB_guiFolder.Name = "เขมรกาก"
+        DYHUB_guiFolder.ResetOnSpawn = false
+        DYHUB_guiFolder.IgnoreGuiInset = true
+        DYHUB_guiFolder.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        DYHUB_guiFolder.Parent = PlayerGui
+    end
+
+    DYHUB_CreateMobileButton()
+    DYHUB_CreateMobileButton28()
+    DYHUB_EnableDrag(DYHUB_Settings.Aimbot.DragUI)
+end
+
+-- initial GUI creation
+DYHUB_EnsureGui()
+
+-- Recreate GUI after character spawn (to avoid ScreenGui being reset)
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    DYHUB_EnsureGui()
+end)
+
+-- Watch in background to recreate GUI if removed
+task.spawn(function()
+    while task.wait(1) do
+        if not PlayerGui:FindFirstChild("เขมรกาก") then
+            DYHUB_EnsureGui()
+        end
+    end
+end)
+
 -------------------------------------------------------
 -- Keybind Toggle (PC)
+-- Z toggles normal; C toggles 28°
 -------------------------------------------------------
-UserInputService.InputBegan:Connect(function(input,gp) if gp then return end if input.UserInputType==Enum.UserInputType.Keyboard then if input.KeyCode.Name==DYHUB_Settings.Aimbot.SetKeybindLock then DYHUB_AimbotEnabled=not DYHUB_AimbotEnabled if not DYHUB_AimbotEnabled then DYHUB_LockedTarget=nil end if DYHUB_mobileButton then DYHUB_mobileButton.BackgroundColor3=DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60) end end end end)
--------------------------------------------------------
--- MAIN LOOP
--------------------------------------------------------
-RunService.RenderStepped:Connect(function() if not DYHUB_AimbotEnabled then return end local root=DYHUB_GetLocalRoot() if not root then return end local closePlr,dist=DYHUB_GetClosestByDistance() if closePlr and dist<=DYHUB_CloseDistance then DYHUB_LockedTarget=closePlr end if not DYHUB_TargetAlive() then DYHUB_LockedTarget=DYHUB_GetClosestInScreen() end if DYHUB_LockedTarget and DYHUB_CanSeeTarget(DYHUB_LockedTarget) then DYHUB_AimAt(DYHUB_LockedTarget) end end)
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local name = input.KeyCode.Name
+        if name == DYHUB_Settings.Aimbot.SetKeybindLock then
+            -- toggle normal
+            DYHUB_AimbotEnabled = not DYHUB_AimbotEnabled
+            if DYHUB_AimbotEnabled then
+                DYHUB_Aimbot28Enabled = false -- mutual exclusion under The Veil
+            else
+                DYHUB_LockedTarget = nil
+            end
+            if DYHUB_mobileButton then
+                DYHUB_mobileButton.BackgroundColor3 = DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+            end
+            if DYHUB_mobileButton28 and not DYHUB_Aimbot28Enabled then
+                DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        elseif name == DYHUB_Settings.Aimbot.SetKeybindLock28 then
+            -- toggle 28°
+            DYHUB_Aimbot28Enabled = not DYHUB_Aimbot28Enabled
+            if DYHUB_Aimbot28Enabled then
+                DYHUB_AimbotEnabled = false
+            else
+                DYHUB_LockedTarget = nil
+            end
+            if DYHUB_mobileButton28 then
+                DYHUB_mobileButton28.BackgroundColor3 = DYHUB_Aimbot28Enabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+            end
+            if DYHUB_mobileButton and not DYHUB_AimbotEnabled then
+                DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        end
+    end
+end)
 
+RunService.RenderStepped:Connect(function()
+    -- if neither enabled, nothing to do
+    if not DYHUB_AimbotEnabled and not DYHUB_Aimbot28Enabled then return end
+
+    local localRoot = DYHUB_GetLocalRoot()
+    if not localRoot then return end
+
+    -- try select close player by distance if within CloseDistance
+    local closePlr, dist = DYHUB_GetClosestByDistance()
+    if closePlr and dist and dist <= DYHUB_CloseDistance then
+        DYHUB_LockedTarget = closePlr
+    end
+
+    -- if no locked target or locked target invalid, pick closest on screen
+    if not DYHUB_TargetAlive() then
+        DYHUB_LockedTarget = DYHUB_GetClosestInScreen()
+    end
+
+    -- if no locked target or locked target invalid, pick closest on screen
+    if not DYHUB_TargetAlive() then
+        DYHUB_LockedTarget = DYHUB_GetClosestInScreen()
+    end
+
+    if DYHUB_LockedTarget and DYHUB_CanSeeTarget(DYHUB_LockedTarget) then
+        if DYHUB_Aimbot28Enabled then
+            DYHUB_AimAt(DYHUB_LockedTarget, true)  -- use 28°
+        elseif DYHUB_AimbotEnabled then
+            DYHUB_AimAt(DYHUB_LockedTarget, false) -- compute pitch by distance
+        end
+    end
+end)
 
 killerTab:Section({ Title = "Feature Killer", Icon = "swords" })
 
