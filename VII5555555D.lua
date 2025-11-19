@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v798
 -- ======================
-local version = "4.3.6"
+local version = "4.4.0"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -690,6 +690,15 @@ EspTab:Toggle({Title="Show Highlight", Value=ShowHighlight, Callback=function(v)
 EspTab:Toggle({Title="Show Percent", Value=ShowPercent, Callback=function(v) ShowPercent=v end})
 
 -- ====================== BYPASS GATE ======================
+MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
+
+MainTab:Button({ 
+    Title = "Aimbot (NEW)", 
+    Callback = function()
+       loadstring(game:HttpGet("https://pastefy.app/Y6ui9r3d/raw"))()
+    end
+})
+
 local bypassGateEnabled = false
 
 -- ฟังก์ชันรวบรวมเกตทั้งหมด
@@ -1752,7 +1761,7 @@ local DYHUB_MAX_DISTANCE = 250
 local DYHUB_MIN_PITCH = -1
 local DYHUB_MAX_PITCH = 30
 local DYHUB_LOW_HP_IGNORE = 20
-local DYHUB_ToughWall = false
+local DYHUB_ToughWall = true
 local DYHUB_AimbotToggleGUIVisible = false
 local DYHUB_Aimbot28ToggleGUIVisible = false
 local DYHUB_crosshair, DYHUB_mobileButton, DYHUB_mobileButton28, DYHUB_guiFolder
@@ -2109,9 +2118,9 @@ if type(killerTab) == "table" and killerTab.Section and killerTab.Toggle then --
     })
 
     killerTab:Section({Title="Killer: The Veil Setting", Icon="settings"})
-    killerTab:Input({Title="Set Pitch Min (Value)", Default=tostring(DYHUB_MIN_PITCH), Placeholder="Ex: -1", Callback=function(v) local n=tonumber(v) if n then DYHUB_MIN_PITCH=n end end})
-    killerTab:Input({Title="Set Pitch Max (Value)", Default=tostring(DYHUB_MAX_PITCH), Placeholder="Ex: 30", Callback=function(v) local n=tonumber(v) if n then DYHUB_MAX_PITCH=n end end})
-    killerTab:Toggle({Title="Tough Wall (The Veil)", Default=false, Callback=function(v) DYHUB_ToughWall=v end})
+    --killerTab:Input({Title="Set Pitch Min (Value)", Default=tostring(DYHUB_MIN_PITCH), Placeholder="Ex: -1", Callback=function(v) local n=tonumber(v) if n then DYHUB_MIN_PITCH=n end end})
+    --killerTab:Input({Title="Set Pitch Max (Value)", Default=tostring(DYHUB_MAX_PITCH), Placeholder="Ex: 30", Callback=function(v) local n=tonumber(v) if n then DYHUB_MAX_PITCH=n end end})
+    killerTab:Toggle({Title="Tough Wall (The Veil)", Value=true, Callback=function(v) DYHUB_ToughWall=v end})
     killerTab:Input({Title="Set Keybind Aimbot (PC ONLY)", Default=DYHUB_Settings.Aimbot.SetKeybindLock, Placeholder="Ex: Z", Callback=function(v) if #v==1 then DYHUB_Settings.Aimbot.SetKeybindLock=string.upper(v) end end})
     killerTab:Input({Title="Set Keybind Aimbot Charge (PC ONLY)", Default=DYHUB_Settings.Aimbot.SetKeybindLock28, Placeholder="Ex: X", Callback=function(v) if #v==1 then DYHUB_Settings.Aimbot.SetKeybindLock28=string.upper(v) end end})
 
@@ -2179,6 +2188,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
+killerTab:Section({ Title = "Killer: The Masked", Icon = "venetian-mask" })
 killerTab:Paragraph({
     Title = "Information: The Masked",
     Desc = "• Richard (No Abilities)\n• Tony (One Shot, No hold)\n• Brandon (Speed Boost)\n• Jake (Lunge Range)\n• Richter (Removes terror radius)\n• Graham (Faster Vault)\n• Alex (Chainsaw, One Shot)",
@@ -2186,8 +2196,6 @@ killerTab:Paragraph({
     ImageSize = 50,
     Locked = false
 })
-
-killerTab:Section({ Title = "Killer: The Masked", Icon = "venetian-mask" })
 
 local Killer = {
     TheMasked = {
@@ -2755,6 +2763,8 @@ killerTab:Button({
 })
 
 -- ====================== VISUAL ======================
+
+
 local Lighting = game:GetService("Lighting")
 
 local fullBrightEnabled = false
@@ -2820,7 +2830,7 @@ MainTab:Section({ Title = "Misc", Icon = "settings" })
 local AntiAFK = false
 MainTab:Toggle({
     Title = "Anti AFK",
-    Default = false,
+    Value = true,
     Callback = function(state)
         AntiAFK = state
         task.spawn(function()
@@ -3504,6 +3514,3 @@ local Discord = Info:Paragraph({
 })
 
 -- hi
-
-
-
