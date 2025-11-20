@@ -2,8 +2,8 @@
 
 local KINGHUB01 = 'https://raw.githubusercontent.com/KINGHUB01/Gui/main/'
 
-local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/dyumra/Library-DYHUB/refs/heads/main/library.lua'))()
-local theme_manager = loadstring(game:HttpGet('https://raw.githubusercontent.com/dyumra/Library-DYHUB/refs/heads/main/ThemeManager.lua'))()
+local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/mabdu21/YWVATBAUBAK-FISH-IT/refs/heads/main/dfadasdas.lua'))()
+local theme_manager = loadstring(game:HttpGet('https://raw.githubusercontent.com/mabdu21/YWVATBAUBAK-FISH-IT/refs/heads/main/jjadjasdhja.lua'))()
 local save_manager = loadstring(game:HttpGet(KINGHUB01 .. 'Gui%20Lib%20%5BSaveManager%5D'))()
 
 if not game:IsLoaded() then
@@ -1702,6 +1702,7 @@ save_manager:BuildConfigSection(tabs['ui settings'])
 theme_manager:ApplyToTab(tabs['ui settings'])
 
 save_manager:LoadAutoloadConfig()
+
 
 
 
