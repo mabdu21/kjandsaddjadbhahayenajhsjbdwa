@@ -1,7 +1,7 @@
 --[[ 
 
   === DYHUB | ARSENAL ===
-  Version: 2.0.0.0.0.0.0.7
+  Version: 2.0.0.0.0.0.0.9
   ===== DYHUB'S TEAM =====
 
 --]]
@@ -52,10 +52,21 @@ Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", frame)
 stroke.Thickness = 3
 
+local MarketplaceService = game:GetService("MarketplaceService")
+local success, info = pcall(function()
+    return MarketplaceService:GetProductInfo(game.PlaceId)
+end)
+
+local namegame = "Unknown Game"
+if success and info and info.Name then
+    namegame = info.Name
+end
+
+-- UI Title
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 36)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.Text = "ARSENAL | DYHUB"
+title.Text = namegame .. " | DYHUB"
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 title.BackgroundTransparency = 1
@@ -317,16 +328,17 @@ btnNext.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 btnNext.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", btnNext).CornerRadius = UDim.new(0, 8)
 
+local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
+
 local autoFireConnection = nil
 
 local function startAutoFire()
     if autoFireConnection then return end
-    autoFireConnection = RunService.RenderStepped:Connect(function()
-        if AutoFire and player and player.Character and player.Character:FindFirstChildOfClass("Tool") then
-            local tool = player.Character:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Handle") then
-                tool:Activate()
-            end
+
+    autoFireConnection = RunService.Heartbeat:Connect(function()
+        if AutoFire then
+            VirtualUser:ClickButton1(Vector2.new(0,0))
         end
     end)
 end
