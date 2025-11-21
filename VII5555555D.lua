@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v798
 -- ======================
-local version = "4.4.1"
+local version = "4.4.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -39,6 +39,71 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- WindUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local executorName = "Unknown"
+
+pcall(function()
+    -- ✅ ตัวตรวจจับหลักจาก identifyexecutor()
+    if identifyexecutor then
+        local name, ver = identifyexecutor()
+        executorName = ver and (name .. " (" .. ver .. ")") or name
+        return
+    end
+
+    -- ✅ ตัวตรวจจับสำรองจาก getexecutorname()
+    if getexecutorname then
+        executorName = getexecutorname()
+        return
+    end
+
+    -- ✅ ตรวจจาก global flags (สำหรับ executor ยอดนิยม)
+    local globals = getgenv and getgenv() or _G
+    local checkList = {
+        { "Delta", "Delta successfully" },
+        { "Xeno", "Xeno successfully" },
+        { "Zenith", "Zenith successfully" },
+        { "Wave", "Wave successfully" },
+	    { "Volt", "Volt successfully" },
+	    { "Volcano", "Volcano successfully" },
+        { "Velocity", "Velocity successfully" },
+        { "Seliware", "Seliware successfully" },
+	    { "Valex", "Valex successfully" },
+	    { "Potassium", "Potassium successfully" },
+        { "Bunni", "Bunni successfully" },
+        { "Sirhurt", "Sirhurt successfully" },
+	    { "Delta", "Delta successfully" },
+	    { "Codex", "Codex successfully" },
+	    { "Solara", "Solara: Not Support" },
+	    { "Cryptic", "Cryptic successfully" },
+        { "Krnl", "Krnl successfully" },
+    }
+
+    for _, data in ipairs(checkList) do
+        local key, name = unpack(data)
+        if globals[key] ~= nil or getfenv()[key] ~= nil then
+            executorName = name
+            return
+        end
+    end
+
+    -- ✅ ตรวจชื่อไฟล์ Lua Environment เผื่อบาง executor
+    local info = debug.getinfo(1, "S")
+    if info and info.source then
+        local src = string.lower(info.source)
+        if src:find("synapse") then executorName = "Synapse Z successfully" end
+        if src:find("fluxus") then executorName = "Rip Fluxus successfully" end
+        if src:find("krnl") then executorName = "Krnl successfully" end
+        if src:find("delta") then executorName = "Delta successfully" end
+    end
+end)
+
+-- ✅ แจ้งเตือนผ่าน WindUI
+WindUI:Notify({
+    Title = "DYHUB",
+    Content = "Executor: " .. executorName .. ".",
+    Duration = 6,
+    Image = "cpu"
+})
 
 -- ====================== WINDOW ======================
 local Players = game:GetService("Players")
@@ -2191,6 +2256,18 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    while task.wait(1) do
+        local playergui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        local Gui = playergui:FindFirstChild("เขมรกากๆ")
+
+        if Gui and Gui.Enabled == false then
+            Gui.Enabled = true
+        end
+    end
+end)
+
+
 -- Loop Aimbot
 RunService.RenderStepped:Connect(function()
     if DYHUB_AimbotEnabled then
@@ -2869,7 +2946,7 @@ local speedEnabled, flyNoclipSpeed = false, 3
 local speedConnection, noclipConnection
 
 PlayerTab:Section({ Title = "Feature Player", Icon = "rabbit" })
-PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=100,Default=4}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
+PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=100,Default=5}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
 
 PlayerTab:Toggle({ Title = "Enable Speed", Value=false, Callback=function(v)
     speedEnabled=v
