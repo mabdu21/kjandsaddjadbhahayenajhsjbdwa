@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.4.1"
+local version = "5.4.1" -- old script
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
