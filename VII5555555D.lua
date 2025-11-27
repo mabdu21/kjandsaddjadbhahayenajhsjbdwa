@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v798
+-- Powered by GPT 5 | v800
 -- ======================
 local version = "4.4.2"
 -- ======================
@@ -2946,7 +2946,7 @@ local speedEnabled, flyNoclipSpeed = false, 3
 local speedConnection, noclipConnection
 
 PlayerTab:Section({ Title = "Feature Player", Icon = "rabbit" })
-PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=100,Default=5}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
+PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=999,Default=5}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
 
 PlayerTab:Toggle({ Title = "Enable Speed", Value=false, Callback=function(v)
     speedEnabled=v
