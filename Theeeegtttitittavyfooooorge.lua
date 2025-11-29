@@ -1,10 +1,10 @@
 if game.GameId ~= 7671049560 then
-    warn("[Haze] โ Not in the correct game!")
+    warn("[DYHUB] Not in the correct game!")
     return
 end
 
 if _G.HazePrivate then
-    warn("[Haze] UI already initialized")
+    warn("[DYHUB] UI already initialized")
     return
 end
 
@@ -58,7 +58,7 @@ local function RedeemAllCodes()
     if not Remotes.RedeemCode then return end
     
     local codes = {
-        "40KLIKES", "20KLIKES", "15KLIKES", 
+        "200K!", "100K!", "40KLIKES", "20KLIKES", "15KLIKES", 
         "10KLIKES", "5KLIKES", "BETARELEASE!", "POSTRELEASEQNA"
     }
 
