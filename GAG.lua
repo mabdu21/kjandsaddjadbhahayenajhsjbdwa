@@ -59,9 +59,9 @@
 -- -- local Import = getgenv().Import
 
 -- Load Modules
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/GAG/refs/heads/main/GAG_Lib.lua"))()
-local Utility = loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/GAG/refs/heads/main/GAG_Utility.lua"))()
-local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/dyumra/GAG/refs/heads/main/GAG_Module.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/GAG_Lib.lua"))()
+local Utility = loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/GAG_Module.lua"))()
+local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/GAG_Utility.lua"))()
 
 local Collection = {
 	["Auto Harvest"] = {
@@ -2767,5 +2767,6 @@ Module:Init(function() --// Exit //--
 	Module:SendNotification('<font color="rgb(173,216,230)">Join Our Discord For More Updates</font>')
 	Module:SendNotification('<font color="rgb(173,216,230)">Scripted by severitysvc :heart: </font>')
 end)
+
 
 
