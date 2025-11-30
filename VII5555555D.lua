@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v800
 -- ======================
-local version = "4.4.2"
+local version = "4.4.4"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -329,51 +329,63 @@ end
 local function getFolderGenerator()
     local folders = {}
     local map = workspace:FindFirstChild("Map")
-    if not map then return folders end
 
-    -- Map.Generator
-    for _, child in ipairs(map:GetChildren()) do
-        if child.Name == "Generator" and child:IsA("Model") then
-            table.insert(folders, child)
-        end
-    end
+    -- ตรวจใน Map
+    if map then
 
-    -- Map.Model.Generator
-    local model = map:FindFirstChild("Model")
-    if model then
-        for _, child in ipairs(model:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-    end
-
-    -- Map.Maze2.Generator
-    local Maze2 = map:FindFirstChild("Maze2")
-    if Maze2 then
-        for _, child in ipairs(Maze2:GetChildren()) do
-            if child.Name == "Generator" and child:IsA("Model") then
-                table.insert(folders, child)
-            end
-        end
-    end
-
-    -- Rooftop.Generator
-    local rooftop = map:FindFirstChild("Rooftop")
-    if rooftop then
-        for _, child in ipairs(rooftop:GetChildren()) do
+        -- Map.Generator
+        for _, child in ipairs(map:GetChildren()) do
             if child.Name == "Generator" and child:IsA("Model") then
                 table.insert(folders, child)
             end
         end
 
-        -- Rooftop.Model.Generator
-        local rooftopModel = rooftop:FindFirstChild("Model")
-        if rooftopModel then
-            for _, child in ipairs(rooftopModel:GetChildren()) do
+        -- Map.Model.Generator
+        local model = map:FindFirstChild("Model")
+        if model then
+            for _, child in ipairs(model:GetChildren()) do
                 if child.Name == "Generator" and child:IsA("Model") then
                     table.insert(folders, child)
                 end
+            end
+        end
+
+        -- Map.Maze2.Generator
+        local Maze2 = map:FindFirstChild("Maze2")
+        if Maze2 then
+            for _, child in ipairs(Maze2:GetChildren()) do
+                if child.Name == "Generator" and child:IsA("Model") then
+                    table.insert(folders, child)
+                end
+            end
+        end
+
+        -- Rooftop.Generator
+        local rooftop = map:FindFirstChild("Rooftop")
+        if rooftop then
+            for _, child in ipairs(rooftop:GetChildren()) do
+                if child.Name == "Generator" and child:IsA("Model") then
+                    table.insert(folders, child)
+                end
+            end
+
+            -- Rooftop.Model.Generator
+            local rooftopModel = rooftop:FindFirstChild("Model")
+            if rooftopModel then
+                for _, child in ipairs(rooftopModel:GetChildren()) do
+                    if child.Name == "Generator" and child:IsA("Model") then
+                        table.insert(folders, child)
+                    end
+                end
+            end
+        end
+    end
+
+    -- 🟦 ถ้าหาไม่เจอเลย -> หาทั้ง workspace ทุกที่
+    if #folders == 0 then
+        for _, descendant in ipairs(workspace:GetDescendants()) do
+            if descendant.Name == "Generator" and descendant:IsA("Model") then
+                table.insert(folders, descendant)
             end
         end
     end
@@ -3108,7 +3120,7 @@ local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
 -- Config
-local LOBBY_POSITION = Vector3.new(653.552002, 684.317444, 1577.81934)
+local LOBBY_POSITION = Vector3.new(1939.12061, 736.51886, 3814.94458)
 local SAFE_DISTANCE_FROM_LOBBY = 50 -- Pumpkin ใกล้ Lobby จะถูกละเว้น
 local TELEPORT_OFFSET = 10 -- ระยะห่างจากวัตถุเวลา teleport
 
@@ -3131,7 +3143,7 @@ local function getAllGenerators()
     return list
 end
 
--- หา Pumpkin ทุกอันใน Workspace แต่ละเว้นใกล้ Lobby และ Decorations
+--[[ หา Pumpkin ทุกอันใน Workspace แต่ละเว้นใกล้ Lobby และ Decorations
 local function getAllPumpkins()
     local list = {}
     local nameCount = {}
@@ -3160,6 +3172,7 @@ local function getAllPumpkins()
     end
     return list
 end
+--]]
 
 -- คืนค่า CFrame ของ object
 local function getCFrame(obj)
@@ -3195,11 +3208,11 @@ end
 local map = {
     teleport = {
         Map = {
-            Lobby = CFrame.new(653.552002, 684.317444, 1577.81934),
+            Lobby = CFrame.new(1939.12061, 736.51886, 3814.94458),
             Game = "PlayerWithWeapon"
         },
-        Generator = {}, -- จะ fill ด้วย getAllGenerators()
-        Pumpkin = {}   -- จะ fill ด้วย getAllPumpkins()
+        Generator = {} -- จะ fill ด้วย getAllGenerators()
+        --Pumpkin = {}   -- จะ fill ด้วย getAllPumpkins()
     }
 }
 
