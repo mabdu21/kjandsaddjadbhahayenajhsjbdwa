@@ -541,7 +541,7 @@ local Library = loadstring(game:HttpGet("https://haze.wtf/api/ui"))()
 task.wait(0.5)
 
 if not Library or not Library.GetStatus or not _G.HazePrivate then
-    warn("[Haze] Failed to load library!")
+    warn("[DYHUB] Failed to load library!")
     return
 end
 
@@ -552,11 +552,11 @@ while not Library.GetStatus().verified do
 end
 
 if not Library.GetStatus().verified then
-    warn("[Haze] Failed to verify library!")
+    warn("[DYHUB] Failed to verify library!")
     return
 end
 
-local Window = Library.new("Haze Script", MarketplaceService:GetProductInfo(game.PlaceId).Name or "Game Title", nil)
+local Window = Library.new("Haze.wtf X DYHUB", MarketplaceService:GetProductInfo(game.PlaceId).Name or "Game Title", nil)
 local ConfigName = "TheForge"
 
 local SavedConfig = Library.InitializeConfig(ConfigName, Config)
@@ -622,7 +622,7 @@ PlayerSection:AddToggle("Auto Run", Config.AutoRun, function(state)
     UpdateSetting("AutoRun", state)
 end)
 
-PlayerSection:AddToggle("Infinite Fly", Config.InfiniteFly, function(state)
+PlayerSection:AddToggle("Infinite Fly (PC ONLY)", Config.InfiniteFly, function(state)
     UpdateSetting("InfiniteFly", state)
 end)
 
