@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v800
+-- Powered by GPT 5 | v805
 -- ======================
 local version = "4.4.4"
 -- ======================
@@ -426,8 +426,33 @@ local function getMapFolders()
         table.insert(folders, model)
     end
 
+    -- เพิ่ม Map.Hooks
+    local hooks = mainMap:FindFirstChild("Hooks")
+    if hooks then
+        table.insert(folders, hooks)
+    end
+
+    -- เพิ่ม Map.Pallets
+    local pallets = mainMap:FindFirstChild("Pallets")
+    if pallets then
+        table.insert(folders, pallets)
+    end
+
+    -- เพิ่ม Map.Vaults
+    local vaults = mainMap:FindFirstChild("Vaults")
+    if vaults then
+        table.insert(folders, vaults)
+    end
+
+    -- เพิ่ม Map.Gens
+    local gens = mainMap:FindFirstChild("Gens")
+    if gens then
+        table.insert(folders, gens)
+    end
+
     return folders
 end
+
 
 -- Update Window ESP
 local function updateWindowESP()
