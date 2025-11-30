@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v805
+-- Powered by GPT 5 | v806
 -- ======================
 local version = "4.4.4"
 -- ======================
@@ -359,6 +359,15 @@ local function getFolderGenerator()
                 end
             end
         end
+
+		local NewMap = map:FindFirstChild("Gens")
+        if NewMap then
+            for _, child in ipairs(Gens:GetChildren()) do
+                if child.Name == "Generator" and child:IsA("Model") then
+                    table.insert(folders, child)
+                end
+            end
+		end
 
         -- Rooftop.Generator
         local rooftop = map:FindFirstChild("Rooftop")
