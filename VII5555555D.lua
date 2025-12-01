@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v806
+-- Powered by GPT 5 | v809
 -- ======================
 local version = "4.4.4"
 -- ======================
@@ -330,7 +330,6 @@ local function getFolderGenerator()
     local folders = {}
     local map = workspace:FindFirstChild("Map")
 
-    -- ตรวจใน Map
     if map then
 
         -- Map.Generator
@@ -360,14 +359,15 @@ local function getFolderGenerator()
             end
         end
 
-		local NewMap = map:FindFirstChild("Gens")
-        if NewMap then
+        -- ✅ Map.Gens.Generator  (แก้ตรงนี้)
+        local Gens = map:FindFirstChild("Gens")
+        if Gens then
             for _, child in ipairs(Gens:GetChildren()) do
                 if child.Name == "Generator" and child:IsA("Model") then
                     table.insert(folders, child)
                 end
             end
-		end
+        end
 
         -- Rooftop.Generator
         local rooftop = map:FindFirstChild("Rooftop")
@@ -390,7 +390,7 @@ local function getFolderGenerator()
         end
     end
 
-    -- 🟦 ถ้าหาไม่เจอเลย -> หาทั้ง workspace ทุกที่
+    -- ถ้าไม่เจอเลย -> scan ทั้ง workspace
     if #folders == 0 then
         for _, descendant in ipairs(workspace:GetDescendants()) do
             if descendant.Name == "Generator" and descendant:IsA("Model") then
