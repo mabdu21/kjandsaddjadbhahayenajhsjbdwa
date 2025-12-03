@@ -1,5 +1,5 @@
 -- ======================
-local version = "2.5.3" 
+local version = "2.5.5" 
 -- ======================
 repeat task.wait() until game:IsLoaded()
 -- FPS Unlock
@@ -697,52 +697,52 @@ PlayerTab:Slider({
 })
 PlayerTab:Toggle({Title="Click TP (Ctrl + Click)", Value=Config.ClickTeleport, Callback=function(v) Config.ClickTeleport = v end})
 CombatTab:Section({ Title = "Combat Features", Icon = "swords" })
-CombatTab:Toggle({
-    Title = "Auto Attack",
-    Value = Config.AutoAttack,
-    Callback = function(v)
-        Config.AutoAttack = v
-    end
-})
-CombatTab:Toggle({
-    Title = "Auto Parry/Block",
-    Value = Config.AutoParry,
-    Callback = function(v)
-        Config.AutoParry = v
-    end
-})
-local MobList = {}
-local MobDropdown
 
--- refresh mobs when changed
+local MobList = {}
+local SelectedMob = nil
+local AutoAttack = false
+
+local MobDropdown = CombatTab:Dropdown("Select Mob", MobList, function(v)
+    SelectedMob = v
+end)
+
+CombatTab:Toggle("Auto Attack", false, function(v)
+    AutoAttack = v
+end)
+
+-- Auto refresh mob list
 task.spawn(function()
-    while true do
-        if ScriptAPI.GetMobTypes then
-            local newMobs = ScriptAPI.GetMobTypes()
-            table.sort(newMobs)
-            if not listsEqual(newMobs, MobList) then
-                MobList = newMobs
-                if MobDropdown then
-                    MobDropdown:Refresh(MobList)
-                end
+    while task.wait(1) do
+        local NewList = {}
+
+        for _, mob in pairs(workspace:GetChildren()) do
+            if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                table.insert(NewList, mob.Name)
             end
         end
-        task.wait(3)
+
+        if #NewList ~= #MobList then
+            MobList = NewList
+            MobDropdown:Refresh(MobList, true)
+        end
     end
 end)
 
-MobDropdown = CombatTab:Dropdown({
-    Title = "Target Mobs",
-    Values = MobList,
-    Multi = true,
-    Callback = function(selected)
-        Config.AttackTargets = {}
-        for _, mob in ipairs(selected) do
-            Config.AttackTargets[mob] = true
+-- Auto attack loop
+task.spawn(function()
+    while task.wait(0.1) do
+        if AutoAttack and SelectedMob then
+            local mob = workspace:FindFirstChild(SelectedMob)
+            local char = game.Players.LocalPlayer.Character
+
+            if mob and mob:FindFirstChild("HumanoidRootPart") and char and char:FindFirstChild("HumanoidRootPart") then
+                char:PivotTo(mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+                mob.Humanoid.Health = mob.Humanoid.Health - 5 -- example damage
+            end
         end
     end
-})
-MobDropdown:Refresh(MobList)
+end)
+
 
 ForgeTab:Section({ Title = "Instant Forge", Icon = "pickaxe" })
 ForgeTab:Paragraph({
@@ -752,158 +752,82 @@ ForgeTab:Paragraph({
     ImageSize = 45,
     Locked = false
 })
-local SelectedOres = {}
-local SelectedAmount = 3
-local OreDropdown
-local ForgeTypes = {"Weapon", "Armor"}
-local ForgeTypeChecks = {}
-ForgeTab:Button({
-    Title = "Start Instant Forge",
-    Callback = function()
-        if not next(SelectedOres) then
-            Window:Notify("Error", "Please select at least one ore!", 3)
-            return
-        end
-        if SelectedAmount < 3 then
-            Window:Notify("Error", "Amount must be at least 3!", 3)
-            return
-        end
-        local finalOres = {}
-        for ore in pairs(SelectedOres) do
-            finalOres[ore] = SelectedAmount
-        end
-        if ScriptAPI.InstantForge then
-            ScriptAPI.InstantForge(finalOres, Config.ForgeItemType, function(title, msg, time)
-                Window:Notify(title, msg, time)
-            end)
-        end
+
+local OreList = {}
+local SelectedOre = nil
+
+local OreDropdown = ForgeTab:Dropdown("Select Ore", OreList, function(v)
+    SelectedOre = v
+end)
+
+ForgeTab:Button("Instant Forge", function()
+    if not SelectedOre then return end
+
+    local forgeRemote = game.ReplicatedStorage:FindFirstChild("ForgeOre")
+
+    if forgeRemote then
+        forgeRemote:FireServer(SelectedOre)
     end
-})
-for _, fType in ipairs(ForgeTypes) do
-    ForgeTypeChecks[fType] = ForgeTab:Toggle({
-        Title = "Forge Type: " .. fType,
-        Value = Config.ForgeItemType == fType,
-        Callback = function(state)
-            if state then
-                Config.ForgeItemType = fType
-                for otherType, toggle in pairs(ForgeTypeChecks) do
-                    if otherType ~= fType then
-                        toggle:Set(false)
-                    end
+end)
+
+-- Auto refresh ores
+task.spawn(function()
+    while task.wait(1) do
+        local NewList = {}
+
+        if game.Players.LocalPlayer:FindFirstChild("Backpack") then
+            for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                if item:IsA("Tool") then
+                    table.insert(NewList, item.Name)
                 end
             end
         end
-    })
-end
-OreDropdown = ForgeTab:Dropdown({
-    Title = "Select Ores",
-    Values = {},
-    Multi = true,
-    Callback = function(selected)
-        SelectedOres = {}
-        for _, ore in ipairs(selected) do
-            SelectedOres[ore] = true
-        end
-    end
-})
-ForgeTab:Slider({
-    Title = "Ore Amount",
-    Min = 3,
-    Max = 100,
-    Value = SelectedAmount,
-    Callback = function(v)
-        SelectedAmount = v
-    end
-})
 
--- refresh available ores reliably
-task.spawn(function()
-    while true do
-        local availOres = ScriptAPI.GetAvailableOres() or {}
-        local oreList = {}
-        for oreName in pairs(availOres) do
-            table.insert(oreList, oreName)
+        if #NewList ~= #OreList then
+            OreList = NewList
+            OreDropdown:Refresh(OreList, true)
         end
-        table.sort(oreList)
-        if OreDropdown and not listsEqual(oreList, {}) then
-            OreDropdown:Refresh(oreList)
-        elseif OreDropdown then
-            -- still refresh even if empty to clear previous values
-            OreDropdown:Refresh(oreList)
-        end
-        task.wait(2) -- Optimized refresh
     end
 end)
+
 
 TeleportTab:Section({ Title = "Teleport Locations", Icon = "map" })
-local TeleportLocations = {}
+
+local TeleportList = {}
 local SelectedTeleport = nil
-local TeleportDropdown = TeleportTab:Dropdown({
-    Title = "Select Location",
-    Values = {},
-    Multi = false,
-    Callback = function(val)
-        SelectedTeleport = val
-    end
-})
 
-local function TeleportTo(name)
-    local proxFolder = Workspace:FindFirstChild("Proximity")
-    if not proxFolder then
-        Window:Notify("Error", "Proximity folder not found!", 3)
-        return
-    end
-    local target = proxFolder:FindFirstChild(name)
-    if not target then
-        Window:Notify("Error", "Location not found!", 3)
-        return
-    end
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local targetCFrame
-    if target:IsA("Model") then
-        targetCFrame = target.PrimaryPart and target.PrimaryPart.CFrame or target:GetPivot()
-    elseif target:IsA("BasePart") then
-        targetCFrame = target.CFrame
-    end
-    if targetCFrame then
-        root.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-        Window:Notify("Success", "Teleported to " .. name .. "!", 3)
-    end
-end
+local TeleportDropdown = TeleportTab:Dropdown("Select Location", TeleportList, function(v)
+    SelectedTeleport = v
+end)
 
--- refresh teleport locations whenever changed
-task.spawn(function()
-    while true do
-        local proxFolder = Workspace:FindFirstChild("Proximity")
-        local newList = {}
-        if proxFolder then
-            for _, loc in ipairs(proxFolder:GetChildren()) do
-                if loc:IsA("Model") or loc:IsA("BasePart") then
-                    table.insert(newList, loc.Name)
-                end
-            end
-            table.sort(newList)
+TeleportTab:Button("Teleport Now", function()
+    if SelectedTeleport then
+        local Point = workspace:FindFirstChild(SelectedTeleport)
+        if Point and Point:IsA("BasePart") then
+            game.Players.LocalPlayer.Character:PivotTo(Point.CFrame + Vector3.new(0, 3, 0))
         end
-        if not listsEqual(newList, TeleportLocations) then
-            TeleportLocations = newList
-            if TeleportDropdown then TeleportDropdown:Refresh(newList) end
-        end
-        task.wait(2)
     end
 end)
 
-TeleportTab:Button({
-    Title = "Teleport Now",
-    Callback = function()
-        if not SelectedTeleport then
-            Window:Notify("Error", "Select a location first!", 3)
-            return
+-- Auto refresh teleport list
+task.spawn(function()
+    while task.wait(1) do
+        local NewList = {}
+        
+        for _, v in pairs(workspace:GetChildren()) do
+            if v:IsA("Part") and v.Name:match("TP") then
+                table.insert(NewList, v.Name)
+            end
         end
-        TeleportTo(SelectedTeleport)
+
+        -- Only update if changed
+        if #NewList ~= #TeleportList then
+            TeleportList = NewList
+            TeleportDropdown:Refresh(TeleportList, true)
+        end
     end
-})
+end)
+
 -- Game Data Callback for WindUI
 Library.SetGameDataCallback(function()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
