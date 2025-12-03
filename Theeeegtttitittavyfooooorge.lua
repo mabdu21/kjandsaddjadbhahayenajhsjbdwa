@@ -1,5 +1,5 @@
 -- ======================
-local version = "2.5.5" 
+local version = "2.5.8"
 -- ======================
 repeat task.wait() until game:IsLoaded()
 -- FPS Unlock
@@ -57,7 +57,7 @@ pcall(function()
     }
     for _, data in ipairs(checkList) do
         local key, name = unpack(data)
-        if globals[key] ~= nil or getfenv()[key] ~= nil then
+        if globals[key] ~= nil or (pcall(function() return getfenv and getfenv()[key] end) and getfenv and getfenv()[key] ~= nil) then
             executorName = name
             return
         end
@@ -137,7 +137,7 @@ Window:EditOpenButton({
     Color = ColorSequence.new(Color3.fromRGB(20, 20, 20), Color3.fromRGB(100, 255, 100)),
     Draggable = true,
 })
-local Players = game:GetService("Players")
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -183,7 +183,7 @@ local function RedeemAllCodes()
         Window:Notify("Error", "RedeemCode remote not found!", 5)
         return
     end
-   
+
     local codes = {
         "200K!", "100K!", "40KLIKES", "20KLIKES", "15KLIKES",
         "10KLIKES", "5KLIKES", "BETARELEASE!", "POSTRELEASEQNA"
@@ -201,12 +201,14 @@ local function RedeemAllCodes()
     end
     Window:Notify("Success", "All codes redeemed!", 3)
 end
+
+-- ===================== AutoMine =====================
 local function InitializeAutoMine()
     ScriptAPI.GetRockTypes = function()
         local rockTypes = {}
         local seen = {}
         local rocksFolder = Workspace:FindFirstChild("Rocks")
-       
+
         if rocksFolder then
             for _, category in ipairs(rocksFolder:GetChildren()) do
                 for _, child in ipairs(category:GetChildren()) do
@@ -230,7 +232,7 @@ local function InitializeAutoMine()
     local function FindNearestRock(maxDist)
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-       
+
         local root = char.HumanoidRootPart
         local closestRock = nil
         local bestDist = maxDist or 15
@@ -240,7 +242,7 @@ local function InitializeAutoMine()
             if descendant.Name == "Hitbox" and descendant:IsA("BasePart") and descendant.Parent and descendant.Parent.Name == Config.MineTarget then
                 local infoFrame = descendant.Parent:FindFirstChild("infoFrame")
                 local hpText = infoFrame and infoFrame:FindFirstChild("Frame") and infoFrame.Frame:FindFirstChild("rockHP") and infoFrame.Frame.rockHP.Text
-               
+
                 local isValid = true
                 if hpText then
                     local hp = tonumber(hpText:match("^(%d+)"))
@@ -301,17 +303,19 @@ local function InitializeAutoMine()
     RunService.Heartbeat:Connect(function(delta)
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-       
+
         if Config.AutoMine and ActiveTargets.Mining and ActiveTargets.Mining.Parent and root then
             root.Anchored = false
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero
-           
+
             local targetPos = ActiveTargets.Mining.Position
             root.CFrame = CFrame.lookAt(targetPos + Vector3.new(5, 0, 0), targetPos)
         end
     end)
 end
+
+-- ===================== AutoRun =====================
 local function InitializeAutoRun()
     task.spawn(function()
         while true do
@@ -325,13 +329,15 @@ local function InitializeAutoRun()
         end
     end)
 end
+
+-- ===================== Combat =====================
 local function InitializeCombat()
     local isBlocking = false
     ScriptAPI.GetMobTypes = function()
         local mobs = {}
         local seen = {}
         local living = Workspace:FindFirstChild("Living")
-       
+
         if living then
             for _, model in ipairs(living:GetChildren()) do
                 if model:IsA("Model") and model:FindFirstChild("Humanoid") and not model:FindFirstChild("RaceFolder") and not model:FindFirstChild("Animate") then
@@ -349,23 +355,23 @@ local function InitializeCombat()
     local function FindTarget(maxDist)
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-       
+
         local root = char.HumanoidRootPart
         local bestTarget = nil
         local bestDist = maxDist or 100
-       
+
         local living = Workspace:FindFirstChild("Living")
         if not living then return nil end
         for _, mob in ipairs(living:GetChildren()) do
             if mob:IsA("Model") and mob:FindFirstChild("Humanoid") then
                 local cleanName = mob.Name:gsub("%d+$", "")
-               
+
                 if Config.AttackTargets[cleanName]
                    and not mob:FindFirstChild("RaceFolder")
                    and not mob:FindFirstChild("Animate")
                    and mob.Humanoid.Health > 0
                    and mob:FindFirstChild("HumanoidRootPart") then
-                   
+
                     local mobRoot = mob.HumanoidRootPart
                     local dist = (mobRoot.Position - root.Position).Magnitude
                     if dist < bestDist then
@@ -382,7 +388,7 @@ local function InitializeCombat()
             task.wait(0.05) -- Smoother
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-           
+
             if Config.AutoAttack and Remotes.ToolActivated and root and char:FindFirstChild("Humanoid") then
                 local weapon = char:FindFirstChildWhichIsA("Tool")
                 if not weapon or weapon.Name == "Pickaxe" or weapon.Name == "Hammer" then
@@ -432,7 +438,7 @@ local function InitializeCombat()
                             Remotes.StopBlock:InvokeServer()
                             isBlocking = false
                         end
-                        
+
                         local targetRoot = target:FindFirstChild("HumanoidRootPart")
                         if targetRoot and (root.Position - targetRoot.Position).Magnitude <= 15 then
                             Remotes.ToolActivated:InvokeServer("Weapon")
@@ -451,7 +457,7 @@ local function InitializeCombat()
     RunService.Heartbeat:Connect(function(delta)
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-       
+
         if Config.AutoAttack and ActiveTargets.Combat and ActiveTargets.Combat.Parent and root then
             local targetRoot = ActiveTargets.Combat:FindFirstChild("HumanoidRootPart")
             if targetRoot then
@@ -463,11 +469,13 @@ local function InitializeCombat()
         end
     end)
 end
+
+-- ===================== Forge =====================
 local function InitializeForge()
     local function InstantForge(ores, itemType, callback)
         local prox = Workspace:FindFirstChild("Proximity")
         local forgeModel = prox and prox:FindFirstChild("Forge")
-       
+
         if not Remotes.ChangeSequence or not Remotes.StartForge or not Remotes.Forge or not forgeModel then
             if callback then callback("Error", "Failed to find necessary remotes or Forge model.", 5) end
             return
@@ -478,7 +486,7 @@ local function InitializeForge()
         task.wait(0.1)
         Remotes.StartForge:InvokeServer(forgeModel)
         task.wait(0.2)
-       
+
         Remotes.ChangeSequence:InvokeServer(unpack({
             "Melt",
             {
@@ -487,21 +495,21 @@ local function InitializeForge()
                 Ores = ores
             }
         }))
-       
+
         task.wait(0.5)
         Remotes.ChangeSequence:InvokeServer("Pour", { ClientTime = Workspace:GetServerTimeNow() })
-       
+
         task.wait(0.5)
         Remotes.ChangeSequence:InvokeServer("Hammer", { ClientTime = Workspace:GetServerTimeNow() })
-       
+
         task.wait(0.5)
         task.spawn(function()
             Remotes.ChangeSequence:InvokeServer("Water", { ClientTime = Workspace:GetServerTimeNow() })
         end)
-       
+
         task.wait(0.5)
         Remotes.ChangeSequence:InvokeServer("Showcase", {})
-       
+
         if callback then callback("Success", "Instant Forge Completed! You can close the window.", 5) end
     end
     local function GetAvailableOres()
@@ -517,7 +525,7 @@ local function InitializeForge()
         for _, child in ipairs(oreFrame:GetChildren()) do
             local main = child:FindFirstChild("Main")
             local quantityLabel = main and main:FindFirstChild("Quantity")
-           
+
             if quantityLabel then
                 local text = quantityLabel.Text or (quantityLabel:FindFirstChild("Text") and quantityLabel.Text.Text)
                 if text then
@@ -533,6 +541,8 @@ local function InitializeForge()
     ScriptAPI.InstantForge = InstantForge
     ScriptAPI.GetAvailableOres = GetAvailableOres
 end
+
+-- ===================== Movement =====================
 local function InitializeMovement()
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
@@ -540,7 +550,7 @@ local function InitializeMovement()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local mouse = LocalPlayer:GetMouse()
-           
+
             if root and mouse.Hit then
                 root.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
             end
@@ -552,7 +562,7 @@ local function InitializeMovement()
         flying = false
         if bg then bg:Destroy(); bg = nil end
         if bv then bv:Destroy(); bv = nil end
-       
+
         local char = LocalPlayer.Character
         local humanoid = char and char:FindFirstChild("Humanoid")
         if humanoid then humanoid.PlatformStand = false end
@@ -561,17 +571,17 @@ local function InitializeMovement()
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
         local humanoid = char and char:FindFirstChild("Humanoid")
-       
+
         if not root or not humanoid then return end
-       
+
         flying = true
         humanoid.PlatformStand = true
-       
+
         bg = Instance.new("BodyGyro", root)
         bg.P = 90000
         bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
         bg.CFrame = root.CFrame
-       
+
         bv = Instance.new("BodyVelocity", root)
         bv.Velocity = Vector3.zero
         bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
@@ -584,7 +594,7 @@ local function InitializeMovement()
                     if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - cam.CFrame.LookVector end
                     if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - cam.CFrame.RightVector end
                     if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + cam.CFrame.RightVector end
-                   
+
                     if direction.Magnitude > 0 then
                         bv.Velocity = direction.Unit * Config.FlySpeed
                     else
@@ -617,12 +627,15 @@ local function InitializeMovement()
         if flying then stopFly() end
     end)
 end
+
+-- Initialize systems
 InitializeAutoMine()
 InitializeAutoRun()
 InitializeCombat()
 InitializeForge()
 InitializeMovement()
--- GUI Setup with Premium Feel
+
+-- ===================== GUI Setup with Premium Feel =====================
 local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
 InfoTab:Paragraph({
     Title = "Welcome to DYHUB Premium",
@@ -636,6 +649,8 @@ local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map" })
 local ForgeTab = Window:Tab({ Title = "Forge", Icon = "anvil" })
 local CombatTab = Window:Tab({ Title = "Combat", Icon = "sword" })
+
+-- ========== Main Tab ==========
 MainTab:Section({ Title = "Farming", Icon = "tractor" })
 MainTab:Toggle({Title="Auto Mine", Value=Config.AutoMine, Callback=function(v) Config.AutoMine = v end})
 local RockList = {}
@@ -685,6 +700,8 @@ MainTab:Button({
     Title = "Redeem All Codes",
     Callback = RedeemAllCodes
 })
+
+-- ========== Player Tab ==========
 PlayerTab:Section({ Title = "Movement", Icon = "running" })
 PlayerTab:Toggle({Title="Auto Run", Value=Config.AutoRun, Callback=function(v) Config.AutoRun = v end})
 PlayerTab:Toggle({Title="Infinite Fly (PC ONLY)", Value=Config.InfiniteFly, Callback=function(v) Config.InfiniteFly = v end})
@@ -696,54 +713,85 @@ PlayerTab:Slider({
     Callback = function(v) Config.FlySpeed = v end
 })
 PlayerTab:Toggle({Title="Click TP (Ctrl + Click)", Value=Config.ClickTeleport, Callback=function(v) Config.ClickTeleport = v end})
+
+-- ========== Combat Tab (fixed) ==========
 CombatTab:Section({ Title = "Combat Features", Icon = "swords" })
 
 local MobList = {}
 local SelectedMob = nil
-local AutoAttack = false
 
-local MobDropdown = CombatTab:Dropdown("Select Mob", MobList, function(v)
-    SelectedMob = v
-end)
+local MobDropdown = CombatTab:Dropdown({
+    Title = "Select Mob",
+    Values = MobList,
+    Multi = false,
+    Callback = function(v)
+        SelectedMob = v
+        -- update AttackTargets map for current selection
+        for k,_ in pairs(Config.AttackTargets) do Config.AttackTargets[k] = nil end
+        if v then Config.AttackTargets[v] = true end
+    end
+})
 
-CombatTab:Toggle("Auto Attack", false, function(v)
-    AutoAttack = v
-end)
+CombatTab:Toggle({Title = "Auto Attack", Value = Config.AutoAttack, Callback = function(v) Config.AutoAttack = v end})
+CombatTab:Toggle({Title = "Auto Parry", Value = Config.AutoParry, Callback = function(v) Config.AutoParry = v end})
 
 -- Auto refresh mob list
 task.spawn(function()
     while task.wait(1) do
         local NewList = {}
-
-        for _, mob in pairs(workspace:GetChildren()) do
-            if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                table.insert(NewList, mob.Name)
+        local living = workspace:FindFirstChild("Living")
+        if living then
+            for _, mob in pairs(living:GetChildren()) do
+                if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                    table.insert(NewList, mob.Name:gsub("%d+$", ""))
+                end
             end
         end
 
-        if #NewList ~= #MobList then
-            MobList = NewList
-            MobDropdown:Refresh(MobList, true)
+        table.sort(NewList)
+        -- remove duplicates
+        local unique = {}
+        for _, name in ipairs(NewList) do
+            if not (unique[#unique] == name) then table.insert(unique, name) end
+        end
+
+        if #unique ~= #MobList then
+            MobList = unique
+            if MobDropdown then MobDropdown:Refresh(MobList) end
         end
     end
 end)
 
--- Auto attack loop
+-- Auto attack loop (uses Config.AutoAttack and SelectedMob)
 task.spawn(function()
     while task.wait(0.1) do
-        if AutoAttack and SelectedMob then
-            local mob = workspace:FindFirstChild(SelectedMob)
-            local char = game.Players.LocalPlayer.Character
-
+        if Config.AutoAttack and SelectedMob then
+            local mob = nil
+            -- try to find an instanced mob matching SelectedMob
+            local living = workspace:FindFirstChild("Living")
+            if living then
+                for _, m in ipairs(living:GetChildren()) do
+                    if m.Name:find(SelectedMob) and m:FindFirstChild("HumanoidRootPart") then
+                        mob = m
+                        break
+                    end
+                end
+            end
+            local char = LocalPlayer.Character
             if mob and mob:FindFirstChild("HumanoidRootPart") and char and char:FindFirstChild("HumanoidRootPart") then
-                char:PivotTo(mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
-                mob.Humanoid.Health = mob.Humanoid.Health - 5 -- example damage
+                pcall(function()
+                    char:PivotTo(mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+                    -- attempt server-legal attack
+                    if Remotes.ToolActivated then
+                        Remotes.ToolActivated:InvokeServer("Weapon")
+                    end
+                end)
             end
         end
     end
 end)
 
-
+-- ========== Forge Tab (fixed) ==========
 ForgeTab:Section({ Title = "Instant Forge", Icon = "pickaxe" })
 ForgeTab:Paragraph({
     Title = "WARNING",
@@ -755,124 +803,158 @@ ForgeTab:Paragraph({
 
 local OreList = {}
 local SelectedOre = nil
-
-local OreDropdown = ForgeTab:Dropdown("Select Ore", OreList, function(v)
-    SelectedOre = v
-end)
-
-ForgeTab:Button("Instant Forge", function()
-    if not SelectedOre then return end
-
-    local forgeRemote = game.ReplicatedStorage:FindFirstChild("ForgeOre")
-
-    if forgeRemote then
-        forgeRemote:FireServer(SelectedOre)
+local OreDropdown = ForgeTab:Dropdown({
+    Title = "Select Ore",
+    Values = OreList,
+    Multi = false,
+    Callback = function(v)
+        SelectedOre = v
     end
-end)
+})
+
+ForgeTab:Button({ Title = "Instant Forge", Callback = function()
+    if not SelectedOre then Window:Notify("Error","No ore selected.",4); return end
+    -- build ores table expected by InstantForge
+    local ores = {}
+    ores[SelectedOre] = 1 -- default 1 quantity; advanced UI can be added to select amount
+    if ScriptAPI.InstantForge then
+        ScriptAPI.InstantForge(ores, Config.ForgeItemType, function(t, msg, dur)
+            Window:Notify(t, msg, dur or 3)
+        end)
+    else
+        Window:Notify("Error","InstantForge API not available.",4)
+    end
+end })
 
 -- Auto refresh ores
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(2) do
         local NewList = {}
-
-        if game.Players.LocalPlayer:FindFirstChild("Backpack") then
-            for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-                if item:IsA("Tool") then
-                    table.insert(NewList, item.Name)
-                end
+        if ScriptAPI.GetAvailableOres then
+            local ores = ScriptAPI.GetAvailableOres()
+            for name, qty in pairs(ores) do
+                table.insert(NewList, name .. " (" .. tostring(qty) .. ")")
             end
         end
-
+        table.sort(NewList)
         if #NewList ~= #OreList then
             OreList = NewList
-            OreDropdown:Refresh(OreList, true)
+            if OreDropdown then OreDropdown:Refresh(OreList) end
         end
     end
 end)
 
-
+-- ========== Teleport Tab (fixed) ==========
 TeleportTab:Section({ Title = "Teleport Locations", Icon = "map" })
 
 local TeleportList = {}
 local SelectedTeleport = nil
-
-local TeleportDropdown = TeleportTab:Dropdown("Select Location", TeleportList, function(v)
-    SelectedTeleport = v
-end)
-
-TeleportTab:Button("Teleport Now", function()
-    if SelectedTeleport then
-        local Point = workspace:FindFirstChild(SelectedTeleport)
-        if Point and Point:IsA("BasePart") then
-            game.Players.LocalPlayer.Character:PivotTo(Point.CFrame + Vector3.new(0, 3, 0))
-        end
+local TeleportDropdown = TeleportTab:Dropdown({
+    Title = "Select Location",
+    Values = TeleportList,
+    Multi = false,
+    Callback = function(v)
+        SelectedTeleport = v
     end
-end)
+})
+
+TeleportTab:Button({ Title = "Teleport Now", Callback = function()
+    if SelectedTeleport then
+        local name = SelectedTeleport
+        -- If the dropdown shows names with extra info (like "Name (x)"), try to extract clean name
+        local clean = tostring(name):match("^[^%(]+") or tostring(name)
+        clean = clean:gsub("%s+$", "")
+        local Point = workspace:FindFirstChild(clean)
+        if not Point then
+            -- fallback search for Part named containing the clean name
+            for _, v in pairs(workspace:GetChildren()) do
+                if v:IsA("BasePart") and v.Name:match(clean) then Point = v; break end
+            end
+        end
+        if Point and Point:IsA("BasePart") then
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char:PivotTo(Point.CFrame + Vector3.new(0, 3, 0))
+            end
+        else
+            Window:Notify("Error", "Teleport point not found: " .. tostring(clean), 4)
+        end
+    else
+        Window:Notify("Info", "No teleport selected.", 3)
+    end
+end })
 
 -- Auto refresh teleport list
 task.spawn(function()
     while task.wait(1) do
         local NewList = {}
-        
         for _, v in pairs(workspace:GetChildren()) do
-            if v:IsA("Part") and v.Name:match("TP") then
+            if v:IsA("BasePart") and v.Name:match("TP") then
                 table.insert(NewList, v.Name)
+            elseif v:IsA("Model") then
+                -- also allow models named TP_<name> or containing TP
+                if v.Name:match("TP") then table.insert(NewList, v.Name) end
             end
         end
-
-        -- Only update if changed
+        table.sort(NewList)
         if #NewList ~= #TeleportList then
             TeleportList = NewList
-            TeleportDropdown:Refresh(TeleportList, true)
+            if TeleportDropdown then TeleportDropdown:Refresh(TeleportList) end
         end
     end
 end)
 
--- Game Data Callback for WindUI
-Library.SetGameDataCallback(function()
-    local gui = LocalPlayer:FindFirstChild("PlayerGui")
-    local level = 0
-    local gold = 0
-    local inventory = {}
-    if gui then
-        local hud = gui:FindFirstChild("Main") and gui.Main:FindFirstChild("Screen") and gui.Main.Screen:FindFirstChild("Hud")
-        if hud then
-            local lvlLbl = hud:FindFirstChild("Level")
-            if lvlLbl then level = tonumber(lvlLbl.Text:match("%d+")) or 0 end
-           
-            local goldLbl = hud:FindFirstChild("Gold")
-            if goldLbl then gold = tonumber(goldLbl.Text:gsub("[$,]", "")) or goldLbl.Text end
-        end
-       
-        local stash = gui:FindFirstChild("Menu") and gui.Menu:FindFirstChild("Frame") and gui.Menu.Frame:FindFirstChild("Frame")
-            and gui.Menu.Frame.Frame:FindFirstChild("Menus") and gui.Menu.Frame.Frame.Menus:FindFirstChild("Stash")
-            and gui.Menu.Frame.Frame.Menus.Stash:FindFirstChild("Background")
-           
-        if stash then
-            for _, itemFrame in ipairs(stash:GetChildren()) do
-                local main = itemFrame:FindFirstChild("Main")
-                if main then
-                    local nameLbl = main:FindFirstChild("ItemName")
-                    local qtyLbl = main:FindFirstChild("Quantity")
-                   
-                    if nameLbl and qtyLbl then
-                        local iName = nameLbl.Text
-                        local iQty = qtyLbl.Text
-                        if iName ~= "" and iQty ~= "" then
-                            inventory[iName] = tonumber(iQty:match("%d+")) or iQty
+-- ========== Game Data Callback for WindUI ==========
+Library = Library or {} -- ensure Library exists to avoid errors if WindUI doesn't provide it
+if Library.SetGameDataCallback then
+    Library.SetGameDataCallback(function()
+        local gui = LocalPlayer:FindFirstChild("PlayerGui")
+        local level = 0
+        local gold = 0
+        local inventory = {}
+        if gui then
+            local hud = gui:FindFirstChild("Main") and gui.Main:FindFirstChild("Screen") and gui.Main.Screen:FindFirstChild("Hud")
+            if hud then
+                local lvlLbl = hud:FindFirstChild("Level")
+                if lvlLbl then level = tonumber(lvlLbl.Text:match("%d+")) or 0 end
+
+                local goldLbl = hud:FindFirstChild("Gold")
+                if goldLbl then gold = tonumber(goldLbl.Text:gsub("[$,]", "")) or goldLbl.Text end
+            end
+
+            local stash = gui:FindFirstChild("Menu") and gui.Menu:FindFirstChild("Frame") and gui.Menu.Frame:FindFirstChild("Frame")
+                and gui.Menu.Frame.Frame:FindFirstChild("Menus") and gui.Menu.Frame.Frame.Menus:FindFirstChild("Stash")
+                and gui.Menu.Frame.Frame.Menus.Stash:FindFirstChild("Background")
+
+            if stash then
+                for _, itemFrame in ipairs(stash:GetChildren()) do
+                    local main = itemFrame:FindFirstChild("Main")
+                    if main then
+                        local nameLbl = main:FindFirstChild("ItemName")
+                        local qtyLbl = main:FindFirstChild("Quantity")
+                        if nameLbl and qtyLbl then
+                            local iName = nameLbl.Text
+                            local iQty = qtyLbl.Text
+                            if iName ~= "" and iQty ~= "" then
+                                inventory[iName] = tonumber(iQty:match("%d+")) or iQty
+                            end
                         end
                     end
                 end
             end
         end
-    end
-    local features = {}
-    for k, v in pairs(Config) do features[k] = v end
-    return {
-        level = level,
-        gold = gold,
-        inventory = inventory,
-        timestamp = os.time(),
-        features = features,
-    }
-end)
+        local features = {}
+        for k, v in pairs(Config) do features[k] = v end
+        return {
+            level = level,
+            gold = gold,
+            inventory = inventory,
+            timestamp = os.time(),
+            features = features,
+        }
+    end)
+end
+
+-- Final: notify user that GUI is ready
+Window:Notify("Ready", "DYHUB UI loaded and tabs initialized.", 4)
+-- End of file
