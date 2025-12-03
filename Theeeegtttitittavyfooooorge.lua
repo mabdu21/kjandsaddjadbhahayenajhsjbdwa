@@ -1,202 +1,81 @@
-if game.GameId ~= 7671049560 then
-    warn("[DYHUB] Not in the correct game!")
-    return
-end
+-- DYHUB Upgraded (Premium-ready)
+-- Powered by GPT-5 Thinking mini | v2.4.1 -> upgraded to v2.5.0
+-- Note: Save/load uses writefile/readfile (exploit-dependent). All network calls pcall'd.
 
--- Powered by GPT 5 | v809
--- ======================
-local version = "2.4.1"
--- ======================
-
+local version = "2.5.0"
 repeat task.wait() until game:IsLoaded()
-
--- FPS Unlock
-if setfpscap then
-    setfpscap(1000000)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "FPS Unlocked!",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("FPS Unlocked!")
-else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "dsc.gg/dyhub",
-        Text = "Your exploit does not support setfpscap.",
-        Duration = 2,
-        Button1 = "Okay"
-    })
-    warn("Your exploit does not support setfpscap.")
-end
-
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
-local executorName = "Unknown"
-
-pcall(function()
-    -- ✅ ตัวตรวจจับหลักจาก identifyexecutor()
-    if identifyexecutor then
-        local name, ver = identifyexecutor()
-        executorName = ver and (name .. " (" .. ver .. ")") or name
-        return
-    end
-
-    -- ✅ ตัวตรวจจับสำรองจาก getexecutorname()
-    if getexecutorname then
-        executorName = getexecutorname()
-        return
-    end
-
-    -- ✅ ตรวจจาก global flags (สำหรับ executor ยอดนิยม)
-    local globals = getgenv and getgenv() or _G
-    local checkList = {
-        { "Delta", "Delta successfully" },
-        { "Xeno", "Xeno successfully" },
-        { "Zenith", "Zenith successfully" },
-        { "Wave", "Wave successfully" },
-	    { "Volt", "Volt successfully" },
-	    { "Volcano", "Volcano successfully" },
-        { "Velocity", "Velocity successfully" },
-        { "Seliware", "Seliware successfully" },
-	    { "Valex", "Valex successfully" },
-	    { "Potassium", "Potassium successfully" },
-        { "Bunni", "Bunni successfully" },
-        { "Sirhurt", "Sirhurt successfully" },
-	    { "Delta", "Delta successfully" },
-	    { "Codex", "Codex successfully" },
-	    { "Solara", "Solara: Not Support" },
-	    { "Cryptic", "Cryptic successfully" },
-        { "Krnl", "Krnl successfully" },
-    }
-
-    for _, data in ipairs(checkList) do
-        local key, name = unpack(data)
-        if globals[key] ~= nil or getfenv()[key] ~= nil then
-            executorName = name
-            return
-        end
-    end
-
-    -- ✅ ตรวจชื่อไฟล์ Lua Environment เผื่อบาง executor
-    local info = debug.getinfo(1, "S")
-    if info and info.source then
-        local src = string.lower(info.source)
-        if src:find("synapse") then executorName = "Synapse Z successfully" end
-        if src:find("fluxus") then executorName = "Rip Fluxus successfully" end
-        if src:find("krnl") then executorName = "Krnl successfully" end
-        if src:find("delta") then executorName = "Delta successfully" end
-    end
-end)
-
--- ✅ แจ้งเตือนผ่าน WindUI
-WindUI:Notify({
-    Title = "DYHUB",
-    Content = "Executor: " .. executorName .. ".",
-    Duration = 6,
-    Image = "cpu"
-})
-
--- ====================== WINDOW ======================
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-
-local FreeVersion = "Free Version"
-local PremiumVersion = "Premium Version"
-
-local function checkVersion(playerName)
-    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
-
-    local success, response = pcall(function()
-        return game:HttpGet(url)
-    end)
-
-    if not success then
-        return FreeVersion
-    end
-
-    local premiumData
-    local func, err = loadstring(response)
-    if func then
-        premiumData = func()
-    else
-        return FreeVersion
-    end
-
-    if premiumData[playerName] then
-        return PremiumVersion
-    else
-        return FreeVersion
-    end
-end
-
-local player = Players.LocalPlayer
-local userversion = checkVersion(player.Name)
-
-local Window = WindUI:CreateWindow({
-    Title = "DYHUB",
-    IconThemed = true,
-    Icon = "rbxassetid://104487529937663",
-    Author = "The Forge | " .. userversion,
-    Folder = "DYHUB_TF",
-    Size = UDim2.fromOffset(500, 400),
-    Transparent = true,
-    Theme = "Dark",
-    BackgroundImageTransparency = 0.8,
-    HasOutline = false,
-    HideSearchBar = true,
-    ScrollBarEnabled = true,
-    User = { Enabled = true, Anonymous = false },
-})
-
-Window:SetToggleKey(Enum.KeyCode.K)
-
-pcall(function()
-    Window:Tag({
-        Title = version,
-        Color = Color3.fromHex("#30ff6a")
-    })
-end)
-
-Window:EditOpenButton({
-    Title = "DYHUB - Open",
-    Icon = "monitor",
-    CornerRadius = UDim.new(0, 6),
-    StrokeThickness = 2,
-    Color = ColorSequence.new(Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255)),
-    Draggable = true,
-})
-
-
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local MarketplaceService = game:GetService("MarketplaceService")
 local Workspace = game:GetService("Workspace")
-
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
-local KnitServices = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services")
 
-local function GetServiceRemote(serviceName, remoteType, remoteName)
-    local success, result = pcall(function()
-        return KnitServices:WaitForChild(serviceName):WaitForChild("RF"):WaitForChild(remoteName)
-    end)
-    return success and result or nil
+-- -----------------------
+-- Executor detection (same logic, compacted)
+-- -----------------------
+local executorName = "Unknown"
+pcall(function()
+    if identifyexecutor then
+        local name, ver = identifyexecutor()
+        executorName = ver and (name .. " (" .. ver .. ")") or name
+        return
+    end
+    if getexecutorname then executorName = getexecutorname(); return end
+
+    local globals = getgenv and getgenv() or _G
+    local checkList = { "Delta","Xeno","Zenith","Wave","Volt","Volcano","Velocity","Seliware","Valex","Potassium","Bunni","Sirhurt","Codex","Solara","Cryptic","Krnl" }
+    for _,k in ipairs(checkList) do
+        if globals[k] ~= nil or getfenv()[k] ~= nil then executorName = k .. " detected"; return end
+    end
+
+    local info = debug.getinfo(1,"S")
+    if info and info.source then
+        local src = string.lower(info.source)
+        for _,token in ipairs({"synapse","fluxus","krnl","delta"}) do
+            if src:find(token) then executorName = token .. " detected"; break end
+        end
+    end
+end)
+
+-- Attempt load WindUI safely
+local WindUI
+pcall(function()
+    WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+end)
+if not WindUI then
+    warn("[DYHUB] Failed to load WindUI. UI features will be disabled.")
 end
 
-local Remotes = {
-    RedeemCode = GetServiceRemote("CodeService", "RF", "RedeemCode"),
-    ToolActivated = GetServiceRemote("ToolService", "RF", "ToolActivated"),
-    StartBlock = GetServiceRemote("ToolService", "RF", "StartBlock"),
-    StopBlock = GetServiceRemote("ToolService", "RF", "StopBlock"),
-    Run = GetServiceRemote("CharacterService", "RF", "Run"),
-    ChangeSequence = GetServiceRemote("ForgeService", "RF", "ChangeSequence"),
-    StartForge = GetServiceRemote("ForgeService", "RF", "StartForge"),
-    Forge = GetServiceRemote("ProximityService", "RF", "Forge"),
-}
+if WindUI and WindUI.Notify then
+    WindUI:Notify({ Title = "DYHUB", Content = "Executor: " .. executorName .. ".", Duration = 5, Image = "cpu" })
+end
 
+-- -----------------------
+-- Version check for Premium
+-- -----------------------
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
+    local success, response = pcall(function() return game:HttpGet(url, true) end)
+    if not success or not response then return FreeVersion end
+    local ok, func = pcall(loadstring, response)
+    if not ok or type(func) ~= "function" then return FreeVersion end
+    local ok2, data = pcall(func)
+    if not ok2 or type(data) ~= "table" then return FreeVersion end
+    if data[playerName] then return PremiumVersion else return FreeVersion end
+end
+
+local userversion = checkVersion(LocalPlayer.Name)
+
+-- -----------------------
+-- Config & Persistence
+-- -----------------------
+local ConfigFile = "DYHUB_config.json"
 local Config = {
     AutoRun = false,
     AutoMine = false,
@@ -207,50 +86,98 @@ local Config = {
     ForgeItemType = "Weapon",
     InfiniteFly = false,
     ClickTeleport = false,
+    FlySpeed = 50,
+}
+-- Save & Load (exploit dependent)
+local function SaveConfig()
+    if writefile then
+        pcall(function()
+            writefile(ConfigFile, HttpService:JSONEncode(Config))
+        end)
+    end
+end
+local function LoadConfig()
+    if readfile then
+        local ok, content = pcall(readfile, ConfigFile)
+        if ok and content then
+            local ok2, tbl = pcall(HttpService.JSONDecode, HttpService, content)
+            if ok2 and type(tbl) == "table" then
+                for k,v in pairs(tbl) do Config[k] = v end
+            end
+        end
+    end
+end
+LoadConfig()
+
+local function UpdateSetting(key, value)
+    Config[key] = value
+    SaveConfig()
+end
+
+-- -----------------------
+-- Knit Remote helpers
+-- -----------------------
+local KnitServices = nil
+pcall(function()
+    KnitServices = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services")
+end)
+
+local function GetServiceRemote(serviceName, remoteName)
+    if not KnitServices then return nil end
+    local ok, result = pcall(function()
+        return KnitServices:FindFirstChild(serviceName) and KnitServices:FindFirstChild(serviceName):FindFirstChild("RF") and KnitServices:FindFirstChild(serviceName).RF:FindFirstChild(remoteName)
+    end)
+    return ok and result or nil
+end
+
+local Remotes = {
+    RedeemCode = GetServiceRemote("CodeService", "RedeemCode"),
+    ToolActivated = GetServiceRemote("ToolService", "ToolActivated"),
+    StartBlock = GetServiceRemote("ToolService", "StartBlock"),
+    StopBlock = GetServiceRemote("ToolService", "StopBlock"),
+    Run = GetServiceRemote("CharacterService", "Run"),
+    ChangeSequence = GetServiceRemote("ForgeService", "ChangeSequence"),
+    StartForge = GetServiceRemote("ForgeService", "StartForge"),
+    Forge = GetServiceRemote("ProximityService", "Forge"),
 }
 
+-- -----------------------
+-- Script API (exposed functions)
+-- -----------------------
 local ScriptAPI = {}
-local ActiveTargets = {
-    Mining = nil,
-    Combat = nil
-}
 
-local function RedeemAllCodes()
+-- Redeem codes safe
+function ScriptAPI.RedeemAllCodes()
     if not Remotes.RedeemCode then return end
-    
-    local codes = {
-        "200K!", "100K!", "40KLIKES", "20KLIKES", "15KLIKES", 
-        "10KLIKES", "5KLIKES", "BETARELEASE!", "POSTRELEASEQNA"
-    }
-
-    for _, code in ipairs(codes) do
+    local codes = {"200K!","100K!","40KLIKES","20KLIKES","15KLIKES","10KLIKES","5KLIKES","BETARELEASE!","POSTRELEASEQNA"}
+    for _,code in ipairs(codes) do
         task.spawn(function()
-            Remotes.RedeemCode:InvokeServer(code)
+            pcall(function() Remotes.RedeemCode:InvokeServer(code) end)
         end)
         task.wait(0.2)
     end
 end
 
-local function InitializeAutoMine()
-    ScriptAPI.GetRockTypes = function()
+-- AutoMine initialization
+do
+    local ActiveTargets = { Mining = nil, Combat = nil }
+    function ScriptAPI.GetRockTypes()
         local rockTypes = {}
         local seen = {}
         local rocksFolder = Workspace:FindFirstChild("Rocks")
-        
-        if rocksFolder then
-            for _, category in ipairs(rocksFolder:GetChildren()) do
-                for _, child in ipairs(category:GetChildren()) do
-                    if child.Name == "SpawnLocation" then
-                        for _, model in ipairs(child:GetChildren()) do
-                            if model:IsA("Model") and model:FindFirstChild("Hitbox") and not seen[model.Name] then
-                                seen[model.Name] = true
-                                table.insert(rockTypes, model.Name)
-                            end
+        if not rocksFolder then return {} end
+        for _, category in ipairs(rocksFolder:GetChildren()) do
+            for _, child in ipairs(category:GetChildren()) do
+                if child.Name == "SpawnLocation" then
+                    for _, model in ipairs(child:GetChildren()) do
+                        if model:IsA("Model") and model:FindFirstChild("Hitbox") and not seen[model.Name] then
+                            seen[model.Name] = true
+                            table.insert(rockTypes, model.Name)
                         end
-                    elseif child:IsA("Model") and child:FindFirstChild("Hitbox") and not seen[child.Name] then
-                        seen[child.Name] = true
-                        table.insert(rockTypes, child.Name)
                     end
+                elseif child:IsA("Model") and child:FindFirstChild("Hitbox") and not seen[child.Name] then
+                    seen[child.Name] = true
+                    table.insert(rockTypes, child.Name)
                 end
             end
         end
@@ -260,131 +187,104 @@ local function InitializeAutoMine()
 
     local function FindNearestRock(maxDist)
         local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-        
-        local root = char.HumanoidRootPart
-        local closestRock = nil
-        local bestDist = maxDist or 15
-        local rocksFolder = Workspace:FindFirstChild("Rocks")
-
-        if not rocksFolder then return nil end
-
-        for _, descendant in ipairs(rocksFolder:GetDescendants()) do
-            if descendant.Name == "Hitbox" and descendant:IsA("BasePart") and descendant.Parent and descendant.Parent.Name == Config.MineTarget then
-                local infoFrame = descendant.Parent:FindFirstChild("infoFrame")
+        if not char then return nil end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return nil end
+        local closest, best = nil, maxDist or 15
+        for _,hit in ipairs(Workspace:GetDescendants()) do
+            if hit.Name == "Hitbox" and hit:IsA("BasePart") and hit.Parent and hit.Parent.Name == Config.MineTarget then
+                local valid = true
+                local infoFrame = hit.Parent:FindFirstChild("infoFrame")
                 local hpText = infoFrame and infoFrame:FindFirstChild("Frame") and infoFrame.Frame:FindFirstChild("rockHP") and infoFrame.Frame.rockHP.Text
-                
-                local isValid = true
                 if hpText then
                     local hp = tonumber(hpText:match("^(%d+)"))
-                    if not hp or hp <= 0 then isValid = false end
+                    if not hp or hp <= 0 then valid = false end
                 end
-
-                if isValid then
-                    local dist = (descendant.Position - root.Position).Magnitude
-                    if dist < bestDist then
-                        closestRock = descendant
-                        bestDist = dist
-                    end
+                if valid then
+                    local dist = (hit.Position - root.Position).Magnitude
+                    if dist < best then best = dist; closest = hit end
                 end
             end
         end
-        return closestRock
+        return closest
     end
 
+    -- Main loop for AutoMine
     task.spawn(function()
         while true do
-            task.wait(0.1)
-            local char = LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            local humanoid = char and char:FindFirstChild("Humanoid")
-
-            if Config.AutoMine and Remotes.ToolActivated and root and humanoid then
-                local pickaxe = char:FindFirstChild("Pickaxe")
-                if not pickaxe then
-                    local backpackPick = LocalPlayer.Backpack:FindFirstChild("Pickaxe")
-                    if backpackPick then
-                        humanoid:EquipTool(backpackPick)
-                        pickaxe = backpackPick
-                    end
+            task.wait(0.12)
+            if Config.AutoMine and Remotes.ToolActivated then
+                local char = LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local humanoid = char and char:FindFirstChild("Humanoid")
+                if not (char and root and humanoid and humanoid.Health>0) then
+                    task.wait(0.5)
+                    continue
                 end
 
-                local targetValid = false
-                if ActiveTargets.Mining and ActiveTargets.Mining.Parent and ActiveTargets.Mining.Parent.Name == Config.MineTarget then
-                     local infoFrame = ActiveTargets.Mining.Parent:FindFirstChild("infoFrame")
-                     local hpText = infoFrame and infoFrame:FindFirstChild("Frame") and infoFrame.Frame:FindFirstChild("rockHP") and infoFrame.Frame.rockHP.Text
-                     if hpText then
-                        local hp = tonumber(hpText:match("^(%d+)"))
-                        if hp and hp > 0 then targetValid = true end
-                     else
-                        targetValid = true
-                     end
+                local pickaxe = char:FindFirstChild("Pickaxe") or LocalPlayer.Backpack:FindFirstChild("Pickaxe")
+                if pickaxe and not pickaxe.Parent:IsA("Backpack") and not pickaxe.Parent:IsA("Tool") then
+                    -- equip logic
+                    pcall(function() humanoid:EquipTool(pickaxe) end)
                 end
 
-                if not targetValid then ActiveTargets.Mining = nil end
-
-                if not ActiveTargets.Mining then
-                    ActiveTargets.Mining = FindNearestRock(500)
+                local target = ActiveTargets.Mining
+                if not (target and target.Parent and target.Parent.Name == Config.MineTarget) then
+                    target = FindNearestRock(500)
+                    ActiveTargets.Mining = target
                 end
 
-                if pickaxe and ActiveTargets.Mining and humanoid.Health > 0 and ActiveTargets.Mining.Parent then
-                     local dist = (root.Position - ActiveTargets.Mining.Position).Magnitude
-                     if dist <= 15 then
-                        Remotes.ToolActivated:InvokeServer("Pickaxe")
-                     end
+                if target and target.Parent and root and (root.Position - target.Position).Magnitude <= 15 then
+                    pcall(function() Remotes.ToolActivated:InvokeServer("Pickaxe") end)
                 end
             else
-                ActiveTargets.Mining = nil
+                task.wait(0.5)
             end
         end
     end)
 
+    -- anchor & face smoothing
     RunService.Heartbeat:Connect(function()
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        
         if Config.AutoMine and ActiveTargets.Mining and ActiveTargets.Mining.Parent and root then
-            root.Anchored = false
-            root.AssemblyLinearVelocity = Vector3.zero
-            root.AssemblyAngularVelocity = Vector3.zero
-            
-            local targetPos = ActiveTargets.Mining.Position
-            root.CFrame = CFrame.lookAt(targetPos + Vector3.new(5, 0, 0), targetPos)
+            pcall(function()
+                root.Anchored = false
+                root.AssemblyLinearVelocity = Vector3.zero
+                root.AssemblyAngularVelocity = Vector3.zero
+                local targetPos = ActiveTargets.Mining.Position
+                root.CFrame = CFrame.lookAt(targetPos + Vector3.new(5,0,0), targetPos)
+            end)
         end
     end)
 end
 
-local function InitializeAutoRun()
-    task.spawn(function()
-        while true do
-            task.wait(0.1)
-            if Config.AutoRun and Remotes.Run then
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
-                    Remotes.Run:InvokeServer()
-                end
+-- AutoRun
+task.spawn(function()
+    while true do
+        task.wait(0.15)
+        if Config.AutoRun and Remotes.Run then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                pcall(function() Remotes.Run:InvokeServer() end)
             end
+        else
+            task.wait(0.5)
         end
-    end)
-end
+    end
+end)
 
-local function InitializeCombat()
-    local isBlocking = false
-
+-- Combat (simplified & robust)
+do
+    local ActiveCombat = nil
     ScriptAPI.GetMobTypes = function()
-        local mobs = {}
-        local seen = {}
+        local mobs, seen = {}, {}
         local living = Workspace:FindFirstChild("Living")
-        
-        if living then
-            for _, model in ipairs(living:GetChildren()) do
-                if model:IsA("Model") and model:FindFirstChild("Humanoid") and not model:FindFirstChild("RaceFolder") and not model:FindFirstChild("Animate") then
-                    local name = model.Name:gsub("%d+$", "")
-                    if not seen[name] then
-                        seen[name] = true
-                        table.insert(mobs, name)
-                    end
-                end
+        if not living then return {} end
+        for _,m in ipairs(living:GetChildren()) do
+            if m:IsA("Model") and m:FindFirstChild("Humanoid") and not m:FindFirstChild("RaceFolder") and not m:FindFirstChild("Animate") then
+                local name = m.Name:gsub("%d+$","")
+                if not seen[name] then seen[name] = true; table.insert(mobs, name) end
             end
         end
         table.sort(mobs)
@@ -393,280 +293,185 @@ local function InitializeCombat()
 
     local function FindTarget(maxDist)
         local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-        
-        local root = char.HumanoidRootPart
-        local bestTarget = nil
-        local bestDist = maxDist or 100
-        
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return nil end
+        local best, bestDist = nil, maxDist or 100
         local living = Workspace:FindFirstChild("Living")
         if not living then return nil end
-
-        for _, mob in ipairs(living:GetChildren()) do
-            if mob:IsA("Model") and mob:FindFirstChild("Humanoid") then
-                local cleanName = mob.Name:gsub("%d+$", "")
-                
-                if Config.AttackTargets and Config.AttackTargets[cleanName] 
-                   and not mob:FindFirstChild("RaceFolder") 
-                   and not mob:FindFirstChild("Animate") 
-                   and mob.Humanoid.Health > 0 
-                   and mob:FindFirstChild("HumanoidRootPart") then
-                    
-                    local mobRoot = mob.HumanoidRootPart
-                    local dist = (mobRoot.Position - root.Position).Magnitude
-                    if dist < bestDist then
-                        bestTarget = mob
-                        bestDist = dist
-                    end
+        for _,mob in ipairs(living:GetChildren()) do
+            if mob:IsA("Model") and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
+                local cleanName = mob.Name:gsub("%d+$","")
+                if Config.AttackTargets[cleanName] and mob.Humanoid.Health > 0 then
+                    local dist = (mob.HumanoidRootPart.Position - root.Position).Magnitude
+                    if dist < bestDist then bestDist, best = dist, mob end
                 end
             end
         end
-        return bestTarget
+        return best
     end
 
     task.spawn(function()
         while true do
-            task.wait(0.1)
-            local char = LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            
-            if Config.AutoAttack and Remotes.ToolActivated and root and char:FindFirstChild("Humanoid") then
+            task.wait(0.12)
+            if Config.AutoAttack and Remotes.ToolActivated then
+                local char = LocalPlayer.Character
+                if not (char and char:FindFirstChild("Humanoid") and char.Humanoid.Health>0) then task.wait(0.5); continue end
+
                 local weapon = char:FindFirstChildWhichIsA("Tool")
                 if not weapon or weapon.Name == "Pickaxe" or weapon.Name == "Hammer" then
-                    for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                    for _,tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
                         if tool:IsA("Tool") and tool.Name ~= "Pickaxe" and tool.Name ~= "Hammer" then
-                            char.Humanoid:EquipTool(tool)
+                            pcall(function() char.Humanoid:EquipTool(tool) end)
                             weapon = tool
                             break
                         end
                     end
                 end
 
-                local targetValid = false
-                if ActiveTargets.Combat and ActiveTargets.Combat.Parent and ActiveTargets.Combat:FindFirstChild("Humanoid") then
-                    local name = ActiveTargets.Combat.Name:gsub("%d+$", "")
-                    if ActiveTargets.Combat.Humanoid.Health > 0 and Config.AttackTargets and Config.AttackTargets[name] then
-                        targetValid = true
-                    end
+                if not (ActiveCombat and ActiveCombat.Parent and ActiveCombat:FindFirstChild("Humanoid") and ActiveCombat.Humanoid.Health>0) then
+                    ActiveCombat = FindTarget(500)
                 end
 
-                if not targetValid then
-                    ActiveTargets.Combat = nil
-                    if isBlocking then
-                        Remotes.StopBlock:InvokeServer()
-                        isBlocking = false
-                    end
-                end
-
-                if not ActiveTargets.Combat then
-                    ActiveTargets.Combat = FindTarget(500)
-                end
-
-                local target = ActiveTargets.Combat
-
-                if weapon and target and char.Humanoid.Health > 0 and target.Parent then
+                if ActiveCombat and weapon and char.Humanoid.Health>0 then
                     local shouldBlock = false
                     if Config.AutoParry then
-                        local status = target:FindFirstChild("Status")
+                        local status = ActiveCombat:FindFirstChild("Status")
                         local attacking = status and status:FindFirstChild("Attacking")
-                        if attacking and attacking.Value == true then
-                            shouldBlock = true
-                        end
+                        if attacking and attacking.Value == true then shouldBlock = true end
                     end
 
-                    if shouldBlock then
-                        if not isBlocking then
-                            Remotes.StartBlock:InvokeServer()
-                            isBlocking = true
-                        end
-                    else
-                        if isBlocking then
-                            Remotes.StopBlock:InvokeServer()
-                            isBlocking = false
-                        end
-                        
-                        local targetRoot = target:FindFirstChild("HumanoidRootPart")
-                        if targetRoot and (root.Position - targetRoot.Position).Magnitude <= 15 then
-                            Remotes.ToolActivated:InvokeServer("Weapon")
-                        end
+                    if shouldBlock and Remotes.StartBlock and not Remotes.StopBlock then
+                        pcall(function() Remotes.StartBlock:InvokeServer() end)
+                    elseif Remotes.ToolActivated and ActiveCombat:FindFirstChild("HumanoidRootPart") then
+                        local dist = (char.HumanoidRootPart.Position - ActiveCombat.HumanoidRootPart.Position).Magnitude
+                        if dist <= 15 then pcall(function() Remotes.ToolActivated:InvokeServer("Weapon") end) end
                     end
                 end
             else
-                ActiveTargets.Combat = nil
-                if isBlocking then
-                    pcall(function() Remotes.StopBlock:InvokeServer() end)
-                    isBlocking = false
-                end
+                task.wait(0.5)
             end
         end
     end)
 
+    -- follow/face target (heartbeat)
     RunService.Heartbeat:Connect(function()
         local char = LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if Config.AutoAttack and ActiveTargets.Combat and ActiveTargets.Combat.Parent and root then
-            local targetRoot = ActiveTargets.Combat:FindFirstChild("HumanoidRootPart")
-            if targetRoot then
-                root.Anchored = false
-                root.AssemblyLinearVelocity = Vector3.zero
-                root.AssemblyAngularVelocity = Vector3.zero
-                root.CFrame = CFrame.lookAt((targetRoot.CFrame * CFrame.new(0, 0, 3)).Position, targetRoot.Position)
+        if Config.AutoAttack and ActiveCombat and ActiveCombat.Parent and char and char:FindFirstChild("HumanoidRootPart") then
+            local tRoot = ActiveCombat:FindFirstChild("HumanoidRootPart")
+            if tRoot then
+                local root = char.HumanoidRootPart
+                pcall(function()
+                    root.Anchored = false
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.AssemblyAngularVelocity = Vector3.zero
+                    root.CFrame = CFrame.lookAt((tRoot.CFrame * CFrame.new(0,0,3)).Position, tRoot.Position)
+                end)
             end
         end
     end)
 end
 
-local function InitializeForge()
+-- Forge functions
+do
     local function InstantForge(ores, itemType, callback)
-        local forgeModel = Workspace:WaitForChild("Proximity"):WaitForChild("Forge")
-        
-        if not Remotes.ChangeSequence or not Remotes.StartForge or not Remotes.Forge or not forgeModel then
-            if callback then callback("Error", "Failed to find necessary remotes or Forge model.", 5) end
-            return
-        end
+        local ok, forgeModel = pcall(function() return Workspace:WaitForChild("Proximity",5):WaitForChild("Forge",5) end)
+        if not ok or not forgeModel then if callback then callback("Error","Forge model not found",5) end; return end
+        if not Remotes.Forge or not Remotes.StartForge or not Remotes.ChangeSequence then if callback then callback("Error","Missing remotes",5) end; return end
 
         if not itemType then itemType = "Weapon" end
-        if callback then callback("Forge", "Starting Instant Forge... Please do not close the window.", 5) end
+        if callback then callback("Forge","Starting Instant Forge...",5) end
 
-        Remotes.Forge:InvokeServer(forgeModel)
-        task.wait()
-        Remotes.StartForge:InvokeServer(forgeModel)
-        task.wait(0.1)
-        
-        Remotes.ChangeSequence:InvokeServer(unpack({
-            "Melt",
-            {
-                FastForge = false,
-                ItemType = itemType,
-                Ores = ores
-            }
-        }))
-        
-        task.wait(1)
-        Remotes.ChangeSequence:InvokeServer("Pour", { ClientTime = Workspace:GetServerTimeNow() })
-        
-        task.wait(1)
-        Remotes.ChangeSequence:InvokeServer("Hammer", { ClientTime = Workspace:GetServerTimeNow() })
-        
-        task.wait(1)
+        pcall(function() Remotes.Forge:InvokeServer(forgeModel) end)
+        task.wait(0.12)
+        pcall(function() Remotes.StartForge:InvokeServer(forgeModel) end)
+        task.wait(0.12)
+        pcall(function() Remotes.ChangeSequence:InvokeServer("Melt", { FastForge = false, ItemType = itemType, Ores = ores }) end)
+        task.wait(0.8)
+        pcall(function() Remotes.ChangeSequence:InvokeServer("Pour", { ClientTime = Workspace:GetServerTimeNow() }) end)
+        task.wait(0.8)
+        pcall(function() Remotes.ChangeSequence:InvokeServer("Hammer", { ClientTime = Workspace:GetServerTimeNow() }) end)
+        task.wait(0.8)
         task.spawn(function()
-            Remotes.ChangeSequence:InvokeServer("Water", { ClientTime = Workspace:GetServerTimeNow() })
+            pcall(function() Remotes.ChangeSequence:InvokeServer("Water", { ClientTime = Workspace:GetServerTimeNow() }) end)
         end)
-        
-        task.wait(1)
-        Remotes.ChangeSequence:InvokeServer("Showcase", {})
-        
-        if callback then callback("Forge", "Instant Forge Completed! You can close the window.", 5) end
+        task.wait(0.8)
+        pcall(function() Remotes.ChangeSequence:InvokeServer("Showcase", {}) end)
+        if callback then callback("Forge","Instant Forge Completed!",5) end
     end
 
     local function GetAvailableOres()
-        local oreData = {}
+        local result = {}
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if not playerGui then return {} end
-
-        local oreFrame = playerGui:FindFirstChild("Forge") 
-            and playerGui.Forge:FindFirstChild("OreSelect") 
-            and playerGui.Forge.OreSelect:FindFirstChild("OresFrame") 
-            and playerGui.Forge.OreSelect.OresFrame:FindFirstChild("Frame") 
-            and playerGui.Forge.OreSelect.OresFrame.Frame:FindFirstChild("Background")
-
-        if not oreFrame then return {} end
-
-        for _, child in ipairs(oreFrame:GetChildren()) do
+        if not playerGui then return result end
+        local oreGui = playerGui:FindFirstChild("Forge") and playerGui.Forge:FindFirstChild("OreSelect") and playerGui.Forge.OreSelect:FindFirstChild("OresFrame")
+        if not oreGui then return result end
+        local container = oreGui:FindFirstChild("Frame") or oreGui
+        for _,child in ipairs(container:GetChildren()) do
             local main = child:FindFirstChild("Main")
-            local quantityLabel = main and main:FindFirstChild("Quantity")
-            
-            if quantityLabel then
-                local text = nil
-                if quantityLabel:IsA("TextLabel") or quantityLabel:IsA("TextBox") then
-                    text = quantityLabel.Text
-                elseif quantityLabel:FindFirstChild("Text") then
-                    text = quantityLabel.Text.Text
-                end
-
-                if text then
-                    local qty = tonumber(text:match("%d+"))
-                    if qty then
-                        oreData[child.Name] = qty
-                    end
+            local qtyLabel = main and main:FindFirstChild("Quantity")
+            if qtyLabel then
+                local txt = (qtyLabel:IsA("TextLabel") or qtyLabel:IsA("TextBox")) and qtyLabel.Text or (qtyLabel:FindFirstChild("Text") and qtyLabel.Text.Text)
+                if txt then
+                    local n = tonumber(txt:match("%d+"))
+                    result[child.Name] = n or txt
                 end
             end
         end
-        return oreData
+        return result
     end
 
     ScriptAPI.InstantForge = InstantForge
     ScriptAPI.GetAvailableOres = GetAvailableOres
 end
 
-local function InitializeMovement()
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+-- Movement: Click TP & Fly
+do
+    local flying = false
+    local bg, bv
+
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp then return end
         if Config.ClickTeleport and input.UserInputType == Enum.UserInputType.MouseButton1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            local mouse = LocalPlayer:GetMouse()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-            local mouse = LocalPlayer:GetMouse()
-            
-            if root and mouse.Hit then
-                root.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            if root and mouse and mouse.Hit then
+                pcall(function() root.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0)) end)
             end
         end
     end)
-
-    local bg, bv
-    local flying = false
-    local flySpeed = 50
 
     local function stopFly()
         flying = false
         if bg then bg:Destroy(); bg = nil end
         if bv then bv:Destroy(); bv = nil end
-        
         local char = LocalPlayer.Character
-        local humanoid = char and char:FindFirstChild("Humanoid")
-        if humanoid then humanoid.PlatformStand = false end
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.PlatformStand = false
+        end
     end
 
     local function startFly()
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
         local humanoid = char and char:FindFirstChild("Humanoid")
-        
-        if not root or not humanoid then return end
-        
+        if not (root and humanoid) then return end
         flying = true
         humanoid.PlatformStand = true
-        
-        bg = Instance.new("BodyGyro", root)
-        bg.P = 90000
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.cframe = root.CFrame
-        
-        bv = Instance.new("BodyVelocity", root)
-        bv.velocity = Vector3.zero
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-
+        bg = Instance.new("BodyGyro", root); bg.P = 90000; bg.maxTorque = Vector3.new(9e9,9e9,9e9); bg.cframe = root.CFrame
+        bv = Instance.new("BodyVelocity", root); bv.velocity = Vector3.zero; bv.maxForce = Vector3.new(9e9,9e9,9e9)
         task.spawn(function()
             while flying do
                 local cam = Workspace.CurrentCamera
-                if cam then
-                    local direction = Vector3.zero
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + cam.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - cam.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - cam.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + cam.CFrame.RightVector end
-                    
-                    if direction.Magnitude > 0 then
-                        bv.velocity = direction.Unit * flySpeed
-                    else
-                        bv.velocity = Vector3.zero
-                    end
-                    bg.cframe = cam.CFrame
-                    RunService.RenderStepped:Wait()
-                else
-                    break
-                end
+                if not cam then break end
+                local direction = Vector3.zero
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + cam.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - cam.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - cam.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + cam.CFrame.RightVector end
+                if direction.Magnitude > 0 then bv.velocity = direction.Unit * (Config.FlySpeed or 50) else bv.velocity = Vector3.zero end
+                bg.cframe = cam.CFrame
+                RunService.RenderStepped:Wait()
             end
             stopFly()
         end)
@@ -674,417 +479,229 @@ local function InitializeMovement()
 
     task.spawn(function()
         while true do
-            task.wait(0.2)
+            task.wait(0.25)
             if Config.InfiniteFly then
                 if not flying and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     startFly()
                 end
             else
-                if flying then
-                    stopFly()
-                end
+                if flying then stopFly() end
             end
         end
     end)
 
-    LocalPlayer.CharacterAdded:Connect(function()
-        if flying then stopFly() end
-    end)
+    LocalPlayer.CharacterAdded:Connect(function() if flying then stopFly() end end)
 end
 
-InitializeAutoMine()
-InitializeAutoRun()
-InitializeCombat()
-InitializeForge()
-InitializeMovement()
+-- -----------------------
+-- UI (WindUI) - create only if available
+-- -----------------------
+local Window, Tabs = nil, {}
+if WindUI and WindUI.CreateWindow then
+    Window = WindUI:CreateWindow({
+        Title = "DYHUB",
+        IconThemed = true,
+        Icon = "rbxassetid://104487529937663",
+        Author = "The Forge | " .. userversion,
+        Folder = "DYHUB_TF",
+        Size = UDim2.fromOffset(520, 420),
+        Transparent = true,
+        Theme = "Dark",
+        BackgroundImageTransparency = 0.8,
+        HasOutline = false,
+        HideSearchBar = true,
+        ScrollBarEnabled = true,
+        User = { Enabled = true, Anonymous = false },
+    })
+    Window:SetToggleKey(Enum.KeyCode.K)
+    pcall(function() Window:Tag({ Title = version, Color = Color3.fromHex("#30ff6a") }) end)
+    Window:EditOpenButton({ Title = "DYHUB - Open", Icon = "monitor", CornerRadius = UDim.new(0,6), StrokeThickness = 2, Draggable = true })
 
-local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
-local Main1Divider = Window:Divider()
-local Maintab = Window:Tab({ Title = "Main", Icon = "rocket" })
-local Playertab = Window:Tab({ Title = "Player", Icon = "user" })
-local Teleporttab = Window:Tab({ Title = "Teleport", Icon = "map" })
-local Autotab = Window:Tab({ Title = "Forge", Icon = "anvil" })
-local Combattab = Window:Tab({ Title = "Combat", Icon = "sword" })
+    -- Tabs
+    Tabs.Info = Window:Tab({ Title = "Information", Icon = "info" })
+    Tabs.Main = Window:Tab({ Title = "Main", Icon = "rocket" })
+    Tabs.Player = Window:Tab({ Title = "Player", Icon = "user" })
+    Tabs.Teleport = Window:Tab({ Title = "Teleport", Icon = "map" })
+    Tabs.Forge = Window:Tab({ Title = "Forge", Icon = "anvil" })
+    Tabs.Combat = Window:Tab({ Title = "Combat", Icon = "sword" })
 
+    -- Info
+    Tabs.Info:Section({ Title = "Info", Icon = "info" })
+    Tabs.Info:Paragraph({ Title = "DYHUB Upgraded", Desc = "Version: "..version.."\nExecutor: "..executorName.."\nMode: "..userversion, Locked = false })
 
-Maintab:Section({ Title = "Farming", Icon = "tractor" })
-Maintab:Toggle({Title="Auto Mine", Value=Config.AutoMine, Callback=function(v) Config.AutoMine=v end})
+    -- Main / Farming
+    Tabs.Main:Section({ Title = "Farming", Icon = "tractor" })
+    Tabs.Main:Toggle({ Title = "Auto Mine", Value = Config.AutoMine, Callback = function(v) UpdateSetting("AutoMine", v) end })
+    -- Dynamic rock dropdown (populated by scriptAPI)
+    local rockDropdown
+    Tabs.Main:Paragraph({ Title = "Target Mine", Desc = "Select which rock type to target." })
+    rockDropdown = Tabs.Main:Dropdown({ Title = "Target Mine", Values = ScriptAPI.GetRockTypes(), Multi = false, Callback = function(v) UpdateSetting("MineTarget", v) end })
 
-local SeenRocks = {}
-local RockList = {}
-
-local Dropdown
-
-task.spawn(function()
-    while true do
-        if ScriptAPI.GetRockTypes then
-            for _, rockName in ipairs(ScriptAPI.GetRockTypes()) do
-                if not SeenRocks[rockName] then
-                    SeenRocks[rockName] = true
-                    table.insert(RockList, rockName)
-
-                    -- อัปเดต Dropdown ถ้ามีอยู่แล้ว
-                    if Dropdown then
-                        Dropdown:Refresh(RockList)
-                    end
-                end
+    -- keep dropdown updated
+    task.spawn(function()
+        local seenList = {}
+        while true do
+            task.wait(4)
+            local ok, arr = pcall(function() return ScriptAPI.GetRockTypes() end)
+            arr = ok and arr or {}
+            table.sort(arr)
+            if rockDropdown and rockDropdown.SetValues then
+                pcall(function() rockDropdown:SetValues(arr) end)
+            elseif rockDropdown and rockDropdown.Refresh then
+                pcall(function() rockDropdown:Refresh(arr) end)
             end
-
-            -- ถ้ายังไม่ได้สร้าง Dropdown ให้สร้างตอนนี้
-            if not Dropdown then
-                Dropdown = Maintab:Dropdown({
-                    Title = "Target Mine",
-                    Values = RockList,
-                    Multi = false,
-                    Callback = function(value)
-                        Config.MineTarget = value
-                    end
-                })
-            end
-        end
-
-        task.wait(5)
-    end
-end)
-
-Maintab:AddToggle("Auto Run", Config.AutoRun, function(state)
-    UpdateSetting("AutoRun", state)
-end)
-
-Maintab:AddToggle("", Config., function(state)
-    UpdateSetting("InfiniteFly", state)
-end)
-
-Maintab:AddToggle("Click TP (Ctrl + Click)", Config.ClickTeleport, function(state)
-    UpdateSetting("ClickTeleport", state)
-end)
-
-Maintab:Section({ Title = "Player", Icon = "user" })
-Maintab:Toggle({Title="Auto Run", Value=Config.AutoRun, Callback=function(v) Config.AutoRun=v end})
-Maintab:Toggle({Title="Infinite Fly (PC ONLY)", Value=Config.InfiniteFly, Callback=function(v) Config.InfiniteFly=v end})
-Maintab:Toggle({Title="Click TP (Ctrl + Click)", Value=Config.ClickTeleport, Callback=function(v) Config.ClickTeleport=v end})
-
-Maintab:Section({ Title = "Code", Icon = "gift" })
-Maintab:Button({
-    Title = "Redeem Code All",
-    Callback = function()
-       RedeemAllCodes()
-    end
-})
-
-Combattab:Section({ Title = "Combat", Icon = "swords" })
-Combattab:Toggle({
-    Title = "Auto Attack",
-    Value = Config.AutoAttack,
-    Callback = function(v)
-        Config.AutoAttack = v
-        if v and Config.AutoRun then
-        end
-    end
-})
-
-Combattab:Toggle({
-    Title = "Auto Block",
-    Value = Config.AutoParry,
-    Callback = function(v)
-        Config.AutoParry = v
-    end
-})
-
-local CurrentMobList = {}
-local DropdownMob
-
-task.spawn(function()
-    while true do
-        if ScriptAPI.GetMobTypes then
-            local mobTypes = ScriptAPI.GetMobTypes()
-
-            -- ตรวจเช็คว่ารายชื่อ mob มีการเปลี่ยนแปลงไหม
-            local changed = false
-            if #mobTypes ~= #CurrentMobList then
-                changed = true
-            else
-                for i, v in ipairs(mobTypes) do
-                    if v ~= CurrentMobList[i] then
-                        changed = true
-                        break
-                    end
-                end
-            end
-
-            -- ถ้ามีการเปลี่ยนแปลง → อัปเดต Dropdown
-            if changed then
-                CurrentMobList = mobTypes
-
-                if DropdownMob then
-                    DropdownMob:SetValues(mobTypes)
-                else
-                    DropdownMob = Combattab:Dropdown({
-                        Title = "Target Mob",
-                        Values = mobTypes,
-                        Multi = false,
-                        Callback = function(value)
-                            Config.AttackTarget = value
-                        end
-                    })
-                end
-            end
-        end
-
-        task.wait(5)
-    end
-end)
-
-Autotab:Section({ Title = "Forge", Icon = "pickaxe" })
-Autotab:Paragraph({
-    Title = "WARNING (Instant Forge)",
-    Desc = "• If you use Instant Forge, you MUST quit and reopen the game before using the forge manually! \n• Select ore quantities and forge instantly.",
-    Image = "rbxassetid://104487529937663",
-    ImageSize = 45,
-    Locked = false
-})
-
---========================================
---   VARIABLES
---========================================
-local SelectedOre = nil
-local SelectedOreAmount = 1
-local OreDropdown = nil
-
-local ForgeTypes = {"Weapon", "Armor"}
-local ForgeTypeChecks = {}
-
---========================================
---   BUTTON: Instant Forge
---========================================
-Autotab:Button({
-    Title = "Instant Forge",
-    Callback = function()
-        if not SelectedOre then
-            Window:Notify("Error", "Please select an ore first!", 3)
-            return
-        end
-
-        if SelectedOreAmount < 3 then
-            Window:Notify("Error", "Amount must be at least 3!", 3)
-            return
-        end
-
-        local finalOres = {}
-        finalOres[SelectedOre] = SelectedOreAmount
-
-        if ScriptAPI.InstantForge then
-            ScriptAPI.InstantForge(finalOres, Config.ForgeItemType, function(title, msg, time)
-                Window:Notify(title, msg, time)
-            end)
-        end
-    end
-})
-
---========================================
---   FORGE ITEM TYPE (Weapon / Armor)
---========================================
-for _, fType in ipairs(ForgeTypes) do
-    local chk
-    chk = InstantForgeSection:AddCheckmark("Type: " .. fType, Config.ForgeItemType == fType, function(state)
-        if state then
-            -- แทน UpdateSetting → ใช้แบบนี้แทน
-            Config.ForgeItemType = fType 
-
-            for name, box in pairs(ForgeTypeChecks) do
-                if name ~= fType and box then 
-                    box:Set(false)
-                end
-            end
-        elseif Config.ForgeItemType == fType and chk then
-            chk:Set(true)
         end
     end)
-    ForgeTypeChecks[fType] = chk
-end
 
---========================================
---   DROPDOWN: Select Ore
---========================================
-OreDropdown = Autotab:Dropdown({
-    Title = "Select Ore",
-    Values = {},
-    Multi = true,
-    Callback = function(val)
-        SelectedOre = val
-    end
-})
+    -- Player controls
+    Tabs.Player:Section({ Title = "Player", Icon = "user" })
+    Tabs.Player:Toggle({ Title = "Auto Run", Value = Config.AutoRun, Callback = function(v) UpdateSetting("AutoRun", v) end })
+    Tabs.Player:Toggle({ Title = "Infinite Fly (PC ONLY)", Value = Config.InfiniteFly, Callback = function(v) UpdateSetting("InfiniteFly", v) end })
+    Tabs.Player:Input({ Title = "Fly Speed", Value = tostring(Config.FlySpeed), Placeholder = "e.g. 50", Callback = function(txt) local n=tonumber(txt); if n then UpdateSetting("FlySpeed", n) end end })
+    Tabs.Player:Toggle({ Title = "Click TP (Ctrl + Click)", Value = Config.ClickTeleport, Callback = function(v) UpdateSetting("ClickTeleport", v) end })
 
---========================================
---   INPUT: Set Amount
---========================================
-Autotab:Input({
-    Title = "Set Amount (Value)",
-    Value = "1",
-    Placeholder = "Amount",
-    Callback = function(text)
-        local num = tonumber(text)
-        if num and num > 0 then
-            SelectedOreAmount = num
-        else
-            warn("Entered an incorrect number!")
+    -- Teleport tab
+    Tabs.Teleport:Section({ Title = "Teleport Location", Icon = "map" })
+    local teleportDropdown = Tabs.Teleport:Dropdown({ Title = "Select Teleport", Values = {}, Multi = false, Callback = function(val) UpdateSetting("SelectedTeleport", val) end })
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            local proxFolder = workspace:FindFirstChild("Proximity")
+            local list = {}
+            if proxFolder then
+                for _, loc in ipairs(proxFolder:GetChildren()) do
+                    if loc:IsA("Model") or loc:IsA("BasePart") then table.insert(list, loc.Name) end
+                end
+                table.sort(list)
+            end
+            if teleportDropdown and teleportDropdown.SetValues then
+                pcall(function() teleportDropdown:SetValues(list) end)
+            elseif teleportDropdown and teleportDropdown.Refresh then
+                pcall(function() teleportDropdown:Refresh(list) end)
+            end
         end
-    end
-})
-
---========================================
---   AUTO UPDATE ORE LIST INTO DROPDOWN
---========================================
-task.spawn(function()
-    while true do
-        local availOres = ScriptAPI.GetAvailableOres and ScriptAPI.GetAvailableOres() or {}
-        local oreList = {}
-
-        for oreName in pairs(availOres) do
-            table.insert(oreList, oreName)
-        end
-
-        table.sort(oreList)
-
-        if OreDropdown and OreDropdown.SetValues then
-            OreDropdown:SetValues(oreList)
-        end
-
-        task.wait(1)
-    end
-end)
-
-local SelectedTeleport = nil
-
--- สร้าง Section
-Teleporttab:Section({
-    Title = "Teleport Location",
-    Icon = "map"
-})
-
--- สร้าง Dropdown
-local TeleportDropdown = Teleporttab:Dropdown({
-    Title = "Select Teleport",
-    Values = {},
-    Multi = false,
-    Callback = function(val)
-        SelectedTeleport = val
-    end
-})
-
--- ฟังก์ชันเทเลพอร์ต
-local function TeleportTo(name)
-    local proxFolder = workspace:FindFirstChild("Proximity")
-    if not proxFolder then return end
-
-    local target = proxFolder:FindFirstChild(name)
-    if not target then return end
-
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local targetCFrame
-
-    if target:IsA("Model") then
-        targetCFrame = target.PrimaryPart and target.PrimaryPart.CFrame or target:GetPivot()
-    elseif target:IsA("BasePart") then
-        targetCFrame = target.CFrame
-    end
-
-    if targetCFrame then
-        root.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-    end
-end
-
--- Auto update รายชื่อใน Dropdown
-task.spawn(function()
-    while true do
+    end)
+    Tabs.Teleport:Button({ Title = "Teleport Now", Callback = function()
+        local name = Config.SelectedTeleport
+        if not name then Window:Notify("Error","Please select a teleport location!",3); return end
         local proxFolder = workspace:FindFirstChild("Proximity")
-        local list = {}
+        if not proxFolder then Window:Notify("Error","Proximity not found",3); return end
+        local target = proxFolder:FindFirstChild(name)
+        if not target then Window:Notify("Error","Target not found",3); return end
+        local char = LocalPlayer.Character; local root = char and char:FindFirstChild("HumanoidRootPart")
+        if root then pcall(function() root.CFrame = (target:IsA("Model") and (target.PrimaryPart and target.PrimaryPart.CFrame or target:GetPivot()) or target.CFrame) + Vector3.new(0,3,0) end) end
+    end })
 
-        if proxFolder then
-            for _, loc in ipairs(proxFolder:GetChildren()) do
-                if loc:IsA("Model") or loc:IsA("BasePart") then
-                    table.insert(list, loc.Name)
-                end
+    -- Combat tab
+    Tabs.Combat:Section({ Title = "Combat", Icon = "swords" })
+    Tabs.Combat:Toggle({ Title = "Auto Attack", Value = Config.AutoAttack, Callback = function(v) UpdateSetting("AutoAttack", v) end })
+    Tabs.Combat:Toggle({ Title = "Auto Block (Parry)", Value = Config.AutoParry, Callback = function(v) UpdateSetting("AutoParry", v) end })
+
+    -- Mob dropdown (dynamic)
+    local mobDropdown = Tabs.Combat:Dropdown({ Title = "Target Mob", Values = ScriptAPI.GetMobTypes and ScriptAPI.GetMobTypes() or {}, Multi = false, Callback = function(val) UpdateSetting("SelectedMob", val); Config.AttackTargets = {}; Config.AttackTargets[val] = true; SaveConfig() end })
+    task.spawn(function()
+        while true do
+            task.wait(4)
+            local ok, arr = pcall(function() return ScriptAPI.GetMobTypes() end)
+            arr = ok and arr or {}
+            table.sort(arr)
+            if mobDropdown and mobDropdown.SetValues then
+                pcall(function() mobDropdown:SetValues(arr) end)
+            elseif mobDropdown and mobDropdown.Refresh then
+                pcall(function() mobDropdown:Refresh(arr) end)
             end
-
-            table.sort(list)
         end
+    end)
 
-        if TeleportDropdown and TeleportDropdown.SetValues then
-            TeleportDropdown:SetValues(list)
+    -- Forge tab
+    Tabs.Forge:Section({ Title = "Forge", Icon = "pickaxe" })
+    Tabs.Forge:Paragraph({ Title = "WARNING (Instant Forge)", Desc = "If you use Instant Forge, you MUST quit and reopen the game before using the forge manually!\nSelect ore quantities and forge instantly.", Image = "rbxassetid://104487529937663", ImageSize = 45 })
+    local oreDropdown = Tabs.Forge:Dropdown({ Title = "Select Ore (Auto)", Values = {}, Multi = true, Callback = function(v) UpdateSetting("SelectedOre", v) end })
+    Tabs.Forge:Input({ Title = "Amount (per ore)", Value = "3", Placeholder = "3", Callback = function(txt) local n=tonumber(txt); if n and n>0 then UpdateSetting("SelectedOreAmount", n) end end })
+    Tabs.Forge:Dropdown({ Title = "Item Type", Values = {"Weapon","Armor"}, Multi = false, Callback = function(v) UpdateSetting("ForgeItemType", v) end })
+
+    -- dynamically update ore values
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            local ores = {}
+            local ok, avail = pcall(function() return ScriptAPI.GetAvailableOres and ScriptAPI.GetAvailableOres() or {} end)
+            if ok and type(avail) == "table" then
+                for k,_ in pairs(avail) do table.insert(ores,k) end
+            end
+            table.sort(ores)
+            if oreDropdown and oreDropdown.SetValues then
+                pcall(function() oreDropdown:SetValues(ores) end)
+            elseif oreDropdown and oreDropdown.Refresh then
+                pcall(function() oreDropdown:Refresh(ores) end)
+            end
         end
+    end)
 
-        task.wait(1)
-    end
-end)
-
--- ปุ่ม Teleport จริง
-Teleporttab:Button({
-    Title = "Teleport Now",
-    Callback = function()
-        if not SelectedTeleport then
-            Window:Notify("Error", "Please select a teleport location!", 3)
-            return
+    Tabs.Forge:Button({ Title = "Instant Forge", Callback = function()
+        local sel = Config.SelectedOre
+        local amount = Config.SelectedOreAmount or 1
+        if not sel or (type(sel)=="table" and #sel==0) then Window:Notify("Error","Please select at least one ore.",3); return end
+        -- build ores table
+        local ores = {}
+        if type(sel) == "string" then ores[sel] = amount else for _,o in ipairs(sel) do ores[o] = amount end end
+        if ScriptAPI.InstantForge then
+            ScriptAPI.InstantForge(ores, Config.ForgeItemType, function(t,m,tm) Window:Notify(t,m,tm) end)
+        else
+            Window:Notify("Error","InstantForge not available",3)
         end
-        TeleportTo(SelectedTeleport)
-    end
-})
+    end })
 
-Library.SetGameDataCallback(function()
-    local gui = LocalPlayer:FindFirstChild("PlayerGui")
-    local level = 0
-    local gold = 0
-    local inventory = {}
+    -- Quick code redeem
+    Tabs.Main:Section({ Title = "Code", Icon = "gift" })
+    Tabs.Main:Button({ Title = "Redeem All Codes", Callback = function() ScriptAPI.RedeemAllCodes() Window:Notify("Codes","Redeeming codes...",3) end })
+end
 
-    if gui then
-        local hud = gui:FindFirstChild("Main") and gui.Main:FindFirstChild("Screen") and gui.Main.Screen:FindFirstChild("Hud")
-        if hud then
-            local lvlLbl = hud:FindFirstChild("Level")
-            if lvlLbl then level = tonumber(lvlLbl.Text:match("%d+")) or 0 end
-            
-            local goldLbl = hud:FindFirstChild("Gold")
-            if goldLbl then gold = tonumber(goldLbl.Text:gsub("[$,]", "")) or goldLbl.Text end
-        end
-        
-        local stash = gui:FindFirstChild("Menu") and gui.Menu:FindFirstChild("Frame") and gui.Menu.Frame:FindFirstChild("Frame") 
-            and gui.Menu.Frame.Frame:FindFirstChild("Menus") and gui.Menu.Frame.Frame.Menus:FindFirstChild("Stash") 
-            and gui.Menu.Frame.Frame.Menus.Stash:FindFirstChild("Background")
-            
-        if stash then
-            for _, itemFrame in ipairs(stash:GetChildren()) do
-                local main = itemFrame:FindFirstChild("Main")
-                if main then
-                    local nameLbl = main:FindFirstChild("ItemName")
-                    local qtyLbl = main:FindFirstChild("Quantity")
-                    
-                    if nameLbl and qtyLbl then
-                        local iName = nameLbl.Text
-                        local iQty = qtyLbl.Text
-                        if iName ~= "" and iQty ~= "" then
-                            inventory[iName] = tonumber(iQty:match("%d+")) or iQty
+-- -----------------------
+-- Library callback (safe)
+-- -----------------------
+pcall(function()
+    if Library and Library.SetGameDataCallback then
+        Library.SetGameDataCallback(function()
+            local gui = LocalPlayer:FindFirstChild("PlayerGui")
+            local level, gold, inventory = 0, 0, {}
+            if gui then
+                local hud = gui:FindFirstChild("Main") and gui.Main:FindFirstChild("Screen") and gui.Main.Screen:FindFirstChild("Hud")
+                if hud then
+                    local lvlLbl = hud:FindFirstChild("Level")
+                    if lvlLbl then level = tonumber(lvlLbl.Text:match("%d+")) or 0 end
+                    local goldLbl = hud:FindFirstChild("Gold")
+                    if goldLbl then gold = tonumber(goldLbl.Text:gsub("[$,]","")) or goldLbl.Text end
+                end
+                local stash = gui:FindFirstChild("Menu") and gui.Menu:FindFirstChild("Frame") and gui.Menu.Frame:FindFirstChild("Frame")
+                stash = stash and stash:FindFirstChild("Menus") and stash.Menus:FindFirstChild("Stash") and stash.Menus.Stash:FindFirstChild("Background")
+                if stash then
+                    for _,itemFrame in ipairs(stash:GetChildren()) do
+                        local main = itemFrame:FindFirstChild("Main")
+                        if main then
+                            local nameLbl = main:FindFirstChild("ItemName")
+                            local qtyLbl = main:FindFirstChild("Quantity")
+                            if nameLbl and qtyLbl then
+                                inventory[nameLbl.Text] = tonumber((qtyLbl.Text):match("%d+")) or qtyLbl.Text
+                            end
                         end
                     end
                 end
             end
-        end
+            local features = {}
+            for k,v in pairs(Config) do features[k] = v end
+            return { level = level, gold = gold, inventory = inventory, timestamp = os.time(), features = features }
+        end)
     end
-
-    local features = {}
-    for k, v in pairs(Config) do features[k] = v end
-
-    return {
-        level = level,
-        gold = gold,
-        inventory = inventory,
-        timestamp = os.time(),
-        features = features,
-    }
 end)
 
-Info = InfoTab
+-- final notify
+if WindUI and WindUI.Notify then
+    WindUI:Notify({ Title = "DYHUB", Content = "Loaded: " .. version .. " (" .. userversion .. ")", Duration = 5 })
+end
+
+
+Info = Tabs.Info
 
 if not ui then ui = {} end
 if not ui.Creator then ui.Creator = {} end
