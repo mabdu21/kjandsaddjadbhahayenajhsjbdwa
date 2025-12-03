@@ -3,10 +3,171 @@ if game.GameId ~= 7671049560 then
     return
 end
 
-if _G.HazePrivate then
-    warn("[DYHUB] UI already initialized")
-    return
+-- Powered by GPT 5 | v809
+-- ======================
+local version = "2.4.1"
+-- ======================
+
+repeat task.wait() until game:IsLoaded()
+
+-- FPS Unlock
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "FPS Unlocked!",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Your exploit does not support setfpscap.",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Your exploit does not support setfpscap.")
 end
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local executorName = "Unknown"
+
+pcall(function()
+    -- ✅ ตัวตรวจจับหลักจาก identifyexecutor()
+    if identifyexecutor then
+        local name, ver = identifyexecutor()
+        executorName = ver and (name .. " (" .. ver .. ")") or name
+        return
+    end
+
+    -- ✅ ตัวตรวจจับสำรองจาก getexecutorname()
+    if getexecutorname then
+        executorName = getexecutorname()
+        return
+    end
+
+    -- ✅ ตรวจจาก global flags (สำหรับ executor ยอดนิยม)
+    local globals = getgenv and getgenv() or _G
+    local checkList = {
+        { "Delta", "Delta successfully" },
+        { "Xeno", "Xeno successfully" },
+        { "Zenith", "Zenith successfully" },
+        { "Wave", "Wave successfully" },
+	    { "Volt", "Volt successfully" },
+	    { "Volcano", "Volcano successfully" },
+        { "Velocity", "Velocity successfully" },
+        { "Seliware", "Seliware successfully" },
+	    { "Valex", "Valex successfully" },
+	    { "Potassium", "Potassium successfully" },
+        { "Bunni", "Bunni successfully" },
+        { "Sirhurt", "Sirhurt successfully" },
+	    { "Delta", "Delta successfully" },
+	    { "Codex", "Codex successfully" },
+	    { "Solara", "Solara: Not Support" },
+	    { "Cryptic", "Cryptic successfully" },
+        { "Krnl", "Krnl successfully" },
+    }
+
+    for _, data in ipairs(checkList) do
+        local key, name = unpack(data)
+        if globals[key] ~= nil or getfenv()[key] ~= nil then
+            executorName = name
+            return
+        end
+    end
+
+    -- ✅ ตรวจชื่อไฟล์ Lua Environment เผื่อบาง executor
+    local info = debug.getinfo(1, "S")
+    if info and info.source then
+        local src = string.lower(info.source)
+        if src:find("synapse") then executorName = "Synapse Z successfully" end
+        if src:find("fluxus") then executorName = "Rip Fluxus successfully" end
+        if src:find("krnl") then executorName = "Krnl successfully" end
+        if src:find("delta") then executorName = "Delta successfully" end
+    end
+end)
+
+-- ✅ แจ้งเตือนผ่าน WindUI
+WindUI:Notify({
+    Title = "DYHUB",
+    Content = "Executor: " .. executorName .. ".",
+    Duration = 6,
+    Image = "cpu"
+})
+
+-- ====================== WINDOW ======================
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
+
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success then
+        return FreeVersion
+    end
+
+    local premiumData
+    local func, err = loadstring(response)
+    if func then
+        premiumData = func()
+    else
+        return FreeVersion
+    end
+
+    if premiumData[playerName] then
+        return PremiumVersion
+    else
+        return FreeVersion
+    end
+end
+
+local player = Players.LocalPlayer
+local userversion = checkVersion(player.Name)
+
+local Window = WindUI:CreateWindow({
+    Title = "DYHUB",
+    IconThemed = true,
+    Icon = "rbxassetid://104487529937663",
+    Author = "The Forge | " .. userversion,
+    Folder = "DYHUB_TF",
+    Size = UDim2.fromOffset(500, 400),
+    Transparent = true,
+    Theme = "Dark",
+    BackgroundImageTransparency = 0.8,
+    HasOutline = false,
+    HideSearchBar = true,
+    ScrollBarEnabled = true,
+    User = { Enabled = true, Anonymous = false },
+})
+
+Window:SetToggleKey(Enum.KeyCode.K)
+
+pcall(function()
+    Window:Tag({
+        Title = version,
+        Color = Color3.fromHex("#30ff6a")
+    })
+end)
+
+Window:EditOpenButton({
+    Title = "DYHUB - Open",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 6),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255)),
+    Draggable = true,
+})
+
+
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -537,59 +698,22 @@ InitializeCombat()
 InitializeForge()
 InitializeMovement()
 
-local Library = loadstring(game:HttpGet("https://haze.wtf/api/ui"))()
-task.wait(0.5)
+local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
+local Main1Divider = Window:Divider()
+local Maintab = Window:Tab({ Title = "Main", Icon = "rocket" })
+local Playertab = Window:Tab({ Title = "Player", Icon = "user" })
+local Teleporttab = Window:Tab({ Title = "Teleport", Icon = "map" })
+local Autotab = Window:Tab({ Title = "Forge", Icon = "anvil" })
+local Combattab = Window:Tab({ Title = "Combat", Icon = "sword" })
 
-if not Library or not Library.GetStatus or not _G.HazePrivate then
-    warn("[DYHUB] Failed to load library!")
-    return
-end
 
-local startTick = tick()
-while not Library.GetStatus().verified do
-    if tick() - startTick > 10 then break end
-    task.wait(0.1)
-end
+Maintab:Section({ Title = "Farming", Icon = "tractor" })
+Maintab:Toggle({Title="Auto Mine", Value=Config.AutoMine, Callback=function(v) Config.AutoMine=v end})
 
-if not Library.GetStatus().verified then
-    warn("[DYHUB] Failed to verify library!")
-    return
-end
-
-local Window = Library.new("Haze.wtf X DYHUB", MarketplaceService:GetProductInfo(game.PlaceId).Name or "Game Title", nil)
-local ConfigName = "TheForge"
-
-local SavedConfig = Library.InitializeConfig(ConfigName, Config)
-for k, v in pairs(SavedConfig) do
-    if Config[k] ~= nil then Config[k] = v end
-end
-
-if SavedConfig.AttackTarget and type(SavedConfig.AttackTarget) == "string" then
-    if not Config.AttackTargets then Config.AttackTargets = {} end
-    local count = 0
-    for _ in pairs(Config.AttackTargets) do count = count + 1 end
-    
-    if count == 0 and SavedConfig.AttackTarget ~= "" then
-        Config.AttackTargets[SavedConfig.AttackTarget] = true
-    end
-    Config.AttackTarget = nil
-    Library.SaveConfig(ConfigName)
-end
-
-local function UpdateSetting(key, value)
-    Config[key] = value
-    Library.UpdateConfig(ConfigName, key, value)
-end
-
-local MainTab = Window:AddTab("Main", "rbxassetid://6026568198")
-local FarmingSection = MainTab:AddSection("Farming")
-
-FarmingSection:AddToggle("Auto Mine", Config.AutoMine, function(state)
-    UpdateSetting("AutoMine", state)
-end)
-
-local RockCheckboxes = {}
 local SeenRocks = {}
+local RockList = {}
+
+local Dropdown
 
 task.spawn(function()
     while true do
@@ -597,125 +721,180 @@ task.spawn(function()
             for _, rockName in ipairs(ScriptAPI.GetRockTypes()) do
                 if not SeenRocks[rockName] then
                     SeenRocks[rockName] = true
-                    
-                    local checkbox
-                    checkbox = FarmingSection:AddCheckmark("Target: " .. rockName, Config.MineTarget == rockName, function(state)
-                        if state then
-                            UpdateSetting("MineTarget", rockName)
-                            for name, box in pairs(RockCheckboxes) do
-                                if name ~= rockName and box then box:Set(false) end
-                            end
-                        elseif Config.MineTarget == rockName and checkbox then
-                            checkbox:Set(true) 
-                        end
-                    end)
-                    RockCheckboxes[rockName] = checkbox
+                    table.insert(RockList, rockName)
+
+                    -- อัปเดต Dropdown ถ้ามีอยู่แล้ว
+                    if Dropdown then
+                        Dropdown:Refresh(RockList)
+                    end
                 end
             end
+
+            -- ถ้ายังไม่ได้สร้าง Dropdown ให้สร้างตอนนี้
+            if not Dropdown then
+                Dropdown = Maintab:Dropdown({
+                    Title = "Target Mine",
+                    Values = RockList,
+                    Multi = false,
+                    Callback = function(value)
+                        Config.MineTarget = value
+                    end
+                })
+            end
         end
+
         task.wait(5)
     end
 end)
 
-local PlayerSection = MainTab:AddSection("Player")
-PlayerSection:AddToggle("Auto Run", Config.AutoRun, function(state)
+Maintab:AddToggle("Auto Run", Config.AutoRun, function(state)
     UpdateSetting("AutoRun", state)
 end)
 
-PlayerSection:AddToggle("Infinite Fly (PC ONLY)", Config.InfiniteFly, function(state)
+Maintab:AddToggle("", Config., function(state)
     UpdateSetting("InfiniteFly", state)
 end)
 
-PlayerSection:AddToggle("Click TP (Ctrl + Click)", Config.ClickTeleport, function(state)
+Maintab:AddToggle("Click TP (Ctrl + Click)", Config.ClickTeleport, function(state)
     UpdateSetting("ClickTeleport", state)
 end)
 
-local CodesSection = MainTab:AddSection("Codes")
-CodesSection:AddButton("Claim All Codes", function()
-    RedeemAllCodes()
-    Window:Notify("Codes", "Attempting to claim all codes...", 3)
-end)
+Maintab:Section({ Title = "Player", Icon = "user" })
+Maintab:Toggle({Title="Auto Run", Value=Config.AutoRun, Callback=function(v) Config.AutoRun=v end})
+Maintab:Toggle({Title="Infinite Fly (PC ONLY)", Value=Config.InfiniteFly, Callback=function(v) Config.InfiniteFly=v end})
+Maintab:Toggle({Title="Click TP (Ctrl + Click)", Value=Config.ClickTeleport, Callback=function(v) Config.ClickTeleport=v end})
 
-local CombatTab = Window:AddTab("Combat", "rbxassetid://4391741881")
-local CombatSection = CombatTab:AddSection("Combat")
-
-CombatSection:AddToggle("Auto Attack", Config.AutoAttack, function(state)
-    UpdateSetting("AutoAttack", state)
-    if state and Config.AutoRun then
+Maintab:Section({ Title = "Code", Icon = "gift" })
+Maintab:Button({
+    Title = "Redeem Code All",
+    Callback = function()
+       RedeemAllCodes()
     end
-end)
+})
 
-CombatSection:AddCheckmark("Auto Block", Config.AutoParry, function(state)
-    UpdateSetting("AutoParry", state)
-end)
+Combattab:Section({ Title = "Combat", Icon = "swords" })
+Combattab:Toggle({
+    Title = "Auto Attack",
+    Value = Config.AutoAttack,
+    Callback = function(v)
+        Config.AutoAttack = v
+        if v and Config.AutoRun then
+        end
+    end
+})
 
-local MobCheckboxes = {}
+Combattab:Toggle({
+    Title = "Auto Block",
+    Value = Config.AutoParry,
+    Callback = function(v)
+        Config.AutoParry = v
+    end
+})
+
+local CurrentMobList = {}
+local DropdownMob
+
 task.spawn(function()
     while true do
         if ScriptAPI.GetMobTypes then
-            for _, mobName in ipairs(ScriptAPI.GetMobTypes()) do
-                if not MobCheckboxes[mobName] then
-                    MobCheckboxes[mobName] = true
-                    if Config.AttackTargets[mobName] == nil then Config.AttackTargets[mobName] = false end
-                    
-                    CombatSection:AddCheckmark("Target: " .. mobName, Config.AttackTargets[mobName], function(state)
-                        Config.AttackTargets[mobName] = state
-                        UpdateSetting("AttackTargets", Config.AttackTargets)
-                    end)
+            local mobTypes = ScriptAPI.GetMobTypes()
+
+            -- ตรวจเช็คว่ารายชื่อ mob มีการเปลี่ยนแปลงไหม
+            local changed = false
+            if #mobTypes ~= #CurrentMobList then
+                changed = true
+            else
+                for i, v in ipairs(mobTypes) do
+                    if v ~= CurrentMobList[i] then
+                        changed = true
+                        break
+                    end
+                end
+            end
+
+            -- ถ้ามีการเปลี่ยนแปลง → อัปเดต Dropdown
+            if changed then
+                CurrentMobList = mobTypes
+
+                if DropdownMob then
+                    DropdownMob:SetValues(mobTypes)
+                else
+                    DropdownMob = Combattab:Dropdown({
+                        Title = "Target Mob",
+                        Values = mobTypes,
+                        Multi = false,
+                        Callback = function(value)
+                            Config.AttackTarget = value
+                        end
+                    })
                 end
             end
         end
+
         task.wait(5)
     end
 end)
 
-local ForgeTab = Window:AddTab("Forge", "rbxassetid://132118792360603")
-local InstantForgeSection = ForgeTab:AddSection("Instant Forge")
+Autotab:Section({ Title = "Forge", Icon = "pickaxe" })
+Autotab:Paragraph({
+    Title = "WARNING (Instant Forge)",
+    Desc = "• If you use Instant Forge, you MUST quit and reopen the game before using the forge manually! \n• Select ore quantities and forge instantly.",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 45,
+    Locked = false
+})
 
-InstantForgeSection:SetDescription("⚠️ WARNING: If you use Instant Forge, you MUST quit and reopen the game before using the forge manually! \n\nSelect ore quantities and forge instantly.")
-
-local OreSelections = {}
-local OreSliders = {}
-
-InstantForgeSection:AddButton("Instant Forge", function()
-    if ScriptAPI.InstantForge then
-        local finalOres = {}
-        local totalQty = 0
-        local typeCount = 0
-        
-        for name, qty in pairs(OreSelections) do
-            if qty > 0 then
-                finalOres[name] = qty
-                totalQty = totalQty + qty
-                typeCount = typeCount + 1
-            end
-        end
-        
-        if totalQty < 3 then
-            Window:Notify("Error", "You must select at least 3 ores!", 3)
-            return
-        end
-        if typeCount > 4 then
-            Window:Notify("Error", "Too many ore types! Max 4 allowed.", 3)
-            return
-        end
-        
-        ScriptAPI.InstantForge(finalOres, Config.ForgeItemType, function(title, msg, time)
-            Window:Notify(title, msg, time)
-        end)
-    end
-end)
+--========================================
+--   VARIABLES
+--========================================
+local SelectedOre = nil
+local SelectedOreAmount = 1
+local OreDropdown = nil
 
 local ForgeTypes = {"Weapon", "Armor"}
 local ForgeTypeChecks = {}
 
+--========================================
+--   BUTTON: Instant Forge
+--========================================
+Autotab:Button({
+    Title = "Instant Forge",
+    Callback = function()
+        if not SelectedOre then
+            Window:Notify("Error", "Please select an ore first!", 3)
+            return
+        end
+
+        if SelectedOreAmount < 3 then
+            Window:Notify("Error", "Amount must be at least 3!", 3)
+            return
+        end
+
+        local finalOres = {}
+        finalOres[SelectedOre] = SelectedOreAmount
+
+        if ScriptAPI.InstantForge then
+            ScriptAPI.InstantForge(finalOres, Config.ForgeItemType, function(title, msg, time)
+                Window:Notify(title, msg, time)
+            end)
+        end
+    end
+})
+
+--========================================
+--   FORGE ITEM TYPE (Weapon / Armor)
+--========================================
 for _, fType in ipairs(ForgeTypes) do
     local chk
     chk = InstantForgeSection:AddCheckmark("Type: " .. fType, Config.ForgeItemType == fType, function(state)
         if state then
-            UpdateSetting("ForgeItemType", fType)
+            -- แทน UpdateSetting → ใช้แบบนี้แทน
+            Config.ForgeItemType = fType 
+
             for name, box in pairs(ForgeTypeChecks) do
-                if name ~= fType and box then box:Set(false) end
+                if name ~= fType and box then 
+                    box:Set(false)
+                end
             end
         elseif Config.ForgeItemType == fType and chk then
             chk:Set(true)
@@ -724,84 +903,135 @@ for _, fType in ipairs(ForgeTypes) do
     ForgeTypeChecks[fType] = chk
 end
 
+--========================================
+--   DROPDOWN: Select Ore
+--========================================
+OreDropdown = Autotab:Dropdown({
+    Title = "Select Ore",
+    Values = {},
+    Multi = true,
+    Callback = function(val)
+        SelectedOre = val
+    end
+})
+
+--========================================
+--   INPUT: Set Amount
+--========================================
+Autotab:Input({
+    Title = "Set Amount (Value)",
+    Value = "1",
+    Placeholder = "Amount",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num and num > 0 then
+            SelectedOreAmount = num
+        else
+            warn("Entered an incorrect number!")
+        end
+    end
+})
+
+--========================================
+--   AUTO UPDATE ORE LIST INTO DROPDOWN
+--========================================
 task.spawn(function()
     while true do
         local availOres = ScriptAPI.GetAvailableOres and ScriptAPI.GetAvailableOres() or {}
-        local sortedOres = {}
-        
-        for k in pairs(availOres) do table.insert(sortedOres, k) end
-        table.sort(sortedOres)
-        
-        local currentOresInUI = {}
+        local oreList = {}
 
-        for _, oreName in ipairs(sortedOres) do
-            currentOresInUI[oreName] = true
-            local maxQty = availOres[oreName]
-            local currentSlider = OreSliders[oreName]
-            
-            if currentSlider then
-                local currentVal = OreSelections[oreName] or 0
-                if maxQty < currentVal then currentVal = maxQty end
-                
-                if currentVal ~= OreSelections[oreName] then
-                    OreSelections[oreName] = currentVal
-                end
-                currentSlider:Set(currentVal, 0, maxQty)
-            else
-                local currentVal = OreSelections[oreName] or 0
-                if maxQty < currentVal then currentVal = maxQty end
-                
-                OreSliders[oreName] = InstantForgeSection:AddSlider(oreName, 0, maxQty, currentVal, function(val)
-                    OreSelections[oreName] = val
-                end)
-            end
+        for oreName in pairs(availOres) do
+            table.insert(oreList, oreName)
         end
 
-        for name, slider in pairs(OreSliders) do
-            if not currentOresInUI[name] then
-                if slider.Destroy then slider.Destroy() end
-                OreSliders[name] = nil
-                OreSelections[name] = 0
-            end
+        table.sort(oreList)
+
+        if OreDropdown and OreDropdown.SetValues then
+            OreDropdown:SetValues(oreList)
         end
+
         task.wait(1)
     end
 end)
 
-local TeleportTab = Window:AddTab("Teleport", "rbxassetid://114223315914239")
-local LocationsSection = TeleportTab:AddSection("Locations")
+local SelectedTeleport = nil
 
-local function RefreshLocations()
-    local proxFolder = Workspace:FindFirstChild("Proximity")
-    if not proxFolder then
-        LocationsSection:AddButton("No Proximity Folder Found", function() end)
-        return
+-- สร้าง Section
+Teleporttab:Section({
+    Title = "Teleport Location",
+    Icon = "map"
+})
+
+-- สร้าง Dropdown
+local TeleportDropdown = Teleporttab:Dropdown({
+    Title = "Select Teleport",
+    Values = {},
+    Multi = false,
+    Callback = function(val)
+        SelectedTeleport = val
+    end
+})
+
+-- ฟังก์ชันเทเลพอร์ต
+local function TeleportTo(name)
+    local proxFolder = workspace:FindFirstChild("Proximity")
+    if not proxFolder then return end
+
+    local target = proxFolder:FindFirstChild(name)
+    if not target then return end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local targetCFrame
+
+    if target:IsA("Model") then
+        targetCFrame = target.PrimaryPart and target.PrimaryPart.CFrame or target:GetPivot()
+    elseif target:IsA("BasePart") then
+        targetCFrame = target.CFrame
     end
 
-    local children = proxFolder:GetChildren()
-    table.sort(children, function(a, b) return a.Name < b.Name end)
-
-    for _, loc in ipairs(children) do
-        if loc:IsA("Model") or loc:IsA("BasePart") then
-            LocationsSection:AddButton(loc.Name, function()
-                local char = LocalPlayer.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                local targetCFrame
-                
-                if loc:IsA("Model") then
-                    targetCFrame = loc.PrimaryPart and loc.PrimaryPart.CFrame or loc:GetPivot()
-                elseif loc:IsA("BasePart") then
-                    targetCFrame = loc.CFrame
-                end
-                
-                if root and targetCFrame then
-                    root.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-                end
-            end)
-        end
+    if targetCFrame then
+        root.CFrame = targetCFrame + Vector3.new(0, 3, 0)
     end
 end
-RefreshLocations()
+
+-- Auto update รายชื่อใน Dropdown
+task.spawn(function()
+    while true do
+        local proxFolder = workspace:FindFirstChild("Proximity")
+        local list = {}
+
+        if proxFolder then
+            for _, loc in ipairs(proxFolder:GetChildren()) do
+                if loc:IsA("Model") or loc:IsA("BasePart") then
+                    table.insert(list, loc.Name)
+                end
+            end
+
+            table.sort(list)
+        end
+
+        if TeleportDropdown and TeleportDropdown.SetValues then
+            TeleportDropdown:SetValues(list)
+        end
+
+        task.wait(1)
+    end
+end)
+
+-- ปุ่ม Teleport จริง
+Teleporttab:Button({
+    Title = "Teleport Now",
+    Callback = function()
+        if not SelectedTeleport then
+            Window:Notify("Error", "Please select a teleport location!", 3)
+            return
+        end
+        TeleportTo(SelectedTeleport)
+    end
+})
 
 Library.SetGameDataCallback(function()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -853,3 +1083,190 @@ Library.SetGameDataCallback(function()
         features = features,
     }
 end)
+
+Info = InfoTab
+
+if not ui then ui = {} end
+if not ui.Creator then ui.Creator = {} end
+
+-- Define the Request function that mimics ui.Creator.Request
+ui.Creator.Request = function(requestData)
+    local HttpService = game:GetService("HttpService")
+    
+    -- Try different HTTP methods
+    local success, result = pcall(function()
+        if HttpService.RequestAsync then
+            -- Method 1: Use RequestAsync if available
+            local response = HttpService:RequestAsync({
+                Url = requestData.Url,
+                Method = requestData.Method or "GET",
+                Headers = requestData.Headers or {}
+            })
+            return {
+                Body = response.Body,
+                StatusCode = response.StatusCode,
+                Success = response.Success
+            }
+        else
+            -- Method 2: Fallback to GetAsync
+            local body = HttpService:GetAsync(requestData.Url)
+            return {
+                Body = body,
+                StatusCode = 200,
+                Success = true
+            }
+        end
+    end)
+    
+    if success then
+        return result
+    else
+        error("HTTP Request failed: " .. tostring(result))
+    end
+end
+
+-- Remove this line completely: Info = InfoTab
+-- The Info variable is already correctly set above
+
+local InviteCode = "jWNDPNMmyB"
+local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+
+local function LoadDiscordInfo()
+    local success, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+            Url = DiscordAPI,
+            Method = "GET",
+            Headers = {
+                ["User-Agent"] = "RobloxBot/1.0",
+                ["Accept"] = "application/json"
+            }
+        }).Body)
+    end)
+
+    if success and result and result.guild then
+        local DiscordInfo = Info:Paragraph({
+            Title = result.guild.name,
+            Desc = ' <font color="#52525b">●</font> Member Count : ' .. tostring(result.approximate_member_count) ..
+                '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(result.approximate_presence_count),
+            Image = "https://cdn.discordapp.com/icons/" .. result.guild.id .. "/" .. result.guild.icon .. ".png?size=1024",
+            ImageSize = 42,
+        })
+
+        Info:Button({
+            Title = "Update Info",
+            Callback = function()
+                local updated, updatedResult = pcall(function()
+                    return game:GetService("HttpService"):JSONDecode(ui.Creator.Request({
+                        Url = DiscordAPI,
+                        Method = "GET",
+                    }).Body)
+                end)
+
+                if updated and updatedResult and updatedResult.guild then
+                    DiscordInfo:SetDesc(
+                        ' <font color="#52525b">●</font> Member Count : ' .. tostring(updatedResult.approximate_member_count) ..
+                        '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(updatedResult.approximate_presence_count)
+                    )
+                    
+                    WindUI:Notify({
+                        Title = "Discord Info Updated",
+                        Content = "Successfully refreshed Discord statistics",
+                        Duration = 2,
+                        Icon = "refresh-cw",
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "Update Failed",
+                        Content = "Could not refresh Discord info",
+                        Duration = 3,
+                        Icon = "alert-triangle",
+                    })
+                end
+            end
+        })
+
+        Info:Button({
+            Title = "Copy Discord Invite",
+            Callback = function()
+                setclipboard("https://discord.gg/" .. InviteCode)
+                WindUI:Notify({
+                    Title = "Copied!",
+                    Content = "Discord invite copied to clipboard",
+                    Duration = 2,
+                    Icon = "clipboard-check",
+                })
+            end
+        })
+    else
+        Info:Paragraph({
+            Title = "Error fetching Discord Info",
+            Desc = "Unable to load Discord information. Check your internet connection.",
+            Image = "triangle-alert",
+            ImageSize = 26,
+            Color = "Red",
+        })
+        print("Discord API Error:", result) -- Debug print
+    end
+end
+
+LoadDiscordInfo()
+
+Info:Divider()
+Info:Section({ 
+    Title = "DYHUB Information",
+    TextXAlignment = "Center",
+    TextSize = 17,
+})
+Info:Divider()
+
+local Owner = Info:Paragraph({
+    Title = "Main Owner",
+    Desc = "@dyumraisgoodguy#8888",
+    Image = "rbxassetid://119789418015420",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+})
+
+local Social = Info:Paragraph({
+    Title = "Social",
+    Desc = "Copy link social media for follow!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://guns.lol/DYHUB")
+                print("Copied social media link to clipboard!")
+            end,
+        }
+    }
+})
+
+local Discord = Info:Paragraph({
+    Title = "Discord",
+    Desc = "Join our discord for more scripts!",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 30,
+    Thumbnail = "",
+    ThumbnailSize = 0,
+    Locked = false,
+    Buttons = {
+        {
+            Icon = "copy",
+            Title = "Copy Link",
+            Callback = function()
+                setclipboard("https://discord.gg/jWNDPNMmyB")
+                print("Copied discord link to clipboard!")
+            end,
+        }
+    }
+})
+
+-- hi
