@@ -1,5 +1,5 @@
 -- ======================
-local version = "5.7.8"
+local version = "5.7.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -6524,7 +6524,7 @@ FastReviveMethodDropdown = Tabs.Auto:Dropdown({
     end
 })
 
-Tabs.Auto:Section({ Title = "Auto Vote", TextSize = 40 })
+Tabs.Auto:Section({ Title = "Auto Vote", TextSize = 30 })
     AutoVoteDropdown = Tabs.Auto:Dropdown({
         Title = "loc:AUTO_VOTE_MAP",
         Values = {"Map 1", "Map 2", "Map 3", "Map 4"},
@@ -6602,7 +6602,7 @@ AutoVoteModeDropdown = Tabs.Auto:Dropdown({
     end
 })
 
-Tabs.Auto:Section({ Title = "Auto Revive", TextSize = 40 })
+Tabs.Auto:Section({ Title = "Auto Revive", TextSize = 30 })
 featureStates.SelfReviveMethod = "Spawnpoint"
 local lastSavedPosition = nil
 local respawnConnection = nil
@@ -6807,7 +6807,74 @@ Tabs.Auto:Button({
     end
 })
 
-Tabs.Auto:Section({ Title = "Auto Farm", TextSize = 40 })
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Event = ReplicatedStorage:FindFirstChild("Events")
+local CustomServer = Event and Event:FindFirstChild("CustomServers")
+local Admins = Event and Event:FindFirstChild("Admin")
+
+local Admin = CustomServer and CustomServer:FindFirstChild("Admin")
+local VIPCommand = Admins and Admins:FindFirstChild("VIPCommand")
+
+local remoteFired = false     -- กันยิง FireServer ซ้ำ
+local mapInvoked = false      -- กัน invoke !map ซ้ำ
+local loopRunning = false     -- กัน loop ซ้ำ
+
+Tabs.Auto:Section({ Title = "Private Server", TextSize = 30 })
+
+AutoWinToggle = Tabs.Auto:Toggle({
+    Title = "Set Up Server (VIP Farm)",
+    Value = false,
+    Callback = function(state)
+
+        featureStates.Setup = state
+
+        if state == true then
+            
+            --------------------------
+            -- ยิง RemoteEvent แค่ครั้งเดียว
+            --------------------------
+            if not remoteFired then
+                remoteFired = true
+
+                -- ยิงครั้งเดียวเท่านั้น
+                Admin:FireServer("Gamemode", "Pro")
+                Admin:FireServer("AddMap", "DesertBus")
+
+                task.wait(0.5)
+            end
+
+            --------------------------
+            -- ยิง "!map DesertBus" ครั้งเดียว
+            --------------------------
+            if not mapInvoked then
+                mapInvoked = true
+                VIPCommand:InvokeServer("!map DesertBus")
+            end
+
+            --------------------------
+            -- เริ่ม Loop ยิงเฉพาะ specialround ทุก 30 วิ
+            --------------------------
+            if not loopRunning then
+                loopRunning = true
+
+                task.spawn(function()
+                    while featureStates.Setup do
+                        VIPCommand:InvokeServer("!specialround Plushie Hell")
+                        task.wait(30)
+                    end
+                    loopRunning = false
+                end)
+            end
+
+        else
+            -- ปิด toggle = หยุด loop
+            -- states จะทำให้ loop หยุดเอง
+        end
+    end
+})
+
+Tabs.Auto:Section({ Title = "Auto Farm", TextSize = 30 })
 
     AutoWinToggle = Tabs.Auto:Toggle({
         Title = "loc:AUTO_WIN",
@@ -9158,6 +9225,7 @@ local function monitorAnyDamage()
     end
     player.CharacterAdded:Connect(setupCharacter)
 end
+
 
 
 
