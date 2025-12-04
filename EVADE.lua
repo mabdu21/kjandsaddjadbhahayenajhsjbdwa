@@ -1,3 +1,4 @@
+--666
 repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
@@ -564,6 +565,69 @@ local function fireVoteServer(selectedMapNumber)
         warn("Events folder not found in ReplicatedStorage.")
     end
 end
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Admin = ReplicatedStorage.Events.CustomServers.Admin
+local VIPCommand = ReplicatedStorage.Events.Admin.VIPCommand
+
+local remoteFired = false     -- กันยิง FireServer ซ้ำ
+local mapInvoked = false      -- กัน invoke !map ซ้ำ
+local loopRunning = false     -- กัน loop ซ้ำ
+
+GameTab:Section({ Title = "Private Server", TextSize = 40 })
+
+AutoWinToggle = GameTab:Toggle({
+    Title = "Set Up (VIP Farm)",
+    Value = false,
+    Callback = function(state)
+
+        featureStates.Setup = state
+
+        if state == true then
+            
+            --------------------------
+            -- ยิง RemoteEvent แค่ครั้งเดียว
+            --------------------------
+            if not remoteFired then
+                remoteFired = true
+
+                -- ยิงครั้งเดียวเท่านั้น
+                Admin:FireServer("Gamemode", "Pro")
+                Admin:FireServer("AddMap", "DesertBus")
+
+                task.wait(0.5)
+            end
+
+            --------------------------
+            -- ยิง "!map DesertBus" ครั้งเดียว
+            --------------------------
+            if not mapInvoked then
+                mapInvoked = true
+                VIPCommand:InvokeServer("!map DesertBus")
+            end
+
+            --------------------------
+            -- เริ่ม Loop ยิงเฉพาะ specialround ทุก 30 วิ
+            --------------------------
+            if not loopRunning then
+                loopRunning = true
+
+                task.spawn(function()
+                    while featureStates.Setup do
+                        VIPCommand:InvokeServer("!specialround Plushie Hell")
+                        task.wait(30)
+                    end
+                    loopRunning = false
+                end)
+            end
+
+        else
+            -- ปิด toggle = หยุด loop
+            -- states จะทำให้ loop หยุดเอง
+        end
+    end
+})
+
 
 GameTab:Section({ Title = "Feature Farm", Icon = "dollar-sign" })
 
