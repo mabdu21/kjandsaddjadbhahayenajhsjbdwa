@@ -1,5 +1,5 @@
 ﻿-- =========================
-local verison = "DEV"
+local verison = "Pre-3.9.7"
 -- =========================
 
 if setfpscap then
@@ -858,8 +858,8 @@ local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "ST : Blockade Battlefront | Development",
-    Folder = "DYHUB_Stbb_config",
+    Author = "ST : Blockade Battlefront | Premium Version",
+    Folder = "DYHUB_Stbb",
     Size = UDim2.fromOffset(500, 400),
     Transparent = true,
     Theme = "Dark",
@@ -878,7 +878,7 @@ Window:SetToggleKey(Enum.KeyCode.K)
 pcall(function()
     Window:Tag({
         Title = verison,
-        Color = Color3.fromHex("#ff0000") 
+        Color = Color3.fromHex("#30ff6a") 
     })
 end)
 
@@ -2547,4 +2547,5 @@ SkillTab:Toggle({
 
 print("[DYHUB] DYHUB - Loaded! (Console Show)")
 print("[DYHUB] Language: " .. currentLanguage)
+
 
