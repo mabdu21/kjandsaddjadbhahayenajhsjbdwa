@@ -1,5 +1,5 @@
 ﻿-- =========================
-local verison = "DEV"
+local verison = "Pre-4.7.2"
 -- =========================
 
 if setfpscap then
@@ -10,7 +10,7 @@ if setfpscap then
         Duration = 2,
         Button1 = "Okay"
     })
-    warn("FPS Unlocked!")
+    warn("[DYHUB] FPS Unlocked!")
 else
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "dsc.gg/dyhub",
@@ -18,7 +18,7 @@ else
         Duration = 2,
         Button1 = "Okay"
     })
-    warn("Your exploit does not support setfpscap.")
+    warn("[DYHUB] Your exploit does not support setfpscap.")
 end
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
@@ -854,11 +854,46 @@ LocalPlayer.CharacterAdded:Connect(function()
     if autoGodModeEnabled then startAutoGodMode() end
 end)
 
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local FreeVersion = "Free Version"
+local PremiumVersion = "Premium Version"
+
+local function checkVersion(playerName)
+    local url = "https://raw.githubusercontent.com/mabdu21/2askdkn21h3u21ddaa/refs/heads/main/Main/Premium/listpremium.lua"
+
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success then
+        return FreeVersion
+    end
+
+    local premiumData
+    local func, err = loadstring(response)
+    if func then
+        premiumData = func()
+    else
+        return FreeVersion
+    end
+
+    if premiumData[playerName] then
+        return PremiumVersion
+    else
+        return FreeVersion
+    end
+end
+
+local player = Players.LocalPlayer
+local userversion = checkVersion(player.Name)
+
 local Window = WindUI:CreateWindow({
     Title = "DYHUB",
     IconThemed = true,
     Icon = "rbxassetid://104487529937663",
-    Author = "ST : Blockade Battlefront | Development",
+    Author = "ST : Blockade Battlefront | " .. userversion,
     Folder = "DYHUB_Stbb_config",
     Size = UDim2.fromOffset(500, 400),
     Transparent = true,
@@ -2547,4 +2582,5 @@ SkillTab:Toggle({
 
 print("[DYHUB] DYHUB - Loaded! (Console Show)")
 print("[DYHUB] Language: " .. currentLanguage)
+
 
