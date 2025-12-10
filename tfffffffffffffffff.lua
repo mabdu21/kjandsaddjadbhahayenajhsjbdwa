@@ -1,3 +1,4 @@
+--[[
 local KeySystem = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nisulrocks/Key-system/refs/heads/main/Main"))()
 
 KeySystem.Config.ScriptName = "NisulRocks The Forge Auto Farm"
@@ -8,6 +9,7 @@ KeySystem.Config.CorrectKey = "NisulrocksTheForge123"  -- CHANGE THIS
 KeySystem.Config.DiscordLink = "https://discord.gg/jUctfTAa5D"
 
 KeySystem.Validate():andThen(function()
+--]]
 
 -- Forge main script
 local Players = game:GetService("Players")
@@ -40,34 +42,43 @@ end
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-	Name = "The Forge Auto Farm V1.0",
-	LoadingTitle = "The Forge Automation V1.0",
-	LoadingSubtitle = "By Nisulrocks",
-	ShowText = "The Forge",
+	Name = "DYHUB | The Forge",
+	LoadingTitle = "The Forge Loaded.",
+	LoadingSubtitle = "By DYHUB",
+	ShowText = "DYHUB - Open",
 	ToggleUIKeybind = "K",
     Discord = {
       Enabled = true,
-      Invite = "wN85KUq6nD",
+      Invite = "jWNDPNMmyB",
       RememberJoins = true 
     },
 	ConfigurationSaving = {
 		Enabled = true,
-		FolderName = "TheForgeNisulrocks",
-		FileName = "TheForgeConfig_V2"
+		FolderName = "DYHUB_TheForge",
+		FileName = "TheForge_Config"
 	}
+})
+
+local MainFarmTab1 = Window:CreateTab("Main Farm", 4483362458)
+
+MainFarmTab:CreateButton({
+	Name = "Bypass Auto Quest (Beta)",
+	Callback = function()
+		loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+	end,
 })
 
 local MainFarmTab = Window:CreateTab("Main Farm", 4483362458)
 
 local oreFarm = {
 	enabled = false,
-	tweenSpeed = 120,
+	tweenSpeed = 50,
 	selectedRockTypes = {},
 	selectedOreTypes = {},
 	rocksESPEnabled = false,
 	pickaxeName = "?",
 	pickaxeDamage = 0,
-	maxRockTime = 4,
+	maxRockTime = 10,
 	mineInterval = 0.1,
 	scanDistance = 500,
 }
@@ -602,7 +613,7 @@ local function mineRock(rockInfo, desiredOres)
 	local toolActivated = toolServiceRF:WaitForChild("ToolActivated")
 	local args = { "Pickaxe" }
 	local desiredSet = listToSet(desiredOres)
-	local maxTime = tonumber(oreFarm.maxRockTime) or 4
+	local maxTime = tonumber(oreFarm.maxRockTime) or 10
 	
 	while oreFarm.enabled and rockModel.Parent and tick() - startTick < maxTime do
 		if isRockDestroyed(rockModel) then
@@ -612,7 +623,7 @@ local function mineRock(rockInfo, desiredOres)
 		local hrp = getHumanoidRootPart()
 		if core and hrp then
 			local dist = (core.Position - hrp.Position).Magnitude
-			if dist > 18 then
+			if dist > 26 then
 				return "switch" -- Too far, find another
 			end
 		end
@@ -2702,5 +2713,6 @@ do
     -- Ensure default-enabled behavior on first load
     if antiAfk.enabled then AA_Start() end
 end
+
 
 end)
