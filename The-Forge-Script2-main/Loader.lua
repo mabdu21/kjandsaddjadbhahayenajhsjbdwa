@@ -19,7 +19,7 @@ repeat task.wait(1) until game:IsLoaded()
 ----------------------------------------------------------------
 local CONFIG = {
     -- 🔗 GitHub Raw URL (เปลี่ยนเป็น URL ของคุณ)
-    GITHUB_BASE_URL = "https://raw.githubusercontent.com/talnw1123/The-Forge-Script2/refs/heads/main/",
+    GITHUB_BASE_URL = "https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/The-Forge-Script2-main/",
     
     -- ⏱️ Timing
     INITIAL_WAIT = 1,          -- รอเริ่มต้น (วินาที)
