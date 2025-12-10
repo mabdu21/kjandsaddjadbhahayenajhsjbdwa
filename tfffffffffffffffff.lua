@@ -64,7 +64,7 @@ local MainFarmTab1 = Window:CreateTab("Main Farm", 4483362458)
 MainFarmTab:CreateButton({
 	Name = "Bypass Auto Quest (Beta)",
 	Callback = function()
-		loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/The-Forge-Script2-main/Loader.lua"))()
 	end,
 })
 
@@ -2716,3 +2716,4 @@ end
 
 
 end)
+
