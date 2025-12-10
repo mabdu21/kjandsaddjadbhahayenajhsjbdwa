@@ -1,15 +1,15 @@
---[[
+
 local KeySystem = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nisulrocks/Key-system/refs/heads/main/Main"))()
 
 KeySystem.Config.ScriptName = "NisulRocks The Forge Auto Farm"
 KeySystem.Config.Version    = "V1.0"
 
 KeySystem.Config.StorageId  = "NisulRocks_TheForge_AutoFarm"          -- STABLE ID
-KeySystem.Config.CorrectKey = "NisulrocksTheForge123"  -- CHANGE THIS
+KeySystem.Config.CorrectKey = "dev"  -- CHANGE THIS
 KeySystem.Config.DiscordLink = "https://discord.gg/jUctfTAa5D"
 
 KeySystem.Validate():andThen(function()
---]]
+
 
 -- Forge main script
 local Players = game:GetService("Players")
@@ -2726,5 +2726,6 @@ end
 
 
 end)
+
 
 
