@@ -1,7 +1,7 @@
 -- ==== Whitelist เฉพาะชื่อ ==== --
 local Whitelist = {
     "Yolmar_43",
-    "Gogo123",
+    "SELLINGBIGGAMES",
     -- เพิ่มชื่อได้เลยตามต้องการ
 }
 
