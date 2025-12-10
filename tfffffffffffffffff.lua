@@ -59,6 +59,16 @@ local Window = Rayfield:CreateWindow({
 	}
 })
 
+Rayfield:Notify({
+   Title = "DYHUB Loaded",
+   Content = "Version: 3.2.7 | Code by dyumra",
+   Duration = 5,
+   Image = 104487529937663,
+   Actions = {
+      Okay = {Name = "Let's Go!", Callback = function() end},
+   },
+})
+
 local MainFarmTab1 = Window:CreateTab("Main Farm", 4483362458)
 
 MainFarmTab:CreateButton({
@@ -2716,4 +2726,5 @@ end
 
 
 end)
+
 
