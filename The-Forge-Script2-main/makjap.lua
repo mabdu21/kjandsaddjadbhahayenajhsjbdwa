@@ -1,3 +1,4 @@
+--[[
 local KeySystem = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nisulrocks/Key-system/refs/heads/main/Main"))()
 
 KeySystem.Config.ScriptName = "NisulRocks The Forge Auto Farm"
@@ -8,6 +9,7 @@ KeySystem.Config.CorrectKey = "NisulrocksTheForge123"  -- CHANGE THIS
 KeySystem.Config.DiscordLink = "https://discord.gg/jUctfTAa5D"
 
 KeySystem.Validate():andThen(function()
+--]]
 
 -- Forge main script
 local Players = game:GetService("Players")
@@ -40,34 +42,43 @@ end
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-	Name = "The Forge Auto Farm V1.0",
-	LoadingTitle = "The Forge Automation V1.0",
-	LoadingSubtitle = "By Nisulrocks",
-	ShowText = "The Forge",
+	Name = "DYHUB | The Forge",
+	LoadingTitle = "[v3.2.1] The Forge Loaded.",
+	LoadingSubtitle = "By DYHUB",
+	ShowText = "DYHUB - The Forge",
 	ToggleUIKeybind = "K",
     Discord = {
       Enabled = true,
-      Invite = "wN85KUq6nD",
+      Invite = "jWNDPNMmyB",
       RememberJoins = true 
     },
 	ConfigurationSaving = {
 		Enabled = true,
-		FolderName = "TheForgeNisulrocks",
-		FileName = "TheForgeConfig_V2"
+		FolderName = "TheForgeDYHUB",
+		FileName = "DYHUB_TheForgeConfig"
 	}
+})
+
+local QuestFarmTab = Window:CreateTab("Auto Quest", 4483362458)
+
+MainFarmTab:CreateButton({
+    Name = "Unlock World 2 (BETA)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/mabdu21/kjandsaddjadbhahayenajhsjbdwa/refs/heads/main/The-Forge-Script2-main/Loader.lua"))()
+    end,
 })
 
 local MainFarmTab = Window:CreateTab("Main Farm", 4483362458)
 
 local oreFarm = {
 	enabled = false,
-	tweenSpeed = 120,
+	tweenSpeed = 50,
 	selectedRockTypes = {},
 	selectedOreTypes = {},
 	rocksESPEnabled = false,
 	pickaxeName = "?",
 	pickaxeDamage = 0,
-	maxRockTime = 4,
+	maxRockTime = 12,
 	mineInterval = 0.1,
 	scanDistance = 500,
 }
@@ -550,7 +561,7 @@ local function tweenToPosition(targetPos, speed)
 	local distance = (targetPos - hrp.Position).Magnitude
 	local time = math.max(0.1, distance / math.max(10, speed))
 	local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
-		CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0)),
+		CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0)),
 	})
 	tween.Completed:Connect(function()
 		movementBusy = false
@@ -602,7 +613,7 @@ local function mineRock(rockInfo, desiredOres)
 	local toolActivated = toolServiceRF:WaitForChild("ToolActivated")
 	local args = { "Pickaxe" }
 	local desiredSet = listToSet(desiredOres)
-	local maxTime = tonumber(oreFarm.maxRockTime) or 4
+	local maxTime = tonumber(oreFarm.maxRockTime) or 12
 	
 	while oreFarm.enabled and rockModel.Parent and tick() - startTick < maxTime do
 		if isRockDestroyed(rockModel) then
@@ -612,7 +623,7 @@ local function mineRock(rockInfo, desiredOres)
 		local hrp = getHumanoidRootPart()
 		if core and hrp then
 			local dist = (core.Position - hrp.Position).Magnitude
-			if dist > 18 then
+			if dist > 26 then
 				return "switch" -- Too far, find another
 			end
 		end
@@ -2702,5 +2713,6 @@ do
     -- Ensure default-enabled behavior on first load
     if antiAfk.enabled then AA_Start() end
 end
+
 
 end)
