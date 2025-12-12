@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v809
+-- Powered by GPT 5 | v855
 -- ======================
 local version = "4.4.5"
 -- ======================
@@ -37,8 +37,11 @@ local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
+
+local Version = "1.6.52"
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
 -- WindUI
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+--local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 --[[
 local executorName = "Unknown"
 
