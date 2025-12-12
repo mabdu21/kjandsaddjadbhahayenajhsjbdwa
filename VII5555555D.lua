@@ -39,7 +39,7 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 
 -- WindUI
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Vz-ZorVex/ZorVex/refs/heads/main/Ui-Library"))()
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 --[[
 local executorName = "Unknown"
 
