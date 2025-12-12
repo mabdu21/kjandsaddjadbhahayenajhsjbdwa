@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v809
 -- ======================
-local version = "4.4.4"
+local version = "4.4.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -39,7 +39,7 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- WindUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
+--[[
 local executorName = "Unknown"
 
 pcall(function()
@@ -104,6 +104,7 @@ WindUI:Notify({
     Duration = 6,
     Image = "cpu"
 })
+--]]
 
 -- ====================== WINDOW ======================
 local Players = game:GetService("Players")
