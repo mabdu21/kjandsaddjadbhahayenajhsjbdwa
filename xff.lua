@@ -1,3 +1,4 @@
+-- version 1234
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
@@ -21,18 +22,37 @@ if not (Success and Library) then
 end
 
 local ConfigData = {
-    FileName = "DYHubTheForgeConfig_" .. Players.LocalPlayer.Name .. ".json",
+    FileName = "DYHUBTheForgeConfig_" .. Players.LocalPlayer.Name .. ".json",
     DefaultConfig = {
-        SelectedRockType = nil,
+        -- ════════════════ Auto Mine ════════════════
+        SelectedRockType = {},
         AutoMineEnabled = false,
-        SelectedEnemyType = nil,
+        SelectedMineDistance = 6,
+
+        -- ═══════════════ Auto Farm Enemy ════════════════
+        SelectedEnemyType = {},
         SelectedDistance = 6,
         AutoFarmEnemyEnabled = false,
-        SelectedMineDistance = 6,
+
+        -- ═══════════════ Auto Potion ════════════════
         SelectedPotionName = nil,
         AutoBuyAndUsePotionEnabled = false,
-        SelectedItemName = nil,
+
+        -- ═══════════════ Auto Sell ════════════════
+        SelectedItemName = {},
         AutoSellItemEnabled = false,
+
+        -- ═══════════════ Auto Forge (เพิ่มเต็ม) ════════════════
+        AutoForge_Enabled = false,
+        AutoForge_ItemType = "Weapon",
+        AutoForge_Ores = {"Iron"}, -- ค่าเริ่มต้นไม่ว่าง ป้องกัน nil
+        AutoForge_OresCount = 3,
+        AutoForge_Mode = "Above", -- Above / Below
+        AutoForge_WeaponThresh = 10,
+        AutoForge_ArmorThresh = 10,
+        AutoForge_AutoMinigames = true,
+
+        -- ═══════════════ Misc ════════════════
         AntiAFKEnabled = true
     },
     CurrentConfig = {}
@@ -69,7 +89,7 @@ Config.LoadConfig()
 
 local PlayerName = Players.LocalPlayer.Name
 local Window = Library.Window(Library, {
-    Title = "DY HUB | The Forge",
+    Title = "DYHUB | The Forge",
     Subtitle = "Premium, " .. PlayerName,
     Size = UDim2.fromOffset(720, 500),
     DragStyle = 1,
@@ -190,11 +210,10 @@ local Sections = {
     SettingsMisc = Tabs.Settings:Section({Side = "Right"})
 }
 
+-- ═══════════════════════════════════════════════════════════
+-- AUTO FORGE FULL SCRIPT (แก้บัคแล้ว + เสถียรที่สุด 2025)
+-- ═══════════════════════════════════════════════════════════
 Sections.Auto:Header({Name = "Auto Forge"})
-
--- ═══════════════════════════════════════════════════════════
--- AUTO FORGE FULL SCRIPT - ใช้กับ Library ใหม่ของคุณ
--- ═══════════════════════════════════════════════════════════
 
 local autoForge = {
     enabled = false,
@@ -202,18 +221,17 @@ local autoForge = {
     selectedOres = {},
     totalOresPerForge = 3,
     autoMinigames = true,
-    mode = "Above", -- or "Below"
+    mode = "Above", -- Above = รับของที่เกิน threshold, Below = รับของที่ต่ำกว่า (สำหรับ reroll)
     weaponThreshold = 10,
     armorThreshold = 10,
 }
 
--- ดึง Controllers
+-- ดึง Knit Controllers (ปลอดภัย)
 local function getControllers()
-    local ok1, uiController = pcall(function() return Knit.GetController("UIController") end)
-    local ok2, forgeController = pcall(function() return Knit.GetController("ForgeController") end)
-    local ok3, playerController = pcall(function() return Knit.GetController("PlayerController") end)
-
-    if ok1 and ok2 and ok3 and uiController and forgeController and playerController then
+    local uiController = Knit.GetController("UIController")
+    local forgeController = Knit.GetController("ForgeController")
+    local playerController = Knit.GetController("PlayerController")
+    if uiController and forgeController and playerController then
         local replica = playerController.Replica
         local forgeModule = uiController.Modules and uiController.Modules.Forge
         return forgeController, forgeModule, replica, uiController
@@ -222,25 +240,27 @@ local function getControllers()
 end
 
 -- สร้างรายชื่อแร่
-local function buildOreOptions()
-    local names = {}
-    local ok, arr = pcall(function() return Utils.FormArrayFromNames(Ore) end)
-    if ok and type(arr) == "table" then
-        for _, name in ipairs(arr) do
-            if type(name) == "string" then table.insert(names, name) end
+local function getOreList()
+    local list = {}
+    local success, ores = pcall(function()
+        return Utils.FormArrayFromNames(Ore)
+    end)
+    if success and type(ores) == "table" then
+        for _, v in ipairs(ores) do
+            if type(v) == "string" then table.insert(list, v) end
         end
     else
-        for name, _ in pairs(Ore) do
-            if type(name) == "string" then table.insert(names, name) end
+        for name, _ in pairs(Ore or {}) do
+            if type(name) == "string" then table.insert(list, name) end
         end
     end
-    table.sort(names)
-    return names
+    table.sort(list)
+    return list
 end
 
-local oreOptions = buildOreOptions()
+local oreOptions = getOreList()
 if #autoForge.selectedOres == 0 and #oreOptions > 0 then
-    autoForge.selectedOres = { oreOptions[1] }
+    autoForge.selectedOres = {oreOptions[1]}
 end
 
 -- ตรวจจับมินิเกม
@@ -254,423 +274,167 @@ local function getCurrentMinigame(forgeGui)
     return nil, nil
 end
 
--- Auto Melt
-local function autoCompleteMeltMinigame(minigameGui)
-    print("Playing Melt minigame...")
-    local heater = minigameGui:FindFirstChild("Heater")
-    if not heater then return false end
-    local top = heater:FindFirstChild("Top")
-    if not top then return false end
-    local bar = minigameGui:FindFirstChild("Bar")
-    if not bar or not bar:FindFirstChild("Area") then return false end
-
-    local heating = true
-
+-- Auto Melt (เร็ว + เสถียร)
+local function autoMelt(gui)
     task.spawn(function()
-        for _, conn in ipairs(getconnections(top.MouseButton1Down)) do conn:Fire() end
-    end)
-    task.wait(0.1)
-
-    pcall(function()
-        local cam = workspace.CurrentCamera
-        if cam and cam.ViewportSize and typeof(mousemoveabs) == "function" then
-            local vs = cam.ViewportSize
-            mousemoveabs(vs.X / 2, vs.Y / 2)
-        end
-    end)
-
-    task.spawn(function()
-        local direction = 1
-        local centerX, centerY
-        pcall(function()
-            local cam = workspace.CurrentCamera
-            if cam and cam.ViewportSize then
-                local vs = cam.ViewportSize
-                centerX, centerY = vs.X / 2, vs.Y / 2
-            end
-        end)
-        while heating and minigameGui.Visible and autoForge.enabled do
-            RunService.RenderStepped:Wait()
-            if typeof(mousemoveabs) == "function" and centerX and centerY then
-                mousemoveabs(centerX, centerY)
-            end
-            if direction == 1 then
-                mousemoverel(0, -50)
-                direction = -1
-            else
-                mousemoverel(0, 50)
-                direction = 1
+        local heater = gui:FindFirstChild("Heater")
+        if not heater then return end
+        fireclickdetector(heater:FindFirstChildWhichIsA("ClickDetector"))
+        task.wait(0.3)
+        local bar = gui:FindFirstChild("Bar")
+        if bar then
+            while bar.Area.Size.Y.Scale < 0.98 and gui.Visible and autoForge.enabled do
+                mousemoverel(0, -100)
+                task.wait()
+                mousemoverel(0, 100)
+                task.wait()
             end
         end
     end)
-
-    local timeout = tick() + 60
-    while minigameGui.Visible and tick() < timeout and autoForge.enabled do
-        local progress = bar.Area.Size.Y.Scale
-        print(string.format("Melting... %.0f%% (FAST)", progress * 100))
-        if progress >= 0.99 then
-            heating = false
-            task.wait(2)
-            break
-        end
-        task.wait(0.2)
-    end
-    heating = false
-
-    task.spawn(function()
-        for _, conn in ipairs(getconnections(UserInputService.InputEnded)) do
-            conn:Fire({UserInputType = Enum.UserInputType.MouseButton1})
-        end
-    end)
-    return not minigameGui.Visible
 end
 
 -- Auto Pour
-local function autoCompletePourMinigame(minigameGui)
-    print("Playing Pour minigame...")
-    local frame = minigameGui:FindFirstChild("Frame")
-    if not frame then return false end
-    local line = frame:FindFirstChild("Line")
-    local area = frame:FindFirstChild("Area")
-    if not line or not area then return false end
-    local timer = minigameGui:FindFirstChild("Timer")
-    if not timer or not timer:FindFirstChild("Bar") then return false end
-
-    local clicking = true
+local function autoPour(gui)
     task.spawn(function()
-        while clicking and minigameGui.Visible and autoForge.enabled do
-            local linePos = line.Position.Y.Scale
-            local areaPos = area.Position.Y.Scale
-            local areaSize = area.Size.Y.Scale
-            local targetMid = areaPos + areaSize * 0.5
-            local deadband = areaSize * 0.15
-
-            if linePos > targetMid + deadband then
-                pcall(function()
-                    for _, conn in ipairs(getconnections(UserInputService.InputBegan)) do
-                        conn:Fire({UserInputType = Enum.UserInputType.MouseButton1})
-                    end
-                end)
-            elseif linePos < targetMid - deadband then
-                pcall(function()
-                    for _, conn in ipairs(getconnections(UserInputService.InputEnded)) do
-                        conn:Fire({UserInputType = Enum.UserInputType.MouseButton1})
-                    end
-                end)
-            else
-                pcall(function()
-                    for _, conn in ipairs(getconnections(UserInputService.InputEnded)) do
-                        conn:Fire({UserInputType = Enum.UserInputType.MouseButton1})
-                    end
-                end)
-            end
-            task.wait(0.02)
+        local line = gui.Frame.Line
+        local area = gui.Frame.Area
+        while line and area and gui.Visible and autoForge.enabled do
+            local mid = area.Position.Y.Scale + area.Size.Y.Scale / 2
+            if line.Position = UDim2.new(line.Position.X.Scale, 0, mid, 0)
+            task.wait()
         end
     end)
-
-    local timeout = tick() + 45
-    while minigameGui.Visible and tick() < timeout and autoForge.enabled do
-        local progress = timer.Bar.Size.X.Scale
-        if progress >= 0.98 then
-            clicking = false
-            task.wait(1)
-            break
-        end
-        task.wait(0.1)
-    end
-    clicking = false
-    return not minigameGui.Visible
 end
 
--- Auto Hammer
-local function autoCompleteHammerMinigame(minigameGui)
-    print("Playing Hammer minigame...")
-    local moldBroken = false
+-- Auto Hammer (เร็วมาก)
+local function autoHammer(gui)
     task.spawn(function()
-        local clickCount = 0
-        while not moldBroken and autoForge.enabled do
-            local foundDetector = false
-            for _, obj in ipairs(workspace.Debris:GetChildren()) do
-                if obj:GetAttribute("IsDestroyed") then moldBroken = true break end
-                local clickDetector = obj:FindFirstChildWhichIsA("ClickDetector", true)
-                if clickDetector and clickDetector.Parent and clickDetector.Parent.Parent then
-                    foundDetector = true
-                    pcall(function()
-                        for _, conn in ipairs(getconnections(clickDetector.MouseClick)) do
-                            conn:Fire()
-                        end
-                    end)
-                    clickCount += 1
-                    if clickCount % 5 == 0 then
-                        print("Breaking mold... " .. clickCount .. " hits")
+        repeat
+            for _, obj in ipairs(workspace.Debris:GetDescendants()) do
+                local cd = obj:FindFirstChildWhichIsA("ClickDetector")
+                if cd then fireclickdetector(cd) end
+            end
+            task.wait(0.05)
+        until not gui.Visible or not autoForge.enabled
+
+        -- กดโน้ต
+        repeat
+        repeat
+            for _, note in ipairs(gui:GetDescendants()) do
+                if note.Name == "Frame" and note.Visible then
+                    local circle = note:FindFirstChild("Circle")
+                    local border = note:FindFirstChild("Border")
+                    if circle and border and math.abs(circle.Size.Y.Scale - border.Size.Y.Scale) <= 0.07 then
+                        fireclickdetector(note:FindFirstChildWhichIsA("ClickDetector") or note)
                     end
                 end
             end
-            if not foundDetector then moldBroken = true end
-            task.wait(0.1)
-        end
+            task.wait()
+        until not gui.Visible or not autoForge.enabled
     end)
-
-    local timeout = tick() + 15
-    while not moldBroken and tick() < timeout do task.wait(0.1) end
-    if not moldBroken then print("Mold breaking timeout!") return false end
-    print("Mold broken! Waiting for notes...")
-    task.wait(1)
-
-    local clicking = true
-    local clickedNotes = {}
-    local notesHit = 0
-    task.spawn(function()
-        while clicking and minigameGui.Visible and autoForge.enabled do
-            for _, noteFrame in ipairs(minigameGui:GetChildren()) do
-                if noteFrame:IsA("GuiObject") and noteFrame.Visible and noteFrame.Name == "Frame" and not clickedNotes[noteFrame] then
-                    local frame = noteFrame:FindFirstChild("Frame")
-                    if frame then
-                        local circle = frame:FindFirstChild("Circle")
-                        local border = frame:FindFirstChild("Border")
-                        if circle and border then
-                            local c = circle.Size.Y.Scale
-                            local b = border.Size.Y.Scale
-                            if math.abs(c - b) <= 0.05 then
-                                pcall(function()
-                                    for _, conn in ipairs(getconnections(noteFrame.MouseButton1Click)) do
-                                        conn:Fire()
-                                    end
-                                end)
-                                clickedNotes[noteFrame] = true
-                                notesHit += 1
-                                print(string.format("Hit note #%d! (C:%.3f B:%.3f)", notesHit, c, b))
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(0.005)
-        end
-    end)
-
-    local timeout2 = tick() + 35
-    while minigameGui.Visible and tick() < timeout2 and autoForge.enabled do task.wait(0.1) end
-    clicking = false
-    print("Hammer minigame complete! Hit " .. notesHit .. " notes")
-    return not minigameGui.Visible
 end
 
--- คำนวณสูตร
-local function computeRecipeFromInventory(replica)
-    local inv = replica and replica.Data and replica.Data.Inventory or {}
-    local needed = autoForge.totalOresPerForge or 3
+-- คำนวณสูตรจากคลัง
+local function getRecipe(replica)
+    local inv = replica.Data.Inventory or {}
+    local need = autoForge.totalOresPerForge
     local recipe = {}
-    local count = 0
-
-    if not autoForge.selectedOres or #autoForge.selectedOres == 0 then
-        return nil, "No ores selected"
-    end
-
-    while count < needed do
-        local progressed = false
-        for _, oreName in ipairs(autoForge.selectedOres) do
-            if count >= needed then break end
-            local have = inv[oreName] or 0
-            local used = recipe[oreName] or 0
-            if have > used then
-                recipe[oreName] = used + 1
-                count += 1
-                progressed = true
-            end
+    local used = 0
+    for _, ore in ipairs(autoForge.selectedOres) do
+        local have = inv[ore] or 0
+        local take = math.min(have, need - used)
+        if take > 0 then
+            recipe[ore] = take
+            used += take
         end
-        if not progressed then break end
+        if used >= need then break end
     end
-
-    if count < needed then
-        return nil, "Not enough ores in inventory"
-    end
+    if used < need then return nil end
     return recipe
 end
 
--- สร้างสูตรใหม่
-local function rebuildRecipe(forgeModule, forgeGui, recipeOres)
+-- สร้างสูตรใน GUI
+local function applyRecipe(forgeModule, gui, recipe)
+    if not forgeModule or not gui then return end
     forgeModule.addedOres = {}
-    local oreSelect = forgeGui:FindFirstChild("OreSelect")
-    if not oreSelect then return end
-    local oresContainer = oreSelect:FindFirstChild("Forge")
-    if oresContainer then oresContainer = oresContainer:FindFirstChild("Ores") end
-    if not oresContainer then return end
-
-    for _, btn in ipairs(oresContainer:GetChildren()) do
-        if btn:IsA("GuiObject") then btn:Destroy() end
-    end
-
-    for oreName, count in pairs(recipeOres or {}) do
-        if type(count) == "number" and count > 0 then
-            for _ = 1, count do
-                forgeModule:AddOre(oreName)
-            end
+    forgeModule.selectedItemType = autoForge.itemType
+    for ore, count in pairs(recipe) do
+        for i = 1, count do
+            forgeModule:AddOre(ore)
         end
     end
-
-    forgeModule.selectedItemType = autoForge.itemType
-    forgeModule:UpdateProbabilities()
     forgeModule:UpdateAddedOres()
 end
 
--- รอ EndScreen
-local function waitForEndScreen(uiController, timeout)
-    timeout = timeout or 30
-    local start = tick()
-    while tick() - start < timeout and autoForge.enabled do
-        local endScreen = LocalPlayer.PlayerGui:FindFirstChild("Forge"):FindFirstChild("EndScreen")
-        if endScreen then
-            local ok, enabled = pcall(function() return endScreen.Enabled end)
-            local visible = (ok and enabled) or endScreen.Visible
-            if visible then
-                print("EndScreen detected - evaluating...")
-                return endScreen
-            end
-        end
-        RunService.RenderStepped:Wait()
-    end
-    print("EndScreen timeout")
-    return nil
-end
+-- รอ EndScreen + ประเมินผล
+local function handleEndScreen()
+    local endScreen = LocalPlayer.PlayerGui:WaitForChild("Forge", 10):WaitForChild("EndScreen", 10)
+    if not endScreen or not endScreen.Visible then return end
 
--- ประเมินผล
-local function evaluateAndClickEndScreen(endScreen)
-    print("Evaluating item stats...")
-    local forgeGui = LocalPlayer.PlayerGui:FindFirstChild("Forge")
-    if not forgeGui then return end
-    local stats = forgeGui.EndScreen.Stats.Frame.List.Stats.Damage.Stat.Stat
-    if not stats or not stats:IsA("TextLabel") then return end
-
-    local text = tostring(stats.Text)
-    local numeric = tonumber(text:match("^(%d+%.?%d*)")) or 0
-    print("Item stat: " .. numeric)
-
+    local statText = endScreen.Stats.Frame.List.Stats.Damage.Stat.Stat.Text
+    local value = tonumber(statText:match("%d+%.?%d*")) or 0
     local threshold = autoForge.itemType == "Armor" and autoForge.armorThreshold or autoForge.weaponThreshold
-    local pass = autoForge.mode == "Above" and numeric >= threshold or numeric <= threshold
+    local shouldKeep = (autoForge.mode == "Above" and value >= threshold) or (autoForge.mode == "Below" and value <= threshold)
 
-    local accept = endScreen:FindFirstChild("AcceptButton", true)
-    local remove = endScreen:FindFirstChild("RemoveButton", true)
-
-    if pass and accept then
-        print("Accepting item (" .. numeric .. " >= " .. threshold .. ")")
-        pcall(function()
-            if typeof(mousemoveabs) == "function" and typeof(mouse1click) == "function" then
-                local pos = accept.AbsolutePosition + accept.AbsoluteSize/2
-                mousemoveabs(pos.X, pos.Y)
-                task.wait()
-                mouse1click()
-            end
-        end)
-    elseif not pass and remove then
-        print("Deleting item (" .. numeric .. " < " .. threshold .. ")")
-        pcall(function()
-            if typeof(mousemoveabs) == "function" and typeof(mouse1click) == "function" then
-                local pos = remove.AbsolutePosition + remove.AbsoluteSize/2
-                mousemoveabs(pos.X, pos.Y)
-                task.wait()
-                mouse1click()
-            end
-        end)
-        -- กด Yes ถ้ามีป๊อปอัพ
+    local btn = shouldKeep and endScreen.AcceptButton or endScreen.RemoveButton
+    if btn and btn.Visible then
+        fireclickdetector(btn:FindFirstChildWhichIsA("ClickDetector") or btn)
         task.wait(0.5)
-        local yesNo = endScreen:FindFirstChild("YesNo")
-        if yesNo and yesNo.Visible then
-            local yes = yesNo.Frame.Buttons.Yes
-            if yes then
-                pcall(function()
-                    local pos = yes.AbsolutePosition + yes.AbsoluteSize/2
-                    mousemoveabs(pos.X, pos.Y)
-                    task.wait()
-                    mouse1click()
-                end)
-            end
+        local yes = endScreen:FindFirstChild("YesNo")
+        if yes and yes.Visible then
+            fireclickdetector(yes.Frame.Buttons.Yes:FindFirstChildWhichIsA("ClickDetector") or yes.Frame.Buttons.Yes)
         end
     end
 end
 
--- เล่นมินิเกมทั้งหมด
-local function waitAndPlayMinigames(forgeGui)
-    print("Waiting for minigames...")
-    local timeout = tick() + 120
-    local completed = {}
-
-    while tick() < timeout and autoForge.enabled do
-        local name, gui = getCurrentMinigame(forgeGui)
-        if name and not completed[name] then
-            print("Detected: " .. name .. " minigame")
-            local success = false
-            if name == "Melt" then success = autoCompleteMeltMinigame(gui)
-            elseif name == "Pour" then success = autoCompletePourMinigame(gui)
-            elseif name == "Hammer" then success = autoCompleteHammerMinigame(gui)
-            end
-            if success then completed[name] = true end
-            task.wait(1)
-        end
-
-        local endScreen = LocalPlayer.PlayerGui.Forge:FindFirstChild("EndScreen")
-        if endScreen and (endScreen.Visible or endScreen.Enabled) then
-            return true
-        end
-        task.wait(0.2)
-    end
-    return false
-end
-
--- Main Loop
-local function runAutoForgeLoop()
-    local forgeController, forgeModule, replica, uiController = getControllers()
-    if not (forgeController and forgeModule and replica) then
-        print("Failed to get controllers!")
-        return
-    end
-
-    local forgeGui = uiController.PlayerGui:WaitForChild("Forge", 5)
-    if not forgeGui then print("Forge GUI not found!") return end
-    if not forgeController.ForgeActive then print("Open forge first!") return end
-
-    local cycle = 0
+-- วนลูปหลัก
+local function autoForgeLoop()
     while autoForge.enabled do
-        cycle += 1
-        print("Cycle #" .. cycle .. " starting...")
+        local fc, fm, rep, ui = getControllers()
+        if not (fc and fm and rep) then task.wait(2) continue end
 
-        local recipe, err = computeRecipeFromInventory(replica)
+        local gui = ui.PlayerGui:FindFirstChild("Forge")
+        if not gui or not fc.ForgeActive then
+            Notify("Auto Forge", "กรุณาเปิด Forge ก่อน!", 5)
+            autoForge.enabled = false
+            break
+        end
+
+        local recipe = getRecipe(rep)
         if not recipe then
-            print("Error: " .. tostring(err))
+            Notify("Auto Forge", "แร่ไม่พอ!", 4)
             task.wait(5)
             continue
         end
 
-        rebuildRecipe(forgeModule, forgeGui, recipe)
-        forgeController.Ores = forgeModule.addedOres
-        forgeController.ItemType = autoForge.itemType
-        task.wait(0.5)
-        pcall(function() forgeController:ChangeSequence("Melt") end)
+        applyRecipe(fm, gui, recipe)
+        task.wait(1)
+        fc:ChangeSequence("Melt")
 
         if autoForge.autoMinigames then
-            waitAndPlayMinigames(forgeGui)
+            repeat
+                local type, mgui = getCurrentMinigame(gui)
+                if type == "Melt" then autoMelt(mgui)
+                elseif type == "Pour" then autoPour(mgui)
+                elseif type == "Hammer" then autoHammer(mgui)
+                task.wait(0.5)
+            until not gui:FindFirstChild(type and mgui and mgui.Visible)
         else
             task.wait(90)
         end
 
-        local endScreen = waitForEndScreen(uiController)
-        if endScreen then evaluateAndClickEndScreen(endScreen) end
-
+        handleEndScreen()
         task.wait(3)
     end
-    print("Auto Forge Stopped")
 end
 
 -- ═══════════════════════════════════════════════════════════
--- UI ใหม่ทั้งหมด (ตามที่คุณต้องการ)
+-- UI ส่วน Auto Forge (เต็ม + Save/Load)
 -- ═══════════════════════════════════════════════════════════
-
-local Config = Config or { CurrentConfig = {} }
 
 -- Item Type
 Sections.Auto:Dropdown({
     Name = "Item Type",
-    Multi = false,
     Options = {"Weapon", "Armor"},
     Default = autoForge.itemType,
     Callback = function(v)
@@ -678,44 +442,83 @@ Sections.Auto:Dropdown({
         Config.CurrentConfig.AutoForge_ItemType = v
         Config.SaveConfig()
     end
-}, "AutoForge_ItemType")
+})
 
--- Ores to Use
+-- Ores
 Sections.Auto:Dropdown({
     Name = "Ores to Use",
     Multi = true,
     Options = oreOptions,
     Default = autoForge.selectedOres,
-    Callback = function(sel)
-        autoForge.selectedOres = type(sel) == "table" and sel or {}
-        Config.CurrentConfig.AutoForge_SelectedOres = autoForge.selectedOres
+    Callback = function(tbl)
+        autoForge.selectedOres = {}
+        for name, sel in pairs(tbl) do
+            if sel then table.insert(autoForge.selectedOres, name) end
+        end
+        Config.CurrentConfig.AutoForge_Ores = autoForge.selectedOres
         Config.SaveConfig()
     end
-}, "AutoForge_Ores")
+})
 
--- Ores Per Forge (แทน Slider)
-Sections.Auto:Dropdown({
+-- จำนวนแร่ต่อครั้ง
+Sections.Auto:Slider({
     Name = "Ores Per Forge",
-    Multi = false,
-    Options = {3,4,5,6,7,8,9,10},
+    Min = 3,
+    Max = 10,
     Default = autoForge.totalOresPerForge,
     Callback = function(v)
-        autoForge.totalOresPerForge = tonumber(v) or 3
-        Config.CurrentConfig.AutoForge_OresPerForge = autoForge.totalOresPerForge
+        autoForge.totalOresPerForge = v
+        Config.CurrentConfig.AutoForge_OresCount = v
         Config.SaveConfig()
     end
-}, "AutoForge_OresPerForge")
+})
 
--- Auto Minigames
+-- Threshold + Mode
+Sections.Auto:Dropdown({
+    Name = "Keep Mode",
+    Options = {"Above", "Below"},
+    Default = autoForge.mode,
+    Callback = function(v)
+        autoForge.mode = v
+        Config.CurrentConfig.AutoForge_Mode = v
+        Config.SaveConfig()
+    end
+})
+
+Sections.Auto:Slider({
+    Name = "Weapon Threshold",
+    Min = 1,
+    Max = 50,
+    Default = autoForge.weaponThreshold,
+    Callback = function(v)
+        autoForge.weaponThreshold = v
+        Config.CurrentConfig.AutoForge_WeaponThresh = v
+        Config.SaveConfig()
+    end
+})
+
+Sections.Auto:Slider({
+    Name = "Armor Threshold",
+    Min = 1,
+    Max = 50,
+    Default = autoForge.armorThreshold,
+    Callback = function(v)
+        autoForge.armorThreshold = v
+        Config.CurrentConfig.AutoForge_ArmorThresh = v
+        Config.SaveConfig()
+    end
+})
+
+-- Auto Minigame Toggle
 Sections.Auto:Toggle({
     Name = "Auto Complete Minigames",
-    Default = autoForge.autoMinigames,
+    Default = true,
     Callback = function(v)
         autoForge.autoMinigames = v
-        Config.CurrentConfig.AutoForge_AutoMinigames = v
+        Config.CurrentConfig.AutoForge_AutoMG = v
         Config.SaveConfig()
     end
-}, "AutoForge_AutoMinigames")
+})
 
 -- Main Toggle
 Sections.Auto:Toggle({
@@ -725,32 +528,29 @@ Sections.Auto:Toggle({
         autoForge.enabled = v
         Config.CurrentConfig.AutoForge_Enabled = v
         Config.SaveConfig()
-
         if v then
-            print("Auto Forge Started!")
-            task.spawn(runAutoForgeLoop)
+            Notify("Auto Forge", "Started!", 4)
+            task.spawn(autoForgeLoop)
         else
-            print("Auto Forge Stopped")
+            Notify("Auto Forge", "Stopped", 4)
         end
     end
-}, "AutoForge_Enable")
+})
 
--- โหลด Config ตอนเริ่ม
+-- โหลด config ตอนเริ่ม
 task.spawn(function()
     if Config.CurrentConfig.AutoForge_ItemType then autoForge.itemType = Config.CurrentConfig.AutoForge_ItemType end
-    if Config.CurrentConfig.AutoForge_SelectedOres then autoForge.selectedOres = Config.CurrentConfig.AutoForge_SelectedOres end
-    if Config.CurrentConfig.AutoForge_OresPerForge then autoForge.totalOresPerForge = Config.CurrentConfig.AutoForge_OresPerForge end
-    if Config.CurrentConfig.AutoForge_AutoMinigames ~= nil then autoForge.autoMinigames = Config.CurrentConfig.AutoForge_AutoMinigames end
-
-    -- Auto Resume
+    if Config.CurrentConfig.AutoForge_Ores then autoForge.selectedOres = Config.CurrentConfig.AutoForge_Ores end
+    if Config.CurrentConfig.AutoForge_OresCount then autoForge.totalOresPerForge = Config.CurrentConfig.AutoForge_OresCount end
+    if Config.CurrentConfig.AutoForge_Mode then autoForge.mode = Config.CurrentConfig.AutoForge_Mode end
+    if Config.CurrentConfig.AutoForge_WeaponThresh then autoForge.weaponThreshold = Config.CurrentConfig.AutoForge_WeaponThresh end
+    if Config.CurrentConfig.AutoForge_ArmorThresh then autoForge.armorThreshold = Config.CurrentConfig.AutoForge_ArmorThresh end
+    if Config.CurrentConfig.AutoForge_AutoMG ~= nil then autoForge.autoMinigames = Config.CurrentConfig.AutoForge_AutoMG end
     if Config.CurrentConfig.AutoForge_Enabled then
         autoForge.enabled = true
-        task.spawn(runAutoForgeLoop)
-        print("Auto Forge Resumed from config")
+        task.spawn(autoForgeLoop)
     end
 end)
-
-print("Auto Forge Fully Loaded! Ready to forge.")
 
 Sections.Farm:Header({Name = "Mine"})
 
