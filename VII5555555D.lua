@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v855
 -- ======================
-local version = "4.4.6"
+local version = "4.4.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -2064,6 +2064,52 @@ local function DYHUB_GetAutoPitchMax(distance)
 end
 
 -------------------------------------------------------
+-- PC KEYBIND HANDLER
+-------------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+
+    local key = input.KeyCode.Name
+
+    -- Aimbot ปกติ
+    if key == DYHUB_Settings.Aimbot.SetKeybindLock then
+        DYHUB_AimbotEnabled = not DYHUB_AimbotEnabled
+
+        -- ปิด Charge ถ้าเปิดอยู่
+        if DYHUB_AimbotEnabled and DYHUB_Aimbot28Enabled then
+            DYHUB_Aimbot28Enabled = false
+            if DYHUB_mobileButton28 then
+                DYHUB_mobileButton28.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        end
+
+        if DYHUB_mobileButton then
+            DYHUB_mobileButton.BackgroundColor3 =
+                DYHUB_AimbotEnabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+        end
+    end
+
+    -- Aimbot Charge
+    if key == DYHUB_Settings.Aimbot.SetKeybindLock28 then
+        DYHUB_Aimbot28Enabled = not DYHUB_Aimbot28Enabled
+
+        -- ปิดปกติถ้าเปิดอยู่
+        if DYHUB_Aimbot28Enabled and DYHUB_AimbotEnabled then
+            DYHUB_AimbotEnabled = false
+            if DYHUB_mobileButton then
+                DYHUB_mobileButton.BackgroundColor3 = Color3.fromRGB(255,60,60)
+            end
+        end
+
+        if DYHUB_mobileButton28 then
+            DYHUB_mobileButton28.BackgroundColor3 =
+                DYHUB_Aimbot28Enabled and Color3.fromRGB(60,255,60) or Color3.fromRGB(255,60,60)
+        end
+    end
+end)
+
+-------------------------------------------------------
 -- Aim Functions
 -------------------------------------------------------
 local function DYHUB_AimAt_Normal(target)
@@ -3034,27 +3080,36 @@ PlayerTab:Toggle({ Title = "No Clip", Value=false, Callback=function(state)
 end })
 
 local NoFallEnabled = false
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local FallRemote = ReplicatedStorage:WaitForChild("Remotes")
+    :WaitForChild("Mechanics")
+    :WaitForChild("Fall")
 
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+
+    -- ถ้าเปิด NoFall และพยายาม FireServer ใส่ Fall Remote → block
+    if NoFallEnabled
+        and self == FallRemote
+        and method == "FireServer" then
+        return nil
+    end
+
+    return oldNamecall(self, ...)
+end)
+
+setreadonly(mt, true)
+
+-- Toggle
 PlayerTab:Toggle({
     Title = "No Fall (Beta)",
     Value = false,
     Callback = function(v)
         NoFallEnabled = v
-
-        if NoFallEnabled then
-            task.spawn(function()
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local FallRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Mechanics"):WaitForChild("Fall")
-
-                while NoFallEnabled do
-                    local args = { -100 }
-                    pcall(function()
-                        FallRemote:FireServer(unpack(args))
-                    end)
-                    task.wait(1)
-                end
-            end)
-        end
     end
 })
 
