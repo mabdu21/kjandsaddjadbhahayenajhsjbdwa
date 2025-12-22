@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v908
+-- Powered by GPT 5 | v912
 -- ======================
-local version = "4.5.0"
+local version = "4.5.1"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -3548,43 +3548,36 @@ TeleportTab:Button({
 
 -- =============== FARM ===============
 
+-- ===== SERVICES =====
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
+-- ===== SETTINGS =====
 local AutoFarm = false
+local AutoSendGift = false
 
--- REMOTE
+-- ===== REMOTE =====
 local GiftRemote = ReplicatedStorage
     :WaitForChild("Remotes")
     :WaitForChild("Events")
     :WaitForChild("Christmas")
     :WaitForChild("gift")
 
--- ชื่อ folder ที่อนุญาต
-local EventNames = {
-    "chris",
-    "christmas",
-    "chrisma",
-}
+-- ===== NAME FILTER =====
+local EventNames = { "chris", "christmas", "chrisma" }
+local TreeNames  = { "trees", "christmas trees", "chrismta tute" }
 
-local TreeNames = {
-    "trees",
-    "christmas trees",
-    "chrismta tute"
-}
-
--- ====== UTILS ======
-
-local function getChar()
+-- ===== DYHUB UTILS =====
+local function DYHUB_GetCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
 
-local function getHRP()
-    return getChar():WaitForChild("HumanoidRootPart")
+local function DYHUB_GetHRP()
+    return DYHUB_GetCharacter():WaitForChild("HumanoidRootPart")
 end
 
-local function isNameMatch(name, list)
+local function DYHUB_IsNameMatch(name, list)
     name = name:lower()
     for _,v in ipairs(list) do
         if name:find(v) then
@@ -3594,18 +3587,18 @@ local function isNameMatch(name, list)
     return false
 end
 
-local function getEventFolders()
+local function DYHUB_GetEventFolders()
     local folders = {}
     for _,v in pairs(workspace.Map:GetChildren()) do
-        if isNameMatch(v.Name, EventNames) then
+        if DYHUB_IsNameMatch(v.Name, EventNames) then
             table.insert(folders, v)
         end
     end
     return folders
 end
 
-local function getNearestModel(folder, modelName)
-    local hrp = getHRP()
+local function DYHUB_GetNearestModel(folder, modelName)
+    local hrp = DYHUB_GetHRP()
     local nearest, dist = nil, math.huge
 
     for _,obj in pairs(folder:GetDescendants()) do
@@ -3620,45 +3613,90 @@ local function getNearestModel(folder, modelName)
     return nearest
 end
 
-local function teleportTo(cf)
-    local hrp = getHRP()
-    hrp.CFrame = cf + Vector3.new(0,3,0)
+local function DYHUB_TeleportTo(cf)
+    DYHUB_GetHRP().CFrame = cf + Vector3.new(0,3,0)
 end
 
--- ====== MAIN LOOP ======
+local function DYHUB_HasGift()
+    return DYHUB_GetCharacter():FindFirstChild("Gift") ~= nil
+end
 
+-- ===== AUTO SEND MEMORY =====
+local DYHUB_LastPosition = nil
+local DYHUB_Sending = false
+
+-- ===== MAIN LOOP =====
 task.spawn(function()
     while true do
-        task.wait(0.3)
-        if not AutoFarm then continue end
+        task.wait(0.35)
 
-        for _,eventFolder in ipairs(getEventFolders()) do
+        for _,eventFolder in ipairs(DYHUB_GetEventFolders()) do
 
-            -- ===== GIFT =====
-            local giftModel = getNearestModel(eventFolder, "Gift")
-            if giftModel and giftModel:FindFirstChild("GiftHandle") then
-                teleportTo(giftModel.PrimaryPart.CFrame)
+            -- ===== AUTO SEND GIFT (NEAT MODE) =====
+            if AutoSendGift and DYHUB_HasGift() and not DYHUB_Sending then
+                DYHUB_Sending = true
+
+                -- จำตำแหน่งเดิม
+                DYHUB_LastPosition = DYHUB_GetHRP().CFrame
+
+                -- ไปต้นไม้
+                for _,sub in pairs(eventFolder:GetChildren()) do
+                    if DYHUB_IsNameMatch(sub.Name, TreeNames) then
+                        local tree = DYHUB_GetNearestModel(sub, "Model")
+                        if tree then
+                            DYHUB_TeleportTo(tree.PrimaryPart.CFrame)
+                            break
+                        end
+                    end
+                end
+
+                -- รอจน Gift หาย
+                repeat task.wait(0.2) until not DYHUB_HasGift()
+
+                -- วาร์ปกลับตำแหน่งเดิม
                 task.wait(0.3)
+                if DYHUB_LastPosition then
+                    DYHUB_TeleportTo(DYHUB_LastPosition)
+                    DYHUB_LastPosition = nil
+                end
 
-                GiftRemote:FireServer(giftModel.GiftHandle)
-                task.wait(1)
+                DYHUB_Sending = false
             end
 
-            -- ===== TREE =====
-            for _,sub in pairs(eventFolder:GetChildren()) do
-                if isNameMatch(sub.Name, TreeNames) then
-                    local tree = getNearestModel(sub, "Model")
-                    if tree then
-                        teleportTo(tree.PrimaryPart.CFrame)
-                        task.wait(1)
+            -- ===== AUTO FARM (FULL LOOP) =====
+            if AutoFarm then
+
+                -- หา + เก็บ Gift
+                if not DYHUB_HasGift() then
+                    local giftModel = DYHUB_GetNearestModel(eventFolder, "Gift")
+                    if giftModel and giftModel:FindFirstChild("GiftHandle") then
+                        DYHUB_TeleportTo(giftModel.PrimaryPart.CFrame)
+                        task.wait(0.3)
+
+                        GiftRemote:FireServer(giftModel.GiftHandle)
+                        task.wait(0.8)
+                    end
+                end
+
+                -- ไปต้นไม้
+                if DYHUB_HasGift() then
+                    for _,sub in pairs(eventFolder:GetChildren()) do
+                        if DYHUB_IsNameMatch(sub.Name, TreeNames) then
+                            local tree = DYHUB_GetNearestModel(sub, "Model")
+                            if tree then
+                                DYHUB_TeleportTo(tree.PrimaryPart.CFrame)
+                                task.wait(1)
+                            end
+                        end
                     end
                 end
             end
+
         end
     end
 end)
 
--- ====== UI ======
+-- ===== UI =====
 MasTab:Paragraph({
     Title = "Auto Farm: Gift (BETA)",
     Desc = "• Warp to collect gifts\n• Deliver gifts at the tree\n• Effectively prevent bugs",
@@ -3670,10 +3708,20 @@ MasTab:Paragraph({
 MasTab:Section({ Title = "Christmas Farm", Icon = "candy-cane" })
 
 MasTab:Toggle({
-    Title = "Auto Farm",
+    Title = "Auto Farm (Collect + Send)",
     Value = false,
-    Callback = function(state)
-        AutoFarm = state
+    Callback = function(v)
+        AutoFarm = v
+    end
+})
+
+MasTab:Section({ Title = "Feature Xmas", Icon = "settings" })
+
+MasTab:Toggle({
+    Title = "Auto Send Gift (Not Legit)",
+    Value = false,
+    Callback = function(v)
+        AutoSendGift = v
     end
 })
 
