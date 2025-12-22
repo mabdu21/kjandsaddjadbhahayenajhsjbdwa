@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v920
+-- Powered by GPT 5 | v925
 -- ======================
-local version = "4.5.3"
+local version = "4.5.5"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -3556,7 +3556,7 @@ local LocalPlayer = Players.LocalPlayer
 -- ===== SETTINGS =====
 local AutoFarm = false
 local AutoSendGift = false
-local SAFE_DISTANCE = 60
+local SAFE_DISTANCE = 80
 local DANGER_DISTANCE = 50
 
 -- ===== INTERNAL =====
@@ -3569,6 +3569,12 @@ local GiftRemote = ReplicatedStorage
     :WaitForChild("Events")
     :WaitForChild("Christmas")
     :WaitForChild("gift")
+
+-- ===== BLOCK LOBBY TREE =====
+local LobbyTreeFolder =
+    workspace:FindFirstChild("Lobby")
+    and workspace.Lobby:FindFirstChild("Christmas Decoration")
+    and workspace.Lobby["Christmas Decoration"]:FindFirstChild("Christmas tree")
 
 -- ===== DYHUB UTILS =====
 local function DYHUB_GetChar()
@@ -3589,7 +3595,7 @@ end
 local function DYHUB_TP(cf)
     local hrp = DYHUB_GetHRP()
     if hrp then
-        hrp.CFrame = cf + Vector3.new(0,1.5,0)
+        hrp.CFrame = cf + Vector3.new(0,3,0)
     end
 end
 
@@ -3651,7 +3657,7 @@ local function DYHUB_GetNearestGift()
     return nearest
 end
 
--- ===== FIND NEAREST SAFE TREE =====
+-- ===== FIND NEAREST SAFE TREE (NO LOBBY TREE) =====
 local function DYHUB_GetNearestTree()
     local hrp = DYHUB_GetHRP()
     if not hrp then return nil end
@@ -3660,6 +3666,12 @@ local function DYHUB_GetNearestTree()
 
     for _,obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name == "ChristmasTree" then
+
+            -- ❌ BLOCK LOBBY TREE
+            if LobbyTreeFolder and obj:IsDescendantOf(LobbyTreeFolder) then
+                continue
+            end
+
             local pine = obj:FindFirstChild("TreePine")
             if pine then
                 local pos =
@@ -3720,8 +3732,8 @@ task.spawn(function()
                 local tree = DYHUB_GetNearestTree()
                 if tree then
                     DYHUB_TP(tree:IsA("BasePart") and tree.CFrame or tree.PrimaryPart.CFrame)
-                    repeat task.wait(0.15) until not DYHUB_HasGift()
-                    task.wait(0.2)
+                    repeat task.wait(0.1) until not DYHUB_HasGift()
+                    task.wait(0.15)
                     DYHUB_TP(LastPosition)
                 end
 
@@ -3735,7 +3747,7 @@ task.spawn(function()
                     local gift = DYHUB_GetNearestGift()
                     if gift then
                         DYHUB_TP(gift.PrimaryPart.CFrame)
-                        task.wait(0.25)
+                        task.wait(0.2)
                         GiftRemote:FireServer(gift.GiftHandle)
                     end
                 else
@@ -3752,7 +3764,7 @@ end)
 -- ===== UI =====
 MasTab:Paragraph({
     Title = "Auto Farm: Gift (BETA)",
-    Desc = "• Safe Warp System\n• Avoid Player Weapon\n• No Bug Warp",
+    Desc = "• Safe Warp System\n• Avoid Killer\n• No Lobby Tree\n• No Bug Warp",
     Image = "rbxassetid://104487529937663",
     ImageSize = 45
 })
