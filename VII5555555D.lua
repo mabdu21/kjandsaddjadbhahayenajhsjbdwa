@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v855
+-- Powered by GPT 5 | v908
 -- ======================
-local version = "4.4.8"
+local version = "4.5.0"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -182,6 +182,8 @@ local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
 local Main1Divider = Window:Divider()
 local SurTab = Window:Tab({ Title = "Survivor", Icon = "user-check" })
 local killerTab = Window:Tab({ Title = "Killer", Icon = "swords" })
+local Main3Divider = Window:Divider()
+local MasTab = Window:Tab({ Title = "Xmas", Icon = "tree-pine" })
 local Main2Divider = Window:Divider()
 local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
 local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
@@ -210,12 +212,16 @@ local COLOR_GENERATOR_DONE = Color3.fromRGB(0,255,0)
 local COLOR_GATE           = Color3.fromRGB(255,255,255)
 local COLOR_PALLET         = Color3.fromRGB(255,255,0)
 --local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
+local COLOR_TREE = Color3.fromRGB(0,255,0)   -- เขียว
+local COLOR_GIFT = Color3.fromRGB(255,0,0)   -- แดง
 local COLOR_OUTLINE        = Color3.fromRGB(0,0,0)
 local COLOR_WINDOW         = Color3.fromRGB(175, 215, 230)
 local COLOR_HOOK           = Color3.fromRGB(255,0,0)
 
 -- State flags
 local espEnabled = false
+local espGift = false
+local espTree = false 
 local espSurvivor = false
 local espMurder = false
 local espGenerator = false
@@ -481,6 +487,52 @@ local function updateWindowESP()
     end
 end
 
+local function getEventFolders()
+    local folders = {}
+    local map = workspace:FindFirstChild("Map")
+    if not map then return folders end
+
+    for _,v in pairs(map:GetChildren()) do
+        local name = v.Name:lower()
+        if name:find("chris") or name:find("christmas") then
+            table.insert(folders, v)
+        end
+    end
+    return folders
+end
+
+
+local function updateEventESP()
+    if not espEnabled then return end
+
+    for _,eventFolder in pairs(getEventFolders()) do
+        for _,obj in pairs(eventFolder:GetDescendants()) do
+
+            -- ===== GIFT =====
+            if obj:IsA("Model") and obj.Name == "Gift" then
+                if espGift then
+                    createESP(obj, COLOR_GIFT)
+                else
+                    removeESP(obj)
+                end
+            end
+
+            -- ===== TREE =====
+            if obj:IsA("Model") and obj.Name == "Model" then
+                local parentName = obj.Parent.Name:lower()
+                if parentName:find("tree") or parentName:find("chrismta") then
+                    if espTree then
+                        createESP(obj, COLOR_TREE)
+                    else
+                        removeESP(obj)
+                    end
+                end
+            end
+
+        end
+    end
+end
+
 --[[ local function getPumkinFolders()
     local folders = {}
     -- ค้นหา Map และ Rooftop
@@ -674,6 +726,7 @@ if obj.Name == "Generator" then
     end
 
     updateWindowESP()
+	updateEventESP()
     --updatePumkinESP()
 
     -- Update labels
@@ -769,6 +822,7 @@ EspTab:Toggle({Title="Enable ESP", Value=false, Callback=function(v)
     else
         updateESP(0)
         updateWindowESP()
+		updateEventESP()
         --updatePumkinESP()
     end
 end})
@@ -789,11 +843,15 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
     updateWindowESP()
 end})
 
---[[ EspTab:Section({ Title = "Esp Event", Icon = "candy" })
-EspTab:Toggle({Title="ESP Pumpkin", Value=false, Callback=function(v)
-    espPumkin=v
-    updatePumkinESP()
-end}) ]]
+EspTab:Section({ Title = "Esp Event", Icon = "candy-cane" })
+EspTab:Toggle({Title="ESP Tree", Value=false, Callback=function(v)
+    espTree=v
+    updateEventESP()
+end})
+EspTab:Toggle({Title="ESP Gift", Value=false, Callback=function(v)
+    espGift=v
+    updateEventESP()
+end})
 
 EspTab:Section({ Title = "Esp Settings", Icon = "settings" })
 EspTab:Toggle({Title="Show Name", Value=ShowName, Callback=function(v) ShowName=v end})
@@ -3204,290 +3262,142 @@ Hitbox:Toggle({
 })
 
 
--- =============== IDK ===============
+-- =============== TELEPORT ===============
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
+-- ==============================
 -- Config
-local LOBBY_POSITION = Vector3.new(1939.12061, 736.51886, 3814.94458)
-local SAFE_DISTANCE_FROM_LOBBY = 50 -- Pumpkin ใกล้ Lobby จะถูกละเว้น
-local TELEPORT_OFFSET = 10 -- ระยะห่างจากวัตถุเวลา teleport
+-- ==============================
+local LOBBY_POSITION = Vector3.new(653.552002, 684.317444, 1577.81934)
+local TELEPORT_OFFSET = 10
 
 -- ==============================
 -- Helper Functions
 -- ==============================
 
--- หา Generator ทุกอันใน Workspace
-local function getAllGenerators()
-    local list = {}
-    local nameCount = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj.Name == "Generator" and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            local baseName = "Generator"
-            nameCount[baseName] = (nameCount[baseName] or 0) + 1
-            local displayName = baseName .. " " .. nameCount[baseName]
-            table.insert(list, {Name = displayName, Object = obj})
-        end
-    end
-    return list
-end
-
---[[ หา Pumpkin ทุกอันใน Workspace แต่ละเว้นใกล้ Lobby และ Decorations
-local function getAllPumpkins()
-    local list = {}
-    local nameCount = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsDescendantOf(Workspace.Lobby.Decorations) then
-            continue
-        end
-
-        if obj.Name:match("^Pumpkin") and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            local part
-            if obj:IsA("Model") then
-                part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-            else
-                part = obj
-            end
-            if part then
-                local dist = (part.Position - LOBBY_POSITION).Magnitude
-                if dist > SAFE_DISTANCE_FROM_LOBBY then
-                    local baseName = "Pumpkin"
-                    nameCount[baseName] = (nameCount[baseName] or 0) + 1
-                    local displayName = baseName .. " " .. nameCount[baseName]
-                    table.insert(list, {Name = displayName, Object = obj})
-                end
-            end
-        end
-    end
-    return list
-end
---]]
-
--- คืนค่า CFrame ของ object
 local function getCFrame(obj)
     if obj:IsA("BasePart") then
         return obj.CFrame
     elseif obj:IsA("Model") then
-        return obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").CFrame
+        local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        return part and part.CFrame
     end
-    return nil
 end
 
--- ตรวจสอบตำแหน่งก่อนวาร์ป (ไม่ชนสิ่งกีดขวาง)
-local function safeCFrame(baseCFrame, directionVector)
-    local offset = directionVector.Unit * TELEPORT_OFFSET
-    local targetPos = baseCFrame.Position + offset
+local function safeCFrame(baseCFrame, dir)
+    local offset = dir.Unit * TELEPORT_OFFSET
+    local target = baseCFrame.Position + offset
 
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {LocalPlayer.Character}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
 
-    local ray = Workspace:Raycast(baseCFrame.Position, offset, rayParams)
+    local ray = Workspace:Raycast(baseCFrame.Position, offset, params)
     if ray then
-        -- มีสิ่งกีดขวาง → ปรับ Y ให้สูงขึ้น 5 studs
-        return CFrame.new(targetPos.X, ray.Position.Y + 5, targetPos.Z)
-    else
-        return CFrame.new(targetPos)
+        return CFrame.new(target.X, ray.Position.Y + 5, target.Z)
     end
+
+    return CFrame.new(target)
 end
 
 -- ==============================
--- Map Structure
+-- Generator
 -- ==============================
-local map = {
-    teleport = {
-        Map = {
-            Lobby = CFrame.new(1939.12061, 736.51886, 3814.94458),
-            Game = "PlayerWithWeapon"
-        },
-        Generator = {} -- จะ fill ด้วย getAllGenerators()
-        --Pumpkin = {}   -- จะ fill ด้วย getAllPumpkins()
-    }
-}
-
--- ==============================
--- Teleport: Map
--- ==============================
-TeleportTab:Section({ Title = "Teleport: Place", Icon = "map" })
-
-local Teleport
-TeleportTab:Dropdown({
-    Title = "Select Place",
-    Values = { "Lobby", "Game" },
-    Multi = false,
-    Callback = function(value)
-        Teleport = value
-    end
-})
-
-TeleportTab:Button({
-    Title = "Teleport",
-    Callback = function()
-        if Teleport == "Lobby" then
-            LocalPlayer.Character:PivotTo(map.teleport.Map.Lobby)
-        elseif Teleport == "Game" then
-            local targetPlayer
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Weapon") then
-                    targetPlayer = p
-                    break
-                end
-            end
-
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character.PrimaryPart then
-                local targetCFrame = targetPlayer.Character.PrimaryPart.CFrame
-                local offsetDistance = 200
-
-                local direction = (LocalPlayer.Character.PrimaryPart.Position - targetCFrame.Position).Unit
-                local desiredPos = targetCFrame.Position + direction * offsetDistance
-                local desiredCFrame = CFrame.new(desiredPos.X, targetCFrame.Position.Y, desiredPos.Z)
-
-                local rayParams = RaycastParams.new()
-                rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-                rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-                local ray = Workspace:Raycast(targetCFrame.Position, (desiredPos - targetCFrame.Position), rayParams)
-                if ray then
-                    desiredCFrame = CFrame.new(desiredPos.X, ray.Position.Y + 5, desiredPos.Z)
-                end
-
-                LocalPlayer.Character:PivotTo(desiredCFrame)
-            else
-                warn("[Teleport] No player with Weapon found!")
-            end
+local function getAllGenerators()
+    local list, count = {}, 0
+    for _,obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name == "Generator" and (obj:IsA("Model") or obj:IsA("BasePart")) then
+            count += 1
+            table.insert(list, {Name = "Generator "..count, Object = obj})
         end
     end
-})
-
--- ==============================
--- Teleport: Generator
--- ==============================
---===== GET GENERATOR LIST =====--
-local generatorList = {}
-
-local function updateGeneratorList()
-    generatorList = getAllGenerators() or {}
-    local list = {}
-
-    for _, g in ipairs(generatorList) do
-        table.insert(list, g.Name)
-    end
-
     return list
 end
 
--- โหลดรอบแรก
-generatorList = getAllGenerators() or {}
+-- ==============================
+-- Gifts
+-- ==============================
+local function getAllGifts()
+    local list, count = {}, 0
+    for _,folder in ipairs(getEventFolders()) do
+        for _,obj in ipairs(folder:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Gift" then
+                count += 1
+                table.insert(list, {Name = "Gift "..count, Object = obj})
+            end
+        end
+    end
+    return list
+end
 
---===== UI SECTION =====--
+-- ==============================
+-- Trees
+-- ==============================
+local function getAllTrees()
+    local list, count = {}, 0
+    for _,folder in ipairs(getEventFolders()) do
+        for _,obj in ipairs(folder:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Model" then
+                local parent = obj.Parent.Name:lower()
+                if parent:find("tree") or parent:find("chrismta") then
+                    count += 1
+                    table.insert(list, {Name = "Tree "..count, Object = obj})
+                end
+            end
+        end
+    end
+    return list
+end
+
+-- ==============================
+-- TELEPORT UI
+-- ==============================
+TeleportTab:Section({ Title = "Teleport: Place", Icon = "map" })
+
+local Place
+TeleportTab:Dropdown({
+    Title = "Select Place",
+    Values = {"Lobby","Game"},
+    Callback = function(v) Place = v end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if Place == "Lobby" then
+            LocalPlayer.Character:PivotTo(CFrame.new(LOBBY_POSITION))
+        elseif Place == "Game" then
+            for _,p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Weapon") then
+                    LocalPlayer.Character:PivotTo(p.Character.PrimaryPart.CFrame * CFrame.new(0,0,200))
+                    break
+                end
+            end
+        end
+    end
+})
+
+-- ==============================
+-- Generator Teleport
+-- ==============================
 TeleportTab:Section({ Title = "Teleport: Generator", Icon = "zap" })
 
---===== GENERATOR DROPDOWN =====--
-local Teleport = nil
+local generatorList = getAllGenerators()
+local GenTarget
 
-local GeneratorDropdown = TeleportTab:Dropdown({
+local GenDropdown = TeleportTab:Dropdown({
     Title = "Select Generator",
-    Values = updateGeneratorList(),  -- โหลดครั้งแรก
-    Multi = false,
-    Callback = function(value)
-        -- ใช้ generatorList ใหม่ทุกครั้ง
-        for _, g in ipairs(generatorList) do
-            if g.Name == value then
-                Teleport = g.Object
-                return
-            end
-        end
-
-        Teleport = nil
-        warn("[Teleport] Selected generator not found after refresh!")
-    end
-})
-
---===== REFRESH FUNCTION =====--
-local function refreshGenerators()
-    local newValues = updateGeneratorList()
-
-    GeneratorDropdown:Update(newValues)
-    Teleport = nil
-end
-
---===== TELEPORT DIRECTION =====--
-local TeleportDirection = "Front"
-
-TeleportTab:Dropdown({
-    Title = "Teleport Direction (D: Front)",
-    Values = { "Front", "Back", "Left", "Right" },
-    Multi = false,
-    Callback = function(value)
-        TeleportDirection = value
-    end
-})
-
---===== TELEPORT BUTTON =====--
-TeleportTab:Button({
-    Title = "Teleport",
-    Callback = function()
-        if not Teleport then
-            warn("[Teleport] No generator selected!")
-            return
-        end
-
-        local cframe = getCFrame(Teleport)
-        if not cframe then
-            warn("[Teleport] Cannot get CFrame from generator!")
-            return
-        end
-
-        -- กำหนดทิศทาง
-        local dirVector = ({
-            Front =  cframe.LookVector,
-            Back  = -cframe.LookVector,
-            Left  = -cframe.RightVector,
-            Right =  cframe.RightVector
-        })[TeleportDirection] or cframe.LookVector
-
-        -- ทำ CFrame ปลอดภัย
-        local safeCF = safeCFrame(cframe, dirVector)
-
-        -- วาร์ปตัวละคร
-        LocalPlayer.Character:PivotTo(safeCF)
-    end
-})
-
---===== REFRESH BUTTON =====--
-TeleportTab:Button({
-    Title = "Refresh Generators",
-    Callback = refreshGenerators
-})
-
---[[ ==============================
--- Teleport: Pumpkin
--- ==============================
-local pumpkinList = getAllPumpkins()
-
-local function refreshPumpkins()
-    pumpkinList = getAllPumpkins()
-    local values = {}
-    for _, p in ipairs(pumpkinList) do
-        table.insert(values, p.Name)
-    end
-    PumpkinDropdown:Update(values)
-    Teleport = nil
-end
-
-TeleportTab:Section({ Title = "Teleport: Pumpkin", Icon = "candy" })
-
-local PumpkinDropdown = TeleportTab:Dropdown({
-    Title = "Select Pumpkin",
-    Values = (function() local t={} for _,p in ipairs(pumpkinList) do table.insert(t,p.Name) end return t end)(),
-    Multi = false,
-    Callback = function(value)
-        for _, p in ipairs(pumpkinList) do
-            if p.Name == value then
-                Teleport = p.Object
-                break
-            end
+    Values = (function()
+        local t={}
+        for _,g in ipairs(generatorList) do table.insert(t,g.Name) end
+        return t
+    end)(),
+    Callback = function(v)
+        for _,g in ipairs(generatorList) do
+            if g.Name == v then GenTarget = g.Object end
         end
     end
 })
@@ -3495,36 +3405,282 @@ local PumpkinDropdown = TeleportTab:Dropdown({
 TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
-        if Teleport then
-            local cframe = getCFrame(Teleport)
-            if cframe then
-                LocalPlayer.Character:PivotTo(cframe)
-            else
-                warn("[Teleport] Cannot get CFrame from selected Pumpkin!")
-            end
-        else
-            warn("[Teleport] No Pumpkin selected!")
+        if GenTarget then
+            LocalPlayer.Character:PivotTo(getCFrame(GenTarget))
         end
     end
 })
 
 TeleportTab:Button({
-    Title = "Refresh Pumpkins",
-    Callback = refreshPumpkins
-}) ]]
+    Title = "Refresh Generator",
+    Callback = function()
+        generatorList = getAllGenerators()
+        local t={}
+        for _,g in ipairs(generatorList) do table.insert(t,g.Name) end
+        GenDropdown:Update(t)
+    end
+})
 
 -- ==============================
--- Refresh All
+-- Gift Teleport
 -- ==============================
-TeleportTab:Section({ Title = "Teleport Setting", Icon = "settings" })
+TeleportTab:Section({ Title = "Teleport: Gift", Icon = "gift" })
+
+local giftList = getAllGifts()
+local GiftTarget
+
+local GiftDropdown = TeleportTab:Dropdown({
+    Title = "Select Gift",
+    Values = (function()
+        local t={}
+        for _,g in ipairs(giftList) do table.insert(t,g.Name) end
+        return t
+    end)(),
+    Callback = function(v)
+        for _,g in ipairs(giftList) do
+            if g.Name == v then GiftTarget = g.Object end
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if GiftTarget then
+            LocalPlayer.Character:PivotTo(getCFrame(GiftTarget))
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Gifts",
+    Callback = function()
+        giftList = getAllGifts()
+        local t={}
+        for _,g in ipairs(giftList) do table.insert(t,g.Name) end
+        GiftDropdown:Update(t)
+    end
+})
+
+-- ==============================
+-- Tree Teleport
+-- ==============================
+TeleportTab:Section({ Title = "Teleport: Tree", Icon = "tree-pine" })
+
+local treeList = getAllTrees()
+local TreeTarget
+
+local TreeDropdown = TeleportTab:Dropdown({
+    Title = "Select Tree",
+    Values = (function()
+        local t={}
+        for _,tr in ipairs(treeList) do table.insert(t,tr.Name) end
+        return t
+    end)(),
+    Callback = function(v)
+        for _,tr in ipairs(treeList) do
+            if tr.Name == v then TreeTarget = tr.Object end
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport",
+    Callback = function()
+        if TreeTarget then
+            LocalPlayer.Character:PivotTo(getCFrame(TreeTarget))
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Trees",
+    Callback = function()
+        treeList = getAllTrees()
+        local t={}
+        for _,tr in ipairs(treeList) do table.insert(t,tr.Name) end
+        TreeDropdown:Update(t)
+    end
+})
+
+TeleportTab:Section({ Title = "Teleport: Refresh", Icon = "loader" })
 
 TeleportTab:Button({
     Title = "Refresh All",
     Callback = function()
-        refreshGenerators()
-        --refreshPumpkins()
+
+        -- ===== GENERATOR =====
+        generatorList = getAllGenerators()
+        if GenDropdown then
+            local genValues = {}
+            for _,g in ipairs(generatorList) do
+                table.insert(genValues, g.Name)
+            end
+            GenDropdown:Update(genValues)
+        end
+        GenTarget = nil
+
+        -- ===== GIFT =====
+        giftList = getAllGifts()
+        if GiftDropdown then
+            local giftValues = {}
+            for _,g in ipairs(giftList) do
+                table.insert(giftValues, g.Name)
+            end
+            GiftDropdown:Update(giftValues)
+        end
+        GiftTarget = nil
+
+        -- ===== TREE =====
+        treeList = getAllTrees()
+        if TreeDropdown then
+            local treeValues = {}
+            for _,tr in ipairs(treeList) do
+                table.insert(treeValues, tr.Name)
+            end
+            TreeDropdown:Update(treeValues)
+        end
+        TreeTarget = nil
+
+        print("[Teleport] Refresh All completed")
     end
 })
+
+-- =============== FARM ===============
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+local AutoFarm = false
+
+-- REMOTE
+local GiftRemote = ReplicatedStorage
+    :WaitForChild("Remotes")
+    :WaitForChild("Events")
+    :WaitForChild("Christmas")
+    :WaitForChild("gift")
+
+-- ชื่อ folder ที่อนุญาต
+local EventNames = {
+    "chris",
+    "christmas",
+    "chrisma",
+}
+
+local TreeNames = {
+    "trees",
+    "christmas trees",
+    "chrismta tute"
+}
+
+-- ====== UTILS ======
+
+local function getChar()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function getHRP()
+    return getChar():WaitForChild("HumanoidRootPart")
+end
+
+local function isNameMatch(name, list)
+    name = name:lower()
+    for _,v in ipairs(list) do
+        if name:find(v) then
+            return true
+        end
+    end
+    return false
+end
+
+local function getEventFolders()
+    local folders = {}
+    for _,v in pairs(workspace.Map:GetChildren()) do
+        if isNameMatch(v.Name, EventNames) then
+            table.insert(folders, v)
+        end
+    end
+    return folders
+end
+
+local function getNearestModel(folder, modelName)
+    local hrp = getHRP()
+    local nearest, dist = nil, math.huge
+
+    for _,obj in pairs(folder:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == modelName and obj.PrimaryPart then
+            local d = (hrp.Position - obj.PrimaryPart.Position).Magnitude
+            if d < dist then
+                dist = d
+                nearest = obj
+            end
+        end
+    end
+    return nearest
+end
+
+local function teleportTo(cf)
+    local hrp = getHRP()
+    hrp.CFrame = cf + Vector3.new(0,3,0)
+end
+
+-- ====== MAIN LOOP ======
+
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        if not AutoFarm then continue end
+
+        for _,eventFolder in ipairs(getEventFolders()) do
+
+            -- ===== GIFT =====
+            local giftModel = getNearestModel(eventFolder, "Gift")
+            if giftModel and giftModel:FindFirstChild("GiftHandle") then
+                teleportTo(giftModel.PrimaryPart.CFrame)
+                task.wait(0.3)
+
+                GiftRemote:FireServer(giftModel.GiftHandle)
+                task.wait(1)
+            end
+
+            -- ===== TREE =====
+            for _,sub in pairs(eventFolder:GetChildren()) do
+                if isNameMatch(sub.Name, TreeNames) then
+                    local tree = getNearestModel(sub, "Model")
+                    if tree then
+                        teleportTo(tree.PrimaryPart.CFrame)
+                        task.wait(1)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ====== UI ======
+MasTab:Paragraph({
+    Title = "Auto Farm: Gift (BETA)",
+    Desc = "• Warp to collect gifts\n• Deliver gifts at the tree\n• Effectively prevent bugs",
+    Image = "rbxassetid://104487529937663",
+    ImageSize = 45,
+    Locked = false
+})
+
+MasTab:Section({ Title = "Christmas Farm", Icon = "candy-cane" })
+
+MasTab:Toggle({
+    Title = "Auto Farm",
+    Value = false,
+    Callback = function(state)
+        AutoFarm = state
+    end
+})
+
+-- ===== RESPAWN SAFE =====
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(2)
+end)
 
 -- ============= DISCORD ================= 
 
