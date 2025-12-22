@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v925
+-- Powered by GPT 5 | v930
 -- ======================
 local version = "4.5.5"
 -- ======================
@@ -3754,7 +3754,7 @@ end)
 -- ===== UI =====
 MasTab:Paragraph({
     Title = "Auto Farm: Gift (BETA)",
-    Desc = "• Warp collect gifts\n• Skip gifts in player\n• Skip trees in Lobby",
+    Desc = "• Warp collect gifts\n• Warp send gifts\n• Skip trees in-game",
     Image = "rbxassetid://104487529937663",
     ImageSize = 45,
     Locked = false
