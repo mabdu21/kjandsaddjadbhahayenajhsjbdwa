@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v915
+-- Powered by GPT 5 | v920
 -- ======================
-local version = "4.5.2"
+local version = "4.5.3"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -3546,7 +3546,7 @@ TeleportTab:Button({
     end
 })
 
--- =============== FARM ===============
+-- =============== FARM GIFT ===============
 
 -- ===== SERVICES =====
 local Players = game:GetService("Players")
@@ -3556,7 +3556,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ===== SETTINGS =====
 local AutoFarm = false
 local AutoSendGift = false
-local SAFE_DISTANCE = 80
+local SAFE_DISTANCE = 60
+local DANGER_DISTANCE = 50
 
 -- ===== INTERNAL =====
 local SendingGift = false
@@ -3588,7 +3589,7 @@ end
 local function DYHUB_TP(cf)
     local hrp = DYHUB_GetHRP()
     if hrp then
-        hrp.CFrame = cf + Vector3.new(0,3,0)
+        hrp.CFrame = cf + Vector3.new(0,1.5,0)
     end
 end
 
@@ -3597,13 +3598,13 @@ local function DYHUB_HasGift()
     return char and char:FindFirstChild("Gift") ~= nil
 end
 
--- ===== PLAYER WITH WEAPON NEAR =====
-local function DYHUB_PlayerWithWeaponNear(pos)
+-- ===== CHECK PLAYER WITH WEAPON =====
+local function DYHUB_PlayerWithWeaponNear(pos, distLimit)
     for _,plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer then
             local char = plr.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp and (hrp.Position - pos).Magnitude <= SAFE_DISTANCE then
+            if hrp and (hrp.Position - pos).Magnitude <= distLimit then
                 for _,tool in pairs(char:GetChildren()) do
                     if tool:IsA("Tool") then
                         return true
@@ -3611,6 +3612,15 @@ local function DYHUB_PlayerWithWeaponNear(pos)
                 end
             end
         end
+    end
+    return false
+end
+
+-- ===== IS GIFT OWNED BY PLAYER =====
+local function DYHUB_GiftInPlayer(obj)
+    local parent = obj.Parent
+    if parent and parent:IsA("Model") then
+        return Players:GetPlayerFromCharacter(parent) ~= nil
     end
     return false
 end
@@ -3626,10 +3636,12 @@ local function DYHUB_GetNearestGift()
         if obj:IsA("Model")
             and obj.Name == "Gift"
             and obj.PrimaryPart
-            and obj:FindFirstChild("GiftHandle") then
+            and obj:FindFirstChild("GiftHandle")
+            and not DYHUB_GiftInPlayer(obj) then
 
             local d = (hrp.Position - obj.PrimaryPart.Position).Magnitude
-            if d < dist and not DYHUB_PlayerWithWeaponNear(obj.PrimaryPart.Position) then
+            if d < dist
+            and not DYHUB_PlayerWithWeaponNear(obj.PrimaryPart.Position, SAFE_DISTANCE) then
                 dist = d
                 nearest = obj
             end
@@ -3656,7 +3668,8 @@ local function DYHUB_GetNearestTree()
 
                 if pos then
                     local d = (hrp.Position - pos).Magnitude
-                    if d < dist and not DYHUB_PlayerWithWeaponNear(pos) then
+                    if d < dist
+                    and not DYHUB_PlayerWithWeaponNear(pos, SAFE_DISTANCE) then
                         dist = d
                         nearest = pine
                     end
@@ -3666,6 +3679,12 @@ local function DYHUB_GetNearestTree()
     end
 
     return nearest
+end
+
+-- ===== DANGER CHECK =====
+local function DYHUB_IsDangerNear()
+    local hrp = DYHUB_GetHRP()
+    return hrp and DYHUB_PlayerWithWeaponNear(hrp.Position, DANGER_DISTANCE)
 end
 
 -- ===== MAIN LOOP =====
@@ -3680,6 +3699,19 @@ task.spawn(function()
 
         pcall(function()
 
+            -- ===== EMERGENCY ESCAPE =====
+            if DYHUB_IsDangerNear() then
+                local tree = DYHUB_GetNearestTree()
+                local gift = DYHUB_GetNearestGift()
+
+                if tree then
+                    DYHUB_TP(tree:IsA("BasePart") and tree.CFrame or tree.PrimaryPart.CFrame)
+                elseif gift then
+                    DYHUB_TP(gift.PrimaryPart.CFrame)
+                end
+                return
+            end
+
             -- ===== AUTO SEND GIFT =====
             if AutoSendGift and DYHUB_HasGift() and not SendingGift then
                 SendingGift = true
@@ -3687,14 +3719,9 @@ task.spawn(function()
 
                 local tree = DYHUB_GetNearestTree()
                 if tree then
-                    if tree:IsA("BasePart") then
-                        DYHUB_TP(tree.CFrame)
-                    elseif tree:IsA("Model") and tree.PrimaryPart then
-                        DYHUB_TP(tree.PrimaryPart.CFrame)
-                    end
-
-                    repeat task.wait(0.2) until not DYHUB_HasGift()
-                    task.wait(0.3)
+                    DYHUB_TP(tree:IsA("BasePart") and tree.CFrame or tree.PrimaryPart.CFrame)
+                    repeat task.wait(0.15) until not DYHUB_HasGift()
+                    task.wait(0.2)
                     DYHUB_TP(LastPosition)
                 end
 
@@ -3704,27 +3731,17 @@ task.spawn(function()
 
             -- ===== AUTO FARM =====
             if AutoFarm then
-                -- ไปหา Gift
                 if not DYHUB_HasGift() then
                     local gift = DYHUB_GetNearestGift()
                     if gift then
                         DYHUB_TP(gift.PrimaryPart.CFrame)
                         task.wait(0.25)
                         GiftRemote:FireServer(gift.GiftHandle)
-                        task.wait(0.15)
                     end
-                end
-
-                -- ส่ง Gift (ไม่รอ)
-                if DYHUB_HasGift() then
+                else
                     local tree = DYHUB_GetNearestTree()
                     if tree then
-                        if tree:IsA("BasePart") then
-                            DYHUB_TP(tree.CFrame)
-                        elseif tree:IsA("Model") and tree.PrimaryPart then
-                            DYHUB_TP(tree.PrimaryPart.CFrame)
-                        end
-                        task.wait(0.15)
+                        DYHUB_TP(tree:IsA("BasePart") and tree.CFrame or tree.PrimaryPart.CFrame)
                     end
                 end
             end
@@ -3735,10 +3752,9 @@ end)
 -- ===== UI =====
 MasTab:Paragraph({
     Title = "Auto Farm: Gift (BETA)",
-    Desc = "• Warp to collect gifts\n• Deliver gifts at the tree\n• Effectively prevent bugs",
+    Desc = "• Safe Warp System\n• Avoid Player Weapon\n• No Bug Warp",
     Image = "rbxassetid://104487529937663",
-    ImageSize = 45,
-    Locked = false
+    ImageSize = 45
 })
 
 MasTab:Section({ Title = "Christmas Farm", Icon = "candy-cane" })
@@ -3754,7 +3770,7 @@ MasTab:Toggle({
 MasTab:Section({ Title = "Feature Xmas", Icon = "settings" })
 
 MasTab:Toggle({
-    Title = "Auto Send Gift (Not Legit)",
+    Title = "Auto Send Gift (Fast)",
     Value = false,
     Callback = function(v)
         AutoSendGift = v
