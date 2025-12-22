@@ -1,6 +1,6 @@
--- Powered by GPT 5 | v912
+-- Powered by GPT 5 | v915
 -- ======================
-local version = "4.5.1"
+local version = "4.5.2"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -3556,6 +3556,11 @@ local LocalPlayer = Players.LocalPlayer
 -- ===== SETTINGS =====
 local AutoFarm = false
 local AutoSendGift = false
+local SAFE_DISTANCE = 80
+
+-- ===== INTERNAL =====
+local SendingGift = false
+local LastPosition = nil
 
 -- ===== REMOTE =====
 local GiftRemote = ReplicatedStorage
@@ -3564,135 +3569,166 @@ local GiftRemote = ReplicatedStorage
     :WaitForChild("Christmas")
     :WaitForChild("gift")
 
--- ===== NAME FILTER =====
-local EventNames = { "chris", "christmas", "chrisma" }
-local TreeNames  = { "trees", "christmas trees", "chrismta tute" }
-
 -- ===== DYHUB UTILS =====
-local function DYHUB_GetCharacter()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local function DYHUB_GetChar()
+    return LocalPlayer.Character
 end
 
 local function DYHUB_GetHRP()
-    return DYHUB_GetCharacter():WaitForChild("HumanoidRootPart")
+    local char = DYHUB_GetChar()
+    return char and char:FindFirstChild("HumanoidRootPart")
 end
 
-local function DYHUB_IsNameMatch(name, list)
-    name = name:lower()
-    for _,v in ipairs(list) do
-        if name:find(v) then
-            return true
+local function DYHUB_IsAlive()
+    local char = DYHUB_GetChar()
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    return hum and hum.Health > 0
+end
+
+local function DYHUB_TP(cf)
+    local hrp = DYHUB_GetHRP()
+    if hrp then
+        hrp.CFrame = cf + Vector3.new(0,3,0)
+    end
+end
+
+local function DYHUB_HasGift()
+    local char = DYHUB_GetChar()
+    return char and char:FindFirstChild("Gift") ~= nil
+end
+
+-- ===== PLAYER WITH WEAPON NEAR =====
+local function DYHUB_PlayerWithWeaponNear(pos)
+    for _,plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local char = plr.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp and (hrp.Position - pos).Magnitude <= SAFE_DISTANCE then
+                for _,tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        return true
+                    end
+                end
+            end
         end
     end
     return false
 end
 
-local function DYHUB_GetEventFolders()
-    local folders = {}
-    for _,v in pairs(workspace.Map:GetChildren()) do
-        if DYHUB_IsNameMatch(v.Name, EventNames) then
-            table.insert(folders, v)
-        end
-    end
-    return folders
-end
-
-local function DYHUB_GetNearestModel(folder, modelName)
+-- ===== FIND NEAREST SAFE GIFT =====
+local function DYHUB_GetNearestGift()
     local hrp = DYHUB_GetHRP()
+    if not hrp then return nil end
+
     local nearest, dist = nil, math.huge
 
-    for _,obj in pairs(folder:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name == modelName and obj.PrimaryPart then
+    for _,obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model")
+            and obj.Name == "Gift"
+            and obj.PrimaryPart
+            and obj:FindFirstChild("GiftHandle") then
+
             local d = (hrp.Position - obj.PrimaryPart.Position).Magnitude
-            if d < dist then
+            if d < dist and not DYHUB_PlayerWithWeaponNear(obj.PrimaryPart.Position) then
                 dist = d
                 nearest = obj
             end
         end
     end
+
     return nearest
 end
 
-local function DYHUB_TeleportTo(cf)
-    DYHUB_GetHRP().CFrame = cf + Vector3.new(0,3,0)
-end
+-- ===== FIND NEAREST SAFE TREE =====
+local function DYHUB_GetNearestTree()
+    local hrp = DYHUB_GetHRP()
+    if not hrp then return nil end
 
-local function DYHUB_HasGift()
-    return DYHUB_GetCharacter():FindFirstChild("Gift") ~= nil
-end
+    local nearest, dist = nil, math.huge
 
--- ===== AUTO SEND MEMORY =====
-local DYHUB_LastPosition = nil
-local DYHUB_Sending = false
+    for _,obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "ChristmasTree" then
+            local pine = obj:FindFirstChild("TreePine")
+            if pine then
+                local pos =
+                    pine:IsA("BasePart") and pine.Position or
+                    (pine:IsA("Model") and pine.PrimaryPart and pine.PrimaryPart.Position)
+
+                if pos then
+                    local d = (hrp.Position - pos).Magnitude
+                    if d < dist and not DYHUB_PlayerWithWeaponNear(pos) then
+                        dist = d
+                        nearest = pine
+                    end
+                end
+            end
+        end
+    end
+
+    return nearest
+end
 
 -- ===== MAIN LOOP =====
 task.spawn(function()
     while true do
         task.wait(0.35)
 
-        for _,eventFolder in ipairs(DYHUB_GetEventFolders()) do
-
-            -- ===== AUTO SEND GIFT (NEAT MODE) =====
-            if AutoSendGift and DYHUB_HasGift() and not DYHUB_Sending then
-                DYHUB_Sending = true
-
-                -- จำตำแหน่งเดิม
-                DYHUB_LastPosition = DYHUB_GetHRP().CFrame
-
-                -- ไปต้นไม้
-                for _,sub in pairs(eventFolder:GetChildren()) do
-                    if DYHUB_IsNameMatch(sub.Name, TreeNames) then
-                        local tree = DYHUB_GetNearestModel(sub, "Model")
-                        if tree then
-                            DYHUB_TeleportTo(tree.PrimaryPart.CFrame)
-                            break
-                        end
-                    end
-                end
-
-                -- รอจน Gift หาย
-                repeat task.wait(0.2) until not DYHUB_HasGift()
-
-                -- วาร์ปกลับตำแหน่งเดิม
-                task.wait(0.3)
-                if DYHUB_LastPosition then
-                    DYHUB_TeleportTo(DYHUB_LastPosition)
-                    DYHUB_LastPosition = nil
-                end
-
-                DYHUB_Sending = false
-            end
-
-            -- ===== AUTO FARM (FULL LOOP) =====
-            if AutoFarm then
-
-                -- หา + เก็บ Gift
-                if not DYHUB_HasGift() then
-                    local giftModel = DYHUB_GetNearestModel(eventFolder, "Gift")
-                    if giftModel and giftModel:FindFirstChild("GiftHandle") then
-                        DYHUB_TeleportTo(giftModel.PrimaryPart.CFrame)
-                        task.wait(0.3)
-
-                        GiftRemote:FireServer(giftModel.GiftHandle)
-                        task.wait(0.8)
-                    end
-                end
-
-                -- ไปต้นไม้
-                if DYHUB_HasGift() then
-                    for _,sub in pairs(eventFolder:GetChildren()) do
-                        if DYHUB_IsNameMatch(sub.Name, TreeNames) then
-                            local tree = DYHUB_GetNearestModel(sub, "Model")
-                            if tree then
-                                DYHUB_TeleportTo(tree.PrimaryPart.CFrame)
-                                task.wait(1)
-                            end
-                        end
-                    end
-                end
-            end
-
+        if not DYHUB_IsAlive() or not DYHUB_GetHRP() then
+            task.wait(1)
+            continue
         end
+
+        pcall(function()
+
+            -- ===== AUTO SEND GIFT =====
+            if AutoSendGift and DYHUB_HasGift() and not SendingGift then
+                SendingGift = true
+                LastPosition = DYHUB_GetHRP().CFrame
+
+                local tree = DYHUB_GetNearestTree()
+                if tree then
+                    if tree:IsA("BasePart") then
+                        DYHUB_TP(tree.CFrame)
+                    elseif tree:IsA("Model") and tree.PrimaryPart then
+                        DYHUB_TP(tree.PrimaryPart.CFrame)
+                    end
+
+                    repeat task.wait(0.2) until not DYHUB_HasGift()
+                    task.wait(0.3)
+                    DYHUB_TP(LastPosition)
+                end
+
+                LastPosition = nil
+                SendingGift = false
+            end
+
+            -- ===== AUTO FARM =====
+            if AutoFarm then
+                -- ไปหา Gift
+                if not DYHUB_HasGift() then
+                    local gift = DYHUB_GetNearestGift()
+                    if gift then
+                        DYHUB_TP(gift.PrimaryPart.CFrame)
+                        task.wait(0.25)
+                        GiftRemote:FireServer(gift.GiftHandle)
+                        task.wait(0.15)
+                    end
+                end
+
+                -- ส่ง Gift (ไม่รอ)
+                if DYHUB_HasGift() then
+                    local tree = DYHUB_GetNearestTree()
+                    if tree then
+                        if tree:IsA("BasePart") then
+                            DYHUB_TP(tree.CFrame)
+                        elseif tree:IsA("Model") and tree.PrimaryPart then
+                            DYHUB_TP(tree.PrimaryPart.CFrame)
+                        end
+                        task.wait(0.15)
+                    end
+                end
+            end
+        end)
     end
 end)
 
@@ -3727,7 +3763,7 @@ MasTab:Toggle({
 
 -- ===== RESPAWN SAFE =====
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(2)
+    task.wait(3)
 end)
 
 -- ============= DISCORD ================= 
