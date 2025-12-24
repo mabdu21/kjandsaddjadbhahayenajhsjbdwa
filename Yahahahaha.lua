@@ -1,4 +1,4 @@
--- DYHUB | Evade - Upgraded Full Script (Version 4.5 - Improved)
+-- DYHUB | Evade - Upgraded Full Script (Version ni - Improved)
 -- Author: dyumra (upgraded) - provides safer checks, proper toggles, and resource cleanup.
 repeat task.wait() until game:IsLoaded()
 
@@ -42,14 +42,23 @@ end
 
 -- Window
 local Window = WindUI:CreateWindow({
-    Title = "DYHUB | Evade",
+    Title = "DYHUB",
     IconThemed = true,
-    Icon = "star",
-    Author = "Version: 4.5",
-    Size = UDim2.fromOffset(600, 400),
+    Icon = "rbxassetid://104487529937663",
+    Author = "Evade | Development Version",
+    Size = UDim2.fromOffset(500, 300),
     Transparent = true,
     Theme = "Dark",
 })
+
+Window:SetToggleKey(Enum.KeyCode.K)
+
+pcall(function()
+    Window:Tag({
+        Title = "EZZZZZ",
+        Color = Color3.fromHex("#ff0000")
+    })
+end)
 
 Window:EditOpenButton({
     Title = "DYHUB - Open",
@@ -455,7 +464,7 @@ GameTab:Toggle({
 
 -- Auto Farm Quest (separate toggle but reuses logic)
 GameTab:Toggle({
-    Title = "Auto Farm Point & Quest",
+    Title = "Auto Farm Point",
     Callback = function(state)
         featureStates.AutoFarmQuest = state
         if state then
@@ -522,7 +531,7 @@ GameTab:Toggle({
 })
 
 GameTab:Toggle({
-    Title = "Auto Farm Point & Quest",
+    Title = "Auto Farm Quest",
     Callback = function(state)
         featureStates.AutoFarmQuest = state
         if state then
@@ -616,8 +625,8 @@ GameTab:Toggle({
                                 for _, ticket in ipairs(tickets:GetChildren()) do
                                     local ticketPart = ticket:FindFirstChild("HumanoidRootPart") or ticket.PrimaryPart
                                     if ticketPart then
-                                        rootPart.CFrame = ticketPart.CFrame + Vector3.new(0,2,0)
-                                        task.wait(0.2)
+                                        rootPart.CFrame = ticketPart.CFrame + Vector3.new(0,1.5,0)
+                                        task.wait(1.11)
                                     end
                                 end
                                 teleportToSafeSpot(rootPart)
