@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v930
 -- ======================
-local version = "4.5.5"
+local version = "4.5.7"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -182,8 +182,10 @@ local InfoTab = Window:Tab({ Title = "Information", Icon = "info" })
 local Main1Divider = Window:Divider()
 local SurTab = Window:Tab({ Title = "Survivor", Icon = "user-check" })
 local killerTab = Window:Tab({ Title = "Killer", Icon = "swords" })
+--[[
 local Main3Divider = Window:Divider()
 local MasTab = Window:Tab({ Title = "Xmas", Icon = "tree-pine" })
+--]]
 local Main2Divider = Window:Divider()
 local MainTab = Window:Tab({ Title = "Main", Icon = "rocket" })
 local EspTab = Window:Tab({ Title = "Esp", Icon = "eye" })
@@ -842,6 +844,7 @@ EspTab:Toggle({Title="ESP Window", Value=false, Callback=function(v)
     espWindowEnabled=v
     updateWindowESP()
 end})
+--[[
 
 EspTab:Section({ Title = "Esp Event", Icon = "candy-cane" })
 EspTab:Toggle({Title="ESP Tree", Value=false, Callback=function(v)
@@ -852,7 +855,7 @@ EspTab:Toggle({Title="ESP Gift", Value=false, Callback=function(v)
     espGift=v
     updateEventESP()
 end})
-
+--]]
 EspTab:Section({ Title = "Esp Settings", Icon = "settings" })
 EspTab:Toggle({Title="Show Name", Value=ShowName, Callback=function(v) ShowName=v end})
 EspTab:Toggle({Title="Show Distance", Value=ShowDistance, Callback=function(v) ShowDistance=v end})
@@ -861,7 +864,94 @@ EspTab:Toggle({Title="Show Highlight", Value=ShowHighlight, Callback=function(v)
 EspTab:Toggle({Title="Show Percent", Value=ShowPercent, Callback=function(v) ShowPercent=v end})
 
 -- ====================== BYPASS GATE ======================
-MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
+MainTab:Section({ Title = "Feature Gameplay", Icon = "target" })
+
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- SETTINGS
+local CrosshairEnabled = true
+local Crosshair
+
+-- CREATE CROSSHAIR
+local function CreateCrosshair()
+
+	if PlayerGui:FindFirstChild("CrosshairGUI") then
+		return
+	end
+
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "CrosshairGUI"
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.IgnoreGuiInset = true
+	ScreenGui.Parent = PlayerGui
+
+	local Frame = Instance.new("Frame")
+	Frame.Name = "Crosshair"
+	Frame.Size = UDim2.new(0,5,0,5)
+	Frame.AnchorPoint = Vector2.new(0.5,0.5)
+	Frame.Position = UDim2.new(0.5,0,0.5,0)
+	Frame.BackgroundColor3 = Color3.new(1,1,1)
+	Frame.BackgroundTransparency = 0.3
+	Frame.BorderSizePixel = 0
+	Frame.ZIndex = 999
+	Frame.Parent = ScreenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1,0)
+	corner.Parent = Frame
+
+	Crosshair = Frame
+
+	-- กันโดนปิด
+	Frame:GetPropertyChangedSignal("Visible"):Connect(function()
+		if CrosshairEnabled and not Frame.Visible then
+			Frame.Visible = true
+		end
+	end)
+
+end
+
+-- REMOVE CROSSHAIR
+local function RemoveCrosshair()
+	local gui = PlayerGui:FindFirstChild("CrosshairGUI")
+	if gui then
+		gui:Destroy()
+	end
+end
+
+-- TOGGLE
+local function ToggleCrosshair(state)
+
+	CrosshairEnabled = state
+
+	if state then
+		CreateCrosshair()
+	else
+		RemoveCrosshair()
+	end
+
+end
+
+-- ถ้า GUI โดนลบ ให้สร้างใหม่
+PlayerGui.ChildRemoved:Connect(function(child)
+
+	if child.Name == "CrosshairGUI" and CrosshairEnabled then
+		task.defer(CreateCrosshair)
+	end
+
+end)
+
+-- UI Toggle
+MainTab:Toggle({
+	Title = "Enable Cursor (Recommended)",
+	Value = CrosshairEnabled,
+	Callback = function(state)
+		ToggleCrosshair(state)
+	end
+})
 
 MainTab:Button({ 
     Title = "Aimbot (NEW)", 
@@ -1117,7 +1207,7 @@ local autoparry = false
 local autoShoot = false
 
 SurTab:Toggle({
-    Title = "Auto Shoot (DONT USE IN DEV)",
+    Title = "Auto Shoot (STILL BUG)",
     Value = false,
     Callback = function(v)
         autoShoot = v
@@ -1154,7 +1244,7 @@ SurTab:Toggle({
 })
 
 SurTab:Toggle({
-    Title = "Auto Parry (DONT USE IN DEV)",
+    Title = "Auto Parry (STILL BUG)",
     Value = false,
     Callback = function(v)
         autoparry = v
@@ -1499,7 +1589,7 @@ SurTab:Toggle({
     end
 })
 
-SurTab:Section({ Title = "Feature Heal (TESTING)", Icon = "cross" })
+SurTab:Section({ Title = "Feature Heal", Icon = "cross" })
 
 -- Auto Heal
 local UserInputService = game:GetService("UserInputService")
@@ -1507,7 +1597,7 @@ local UserInputService = game:GetService("UserInputService")
 local autoHealEnabled = false
 
 SurTab:Toggle({
-    Title = "Auto SkillCheck (Perfect)",
+    Title = "Auto SkillCheck (STILL BUG)",
     Value = false,
     Callback = function(v)
         autoHealEnabled = v
@@ -1615,7 +1705,7 @@ SurTab:Toggle({
 local autoHealEnabled2 = false
 
 SurTab:Toggle({
-    Title = "Auto SkillCheck (Not Perfect)",
+    Title = "Auto SkillCheck (STILL BUG)",
     Value = false,
     Callback = function(v)
         autoHealEnabled2 = v
@@ -3075,6 +3165,7 @@ MainTab:Toggle({
 })
 
 MainTab:Section({ Title = "Misc", Icon = "settings" })
+
 local AntiAFK = false
 MainTab:Toggle({
     Title = "Anti AFK",
@@ -3098,7 +3189,7 @@ local speedEnabled, flyNoclipSpeed = false, 3
 local speedConnection, noclipConnection
 
 PlayerTab:Section({ Title = "Feature Player", Icon = "rabbit" })
-PlayerTab:Slider({ Title = "Set Speed Value", Value={Min=1,Max=999,Default=5}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
+PlayerTab:Slider({ Title = "Set Speed (Legit = 3)", Value={Min=1,Max=999,Default=5}, Step=1, Callback=function(val) flyNoclipSpeed=val end })
 
 PlayerTab:Toggle({ Title = "Enable Speed", Value=false, Callback=function(v)
     speedEnabled=v
@@ -3178,7 +3269,7 @@ local hitboxEnabled = false
 local hitboxConnection
 
 Hitbox:Paragraph({
-    Title = "Hitbox System (Killer Only)",
+    Title = "Hitbox System (Patched)",
     Desc = "• Universal Killer Support\n• Precision Slash Modules\n• Optimized Range Handler",
     Image = "rbxassetid://104487529937663",
     ImageSize = 45,
@@ -3424,6 +3515,7 @@ TeleportTab:Button({
 -- ==============================
 -- Gift Teleport
 -- ==============================
+--[[
 TeleportTab:Section({ Title = "Teleport: Gift", Icon = "gift" })
 
 local giftList = getAllGifts()
@@ -3502,6 +3594,7 @@ TeleportTab:Button({
         TreeDropdown:Update(t)
     end
 })
+--]]
 
 TeleportTab:Section({ Title = "Teleport: Refresh", Icon = "loader" })
 
@@ -3520,7 +3613,7 @@ TeleportTab:Button({
         end
         GenTarget = nil
 
-        -- ===== GIFT =====
+        --[[ ===== GIFT =====
         giftList = getAllGifts()
         if GiftDropdown then
             local giftValues = {}
@@ -3541,6 +3634,7 @@ TeleportTab:Button({
             TreeDropdown:Update(treeValues)
         end
         TreeTarget = nil
+--]]
 
         print("[Teleport] Refresh All completed")
     end
