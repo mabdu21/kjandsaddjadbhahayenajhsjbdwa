@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v930
 -- ======================
-local version = "4.5.7"
+local version = "4.5.8"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -824,7 +824,7 @@ EspTab:Toggle({Title="Enable ESP", Value=false, Callback=function(v)
     else
         updateESP(0)
         updateWindowESP()
-		updateEventESP()
+		--updateEventESP()
         --updatePumkinESP()
     end
 end})
@@ -864,97 +864,10 @@ EspTab:Toggle({Title="Show Highlight", Value=ShowHighlight, Callback=function(v)
 EspTab:Toggle({Title="Show Percent", Value=ShowPercent, Callback=function(v) ShowPercent=v end})
 
 -- ====================== BYPASS GATE ======================
-MainTab:Section({ Title = "Feature Gameplay", Icon = "target" })
-
-local Players = game:GetService("Players")
-
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- SETTINGS
-local CrosshairEnabled = true
-local Crosshair
-
--- CREATE CROSSHAIR
-local function CreateCrosshair()
-
-	if PlayerGui:FindFirstChild("CrosshairGUI") then
-		return
-	end
-
-	local ScreenGui = Instance.new("ScreenGui")
-	ScreenGui.Name = "CrosshairGUI"
-	ScreenGui.ResetOnSpawn = false
-	ScreenGui.IgnoreGuiInset = true
-	ScreenGui.Parent = PlayerGui
-
-	local Frame = Instance.new("Frame")
-	Frame.Name = "Crosshair"
-	Frame.Size = UDim2.new(0,5,0,5)
-	Frame.AnchorPoint = Vector2.new(0.5,0.5)
-	Frame.Position = UDim2.new(0.5,0,0.5,0)
-	Frame.BackgroundColor3 = Color3.new(1,1,1)
-	Frame.BackgroundTransparency = 0.3
-	Frame.BorderSizePixel = 0
-	Frame.ZIndex = 999
-	Frame.Parent = ScreenGui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1,0)
-	corner.Parent = Frame
-
-	Crosshair = Frame
-
-	-- กันโดนปิด
-	Frame:GetPropertyChangedSignal("Visible"):Connect(function()
-		if CrosshairEnabled and not Frame.Visible then
-			Frame.Visible = true
-		end
-	end)
-
-end
-
--- REMOVE CROSSHAIR
-local function RemoveCrosshair()
-	local gui = PlayerGui:FindFirstChild("CrosshairGUI")
-	if gui then
-		gui:Destroy()
-	end
-end
-
--- TOGGLE
-local function ToggleCrosshair(state)
-
-	CrosshairEnabled = state
-
-	if state then
-		CreateCrosshair()
-	else
-		RemoveCrosshair()
-	end
-
-end
-
--- ถ้า GUI โดนลบ ให้สร้างใหม่
-PlayerGui.ChildRemoved:Connect(function(child)
-
-	if child.Name == "CrosshairGUI" and CrosshairEnabled then
-		task.defer(CreateCrosshair)
-	end
-
-end)
-
--- UI Toggle
-MainTab:Toggle({
-	Title = "Enable Cursor (Recommended)",
-	Value = CrosshairEnabled,
-	Callback = function(state)
-		ToggleCrosshair(state)
-	end
-})
+MainTab:Section({ Title = "Feature Aimbot", Icon = "target" })
 
 MainTab:Button({ 
-    Title = "Aimbot (NEW)", 
+    Title = "Aimbot (Cursor inside)", 
     Callback = function()
        loadstring(game:HttpGet("https://pastefy.app/Y6ui9r3d/raw"))()
     end
