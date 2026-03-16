@@ -1,4 +1,4 @@
--- Powered by GPT 5 | v930
+-- Powered by GPT 5 | v935
 -- ======================
 local version = "4.5.9"
 -- ======================
@@ -3367,12 +3367,15 @@ TeleportTab:Dropdown({
     Values = {"Lobby","Game"},
     Callback = function(v) Place = v end
 })
-
 TeleportTab:Button({
     Title = "Teleport",
     Callback = function()
         if Place == "Lobby" then
-            LocalPlayer.Character:PivotTo(CFrame.new(LOBBY_POSITION))
+            local spawn = workspace:FindFirstChild("SpawnLocation")
+            if spawn and LocalPlayer.Character then
+                LocalPlayer.Character:PivotTo(spawn.CFrame + Vector3.new(0,1,0))
+            end
+
         elseif Place == "Game" then
             for _,p in ipairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Weapon") then
@@ -3383,6 +3386,7 @@ TeleportTab:Button({
         end
     end
 })
+
 
 -- ==============================
 -- Generator Teleport
