@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v930
 -- ======================
-local version = "4.5.8"
+local version = "4.5.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -203,7 +203,7 @@ local ESPGENERATOR = false
 local ESPGATE      = false
 local ESPPALLET    = false
 local ESPWINDOW    = false
-local ESPPUMKIN    = false
+--local ESPPUMKIN    = false
 local ESPHOOK      = false
 
 -- Color config
@@ -214,16 +214,16 @@ local COLOR_GENERATOR_DONE = Color3.fromRGB(0,255,0)
 local COLOR_GATE           = Color3.fromRGB(255,255,255)
 local COLOR_PALLET         = Color3.fromRGB(255,255,0)
 --local COLOR_PUMKIN         = Color3.fromRGB(255, 165, 0)
-local COLOR_TREE = Color3.fromRGB(0,255,0)   -- เขียว
-local COLOR_GIFT = Color3.fromRGB(255,0,0)   -- แดง
+--local COLOR_TREE = Color3.fromRGB(0,255,0)   -- เขียว
+--local COLOR_GIFT = Color3.fromRGB(255,0,0)   -- แดง
 local COLOR_OUTLINE        = Color3.fromRGB(0,0,0)
 local COLOR_WINDOW         = Color3.fromRGB(175, 215, 230)
 local COLOR_HOOK           = Color3.fromRGB(255,0,0)
 
 -- State flags
 local espEnabled = false
-local espGift = false
-local espTree = false 
+--local espGift = false
+--local espTree = false 
 local espSurvivor = false
 local espMurder = false
 local espGenerator = false
@@ -3554,7 +3554,7 @@ TeleportTab:Button({
 })
 
 -- =============== FARM GIFT ===============
-
+--[[
 -- ===== SERVICES =====
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -3791,7 +3791,7 @@ MasTab:Toggle({
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(3)
 end)
-
+--]]
 
 -- ============= DISCORD ================= 
 
