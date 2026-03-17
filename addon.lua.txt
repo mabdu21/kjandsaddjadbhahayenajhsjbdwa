@@ -1,6 +1,6 @@
 -- Powered by GPT 5 | v937
 -- ======================
-local version = "4.5.9"
+local version = "4.6.0"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -954,7 +954,7 @@ end)
 -- UI Toggle
 MainTab:Toggle({
 	Title = "Enable Cursor (Recommended)",
-	Value = true,
+	Value = false,
 	Callback = function(state)
 		ToggleCrosshair(state)
 	end
