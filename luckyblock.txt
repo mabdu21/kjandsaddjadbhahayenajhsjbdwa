@@ -1,4 +1,4 @@
--- test v2
+-- test v23
 
 repeat task.wait() until game:IsLoaded()
 
@@ -292,7 +292,7 @@ PlaceBest2:OnChanged(function(Value)
     delayPlaceBest = tonumber(Value) or 5
 end)
 
-local PlaceBest = Tabs.Main:AddToggle("PlaceBest", {
+local PlaceBest = Tabs.Upgrades:AddToggle("PlaceBest", {
     Title = "Auto PlaceBest Brainrots",
     Default = false
 })
