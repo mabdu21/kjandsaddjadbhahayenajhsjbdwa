@@ -1,4 +1,4 @@
--- Script taken from  website --
+-- test
 
 repeat task.wait() until game:IsLoaded()
 
@@ -730,7 +730,7 @@ Options.AutoFarmToggle:SetValue(false)
 -----
 -----
 local running2 = false
-local AutoFarmToggle2 = Tabs.Brainrots:AddToggle("AutoFarmToggle", {
+local AutoFarmToggle2 = Tabs.Brainrots:AddToggle("AutoFarmToggle2", {
     Title = "Auto Farm Best Brainrots 2",
     Default = false
 })
