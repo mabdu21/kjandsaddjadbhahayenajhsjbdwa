@@ -1,4 +1,4 @@
--- Verizon 51616161.181881
+-- Verizon 51616161.19
 if getgenv().DYHUB_Running then
     warn("Script already running!")
     return
@@ -4321,7 +4321,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "DYHUB | SP",
-	Footer = "" .. assetName .. " | by dyumra | Sailor Piece | Version 7.6.2",
+	Footer = "" .. assetName .. " | by dyumra | Sailor Piece | Version 7.6.4",
 	NotifySide = "Right",
     Icon = tostring(theChosenOne),
 	ShowCustomCursor = false,
@@ -4507,7 +4507,7 @@ local function GetData()
 
     local tier = "<font color='#ff0000'>Premium User</font>"
 
-    local timeStr = "Lifetime"
+    local timeStr = "null"
 
     return tier, timeStr
 end
