@@ -99,22 +99,22 @@ local omg = {
 }
 
 local fire = {
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/r23dDV0Y/avatar-1200x1200.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg",
-    "https://i.ibb.co/r23dDV0Y/avatar-1200x1200.jpg",
-    "https://i.ibb.co/1GrxgL38/avatar-736x736.jpg"
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png",
+    "https://i.ibb.co/MDcsP25X/DYHUB.png"
 }
 
 local randomIndex = math.random(1, #omg)
