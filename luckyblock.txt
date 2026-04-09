@@ -1,4 +1,4 @@
--- test
+-- test v2
 
 repeat task.wait() until game:IsLoaded()
 
@@ -272,31 +272,52 @@ end)
 Options.ACEPR:SetValue(false)
 -----
 -----
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local redeem = ReplicatedStorage
-    :WaitForChild("Packages")
-    :WaitForChild("_Index")
-    :WaitForChild("sleitnick_knit@1.7.0")
-    :WaitForChild("knit")
-    :WaitForChild("Services")
-    :WaitForChild("CodesService")
-    :WaitForChild("RF")
-    :WaitForChild("RedeemCode")
-local codes = {
-    "release"
-    -- add more codes here
-}
-Tabs.Main:AddButton({
-    Title = "Redeem All Codes",
-    Callback = function()
-        for _, code in ipairs(codes) do
-            pcall(function()
-                redeem:InvokeServer(code)
-            end)
-            task.wait(1)
-        end
+
+
+
+local running = false
+local delayPlaceBest = 5
+
+local PlaceBest2 = Tabs.Upgrades:AddInput("PlaceBest2", {
+    Title = "PlaceBest Delay",
+    Default = "5",
+    Placeholder = "Number",
+    Numeric = true,
+    Finished = false,
+    Callback = function(Value)
+        delayPlaceBest = tonumber(Value) or 5
     end
 })
+PlaceBest2:OnChanged(function(Value)
+    delayPlaceBest = tonumber(Value) or 5
+end)
+
+local PlaceBest = Tabs.Main:AddToggle("PlaceBest", {
+    Title = "Auto PlaceBest Brainrots",
+    Default = false
+})
+
+PlaceBest:OnChanged(function(state)
+    running = state
+    
+    if state then
+        task.spawn(function()
+            while running do
+                pcall(function()
+                    game:GetService("ReplicatedStorage")
+                        .Packages._Index:FindFirstChild("sleitnick_knit@1.7.0")
+                        .knit.Services.ContainerService.RF.PlaceBest:InvokeServer()
+                end)
+                
+                task.wait(delayPlaceBest)
+            end
+        end)
+    end
+end)
+
+Options.PlaceBest:SetValue(false)
+
+    
 -----
 -----
 Tabs.Upgrades:AddSection("Speed Upgrades")
@@ -478,6 +499,34 @@ ABL:OnChanged(function(state)
 end)
 Options.ABL:SetValue(false)
 -----
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local redeem = ReplicatedStorage
+    :WaitForChild("Packages")
+    :WaitForChild("_Index")
+    :WaitForChild("sleitnick_knit@1.7.0")
+    :WaitForChild("knit")
+    :WaitForChild("Services")
+    :WaitForChild("CodesService")
+    :WaitForChild("RF")
+    :WaitForChild("RedeemCode")
+local codes = {
+    "RELEASE",
+    "R81KM461",
+    "GOD",
+    "DEVIL",
+    "ZEUS"
+}
+Tabs.Main:AddButton({
+    Title = "Redeem All Codes",
+    Callback = function()
+        for _, code in ipairs(codes) do
+            pcall(function()
+                redeem:InvokeServer(code)
+            end)
+            task.wait(1)
+        end
+    end
+})
 -----
 Tabs.Main:AddButton({
     Title = "Sell Held Brainrot",
