@@ -1,4 +1,4 @@
--- test v272
+-- test v272-1
 
 repeat task.wait() until game:IsLoaded()
 
@@ -923,7 +923,7 @@ AutoFarmToggle:OnChanged(function(state)
                 if not running then break end
 
                 if State.CollectEgg == true then
-                    task.wait(6.7)
+                    task.wait(3.67)
                 end
 
                 -- วาร์ป Model ไป Base
