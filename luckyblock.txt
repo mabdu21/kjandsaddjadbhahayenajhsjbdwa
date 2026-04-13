@@ -13,7 +13,7 @@ if setfpscap then
     setfpscap(1000000)
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "dsc.gg/dyhub",
-        Text = "Version: 2.7.1",
+        Text = "Version: 2.7.2",
         Duration = 2,
         Button1 = "Okay"
     })
