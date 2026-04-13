@@ -1,4 +1,4 @@
--- test v271
+-- test v272
 
 repeat task.wait() until game:IsLoaded()
 
@@ -856,14 +856,39 @@ Tabs.Brainrots:AddButton({
 })
 -----
 -----
-Tabs.Brainrots:AddSection("Farming")
+--// ================== SELECT BASE ================== //--
+local zonesFolder = workspace:WaitForChild("CollectZones")
+
+local zoneNames = {}
+for _, v in ipairs(zonesFolder:GetChildren()) do
+    table.insert(zoneNames, v.Name)
+end
+
+local SelectedZone = zoneNames[1]
+
+local Dropdown = Tabs.Brainrots:AddDropdown("Base", {
+    Title = "Select Base",
+    Values = zoneNames,
+    Multi = false,
+    Default = 1,
+})
+
+Dropdown:OnChanged(function(Value)
+    SelectedZone = Value
+    print("Selected Base:", Value)
+end)
+
+--// ================== AUTO FARM ================== //--
 local running = false
-local AutoFarmToggle = Tabs.Brainrots:AddToggle("AutoFarmToggle", {
-    Title = "Auto Farm Best Brainrots 1",
+
+local AutoFarmToggle = Tabs.Brainrots:AddToggle("AutoFarm", {
+    Title = "Auto Farm Brainrots",
     Default = false
 })
+
 AutoFarmToggle:OnChanged(function(state)
     running = state
+
     if state then
         task.spawn(function()
             while running do
@@ -872,103 +897,50 @@ AutoFarmToggle:OnChanged(function(state)
                 local root = character:WaitForChild("HumanoidRootPart")
                 local humanoid = character:WaitForChild("Humanoid")
                 local userId = player.UserId
-                local modelsFolder = workspace:WaitForChild("RunningModels")
-                local target = workspace:WaitForChild("CollectZones"):WaitForChild("base14")
-                root.CFrame = CFrame.new(715, 39, -2122)
-                task.wait(0.3)
-                humanoid:MoveTo(Vector3.new(710, 39, -2122))
-                local ownedModel = nil
-                repeat
-                    task.wait(0.3)
-                    for _, obj in ipairs(modelsFolder:GetChildren()) do
-                        if obj:IsA("Model") and obj:GetAttribute("OwnerId") == userId then
-                            ownedModel = obj
-                            break
-                        end
-                    end
-                until ownedModel ~= nil or not running
-                if not running then break end
-                if ownedModel.PrimaryPart then
-                    ownedModel:SetPrimaryPartCFrame(target.CFrame)
-                else
-                    local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                    if part then
-                        part.CFrame = target.CFrame
-                    end
-                end
-                task.wait(0.7)
-                if ownedModel and ownedModel.Parent == modelsFolder then
-                    if ownedModel.PrimaryPart then
-                        ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0, -5, 0))
-                    else
-                        local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                        if part then
-                            part.CFrame = target.CFrame * CFrame.new(0, -5, 0)
-                        end
-                    end
-                end
-                repeat
-                    task.wait(0.3)
-                until not running or (ownedModel == nil or ownedModel.Parent ~= modelsFolder)
-                if not running then break end
-                local oldCharacter = player.Character
-                repeat
-                    task.wait(0.2)
-                until not running or (player.Character ~= oldCharacter and player.Character ~= nil)
-                if not running then break end
-                task.wait(0.4)
-                local newChar = player.Character
-                local newRoot = newChar:WaitForChild("HumanoidRootPart")
-                newRoot.CFrame = CFrame.new(737, 39, -2118)
-                task.wait(2.1)
-            end
-        end)
-    end
-end)
-Options.AutoFarmToggle:SetValue(false)
 
------
------
-local running2 = false
-local AutoFarmToggle2 = Tabs.Brainrots:AddToggle("AutoFarmToggle2", {
-    Title = "Auto Farm Best Brainrots 2",
-    Default = false
-})
-AutoFarmToggle2:OnChanged(function(state)
-    running2 = state
-    if state then
-        task.spawn(function()
-            while running2 do
-                local player = game.Players.LocalPlayer
-                local character = player.Character or player.CharacterAdded:Wait()
-                local root = character:WaitForChild("HumanoidRootPart")
-                local humanoid = character:WaitForChild("Humanoid")
-                local userId = player.UserId
                 local modelsFolder = workspace:WaitForChild("RunningModels")
-                local target = workspace:WaitForChild("CollectZones"):WaitForChild("base15")
+                local targetFolder = workspace:WaitForChild("CollectZones")
+                local target = targetFolder:WaitForChild(SelectedZone)
+
+                -- ไปจุดเริ่ม
                 root.CFrame = CFrame.new(715, 39, -2122)
                 task.wait(0.3)
+
                 humanoid:MoveTo(Vector3.new(710, 39, -2122))
+
+                -- หา Model ของเรา
                 local ownedModel = nil
                 repeat
-                    task.wait(0.3)
+                    task.wait(0.25)
                     for _, obj in ipairs(modelsFolder:GetChildren()) do
                         if obj:IsA("Model") and obj:GetAttribute("OwnerId") == userId then
                             ownedModel = obj
                             break
                         end
                     end
-                until ownedModel ~= nil or not running2
-                if not running2 then break end
-                if ownedModel.PrimaryPart then
-                    ownedModel:SetPrimaryPartCFrame(target.CFrame)
-                else
-                    local part = ownedModel:FindFirstChildWhichIsA("BasePart")
-                    if part then
-                        part.CFrame = target.CFrame
+                until ownedModel or not running
+
+                if not running then break end
+
+                if State.CollectEgg == true then
+                    task.wait(6.7)
+                end
+
+                -- วาร์ป Model ไป Base
+                if ownedModel then
+                    if ownedModel.PrimaryPart then
+                        ownedModel:SetPrimaryPartCFrame(target.CFrame)
+                    else
+                        local part = ownedModel:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            part.CFrame = target.CFrame
+                        end
                     end
                 end
-                task.wait(0.7)
+
+                task.wait(0.6)
+
+                -- กดลงล่างให้เก็บ
                 if ownedModel and ownedModel.Parent == modelsFolder then
                     if ownedModel.PrimaryPart then
                         ownedModel:SetPrimaryPartCFrame(target.CFrame * CFrame.new(0, -5, 0))
@@ -979,25 +951,37 @@ AutoFarmToggle2:OnChanged(function(state)
                         end
                     end
                 end
+
+                -- รอจน Model หาย
                 repeat
-                    task.wait(0.3)
-                until not running2 or (ownedModel == nil or ownedModel.Parent ~= modelsFolder)
-                if not running2 then break end
+                    task.wait(0.25)
+                until not running or (not ownedModel or ownedModel.Parent ~= modelsFolder)
+
+                if not running then break end
+
+                -- รอเกิดใหม่
                 local oldCharacter = player.Character
                 repeat
                     task.wait(0.2)
-                until not running2 or (player.Character ~= oldCharacter and player.Character ~= nil)
-                if not running2 then break end
-                task.wait(0.4)
+                until not running or (player.Character ~= oldCharacter and player.Character)
+
+                if not running then break end
+
+                task.wait(0.3)
+
+                -- วาร์ปกลับ
                 local newChar = player.Character
                 local newRoot = newChar:WaitForChild("HumanoidRootPart")
                 newRoot.CFrame = CFrame.new(737, 39, -2118)
-                task.wait(2.1)
+
+                task.wait(1.8)
             end
         end)
     end
 end)
-Options.AutoFarmToggle2:SetValue(false)
+
+Options.AutoFarm:SetValue(false)
+                
 
 
 
