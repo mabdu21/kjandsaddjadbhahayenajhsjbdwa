@@ -1,6 +1,32 @@
--- test v23
+-- test v271
 
 repeat task.wait() until game:IsLoaded()
+
+local vu = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    task.wait(67)
+    vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+
+if setfpscap then
+    setfpscap(1000000)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Version: 2.7.1",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Anti AFK Enabled & FPS Unlocked!")
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "dsc.gg/dyhub",
+        Text = "Anti AFK Enabled (FPS Unlock Not Supported)",
+        Duration = 2,
+        Button1 = "Okay"
+    })
+    warn("Anti AFK Enabled but setfpscap is missing.")
+end
 
 getgenv().Image = "rbxassetid://104487529937663"
 getgenv().ToggleUI = Enum.KeyCode.LeftControl
@@ -138,6 +164,7 @@ local Window = Fluent:CreateWindow({
 })
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "rocket" }),
+    Event = Window:AddTab({ Title = "Event", Icon = "gift" }),
     Upgrades = Window:AddTab({ Title = "Upgrades", Icon = "gauge" }),
     Brainrots = Window:AddTab({ Title = "Brainrots", Icon = "bot" }),
     Stats = Window:AddTab({ Title = "Stats", Icon = "box" }),
@@ -175,9 +202,9 @@ ACPR:OnChanged(function(state)
                 local success, err = pcall(function()
                     claimGift:InvokeServer(reward)
                 end)
-                task.wait(0.25)
+                task.wait(1)
             end
-            task.wait(1)
+            task.wait(10)
         end
     end)
 end)
@@ -207,7 +234,7 @@ AR:OnChanged(function(state)
             pcall(function()
                 rebirth:InvokeServer()
             end)
-            task.wait(1)
+            task.wait(5)
         end
     end)
 end)
@@ -273,6 +300,126 @@ Options.ACEPR:SetValue(false)
 -----
 -----
 
+--// Services
+local RS = game:GetService("ReplicatedStorage")
+local Knit = RS.Packages._Index:FindFirstChild("sleitnick_knit@1.7.0").knit
+local EventService = Knit.Services.EventService
+
+--// States (แยกทุกระบบ)
+local State = {
+    CollectEgg = false,
+    Buy1 = false,
+    Buy3 = false
+}
+
+--// Values
+local ACEValue = 0.05
+
+--========================--
+-- Auto Collect Egg
+--========================--
+
+local ACE2 = Tabs.Event:AddInput("ACE2", {
+    Title = "Auto Collect Egg Delay",
+    Default = "0.05",
+    Placeholder = "Number",
+    Numeric = true,
+    Finished = false
+})
+
+ACE2:OnChanged(function(Value)
+    ACEValue = tonumber(Value) or 0.05
+end)
+
+local ACE = Tabs.Event:AddToggle("ACE", {
+    Title = "Auto Collect Easter Egg",
+    Default = false
+})
+
+ACE:OnChanged(function(state)
+    State.CollectEgg = state
+    
+    if state then
+        task.spawn(function()
+            while State.CollectEgg do
+                pcall(function()
+                    EventService.RF.CollectEgg:InvokeServer()
+                end)
+                task.wait(ACEValue)
+            end
+        end)
+    end
+end)
+
+Options.ACE:SetValue(false)
+
+--========================--
+-- Auto Buy Lucky Block x1
+--========================--
+
+local ABLB1 = Tabs.Event:AddToggle("ABLB1", {
+    Title = "Auto Buy Lucky Block (x1)",
+    Default = false
+})
+
+ABLB1:OnChanged(function(state)
+    State.Buy1 = state
+    
+    if state then
+        task.spawn(function()
+            while State.Buy1 do
+                pcall(function()
+                    EventService.RF.BuyEventShopItem:InvokeServer("Buy1")
+                end)
+                task.wait(5)
+            end
+        end)
+    end
+end)
+
+Options.ABLB1:SetValue(false)
+
+--========================--
+-- Auto Buy Lucky Block x3
+--========================--
+
+local ABLB3 = Tabs.Event:AddToggle("ABLB3", {
+    Title = "Auto Buy Lucky Block (x3)",
+    Default = false
+})
+
+ABLB3:OnChanged(function(state)
+    State.Buy3 = state
+    
+    if state then
+        task.spawn(function()
+            while State.Buy3 do
+                pcall(function()
+                    EventService.RF.BuyEventShopItem:InvokeServer("Buy3")
+                end)
+                task.wait(5)
+            end
+        end)
+    end
+end)
+
+Options.ABLB3:SetValue(false)
+
+--========================--
+-- Buy Unique Pet
+--========================--
+
+Tabs.Event:AddButton({
+    Title = "Buy Unique Pet",
+    Callback = function()
+        pcall(function()
+            EventService.RF.BuyEventShopItem:InvokeServer("BuyUnique")
+        end)
+    end
+})
+
+    
+-- =============================
 
 
 local running = false
@@ -434,7 +581,7 @@ local function parseCash(text)
 end
 local running = false
 local ABL = Tabs.Main:AddToggle("ABL", {
-    Title = "Auto Buy Best Luckyblock",
+    Title = "Auto Buy Best Lucky Block",
     Default = false
 })
 ABL:OnChanged(function(state)
@@ -510,12 +657,16 @@ local redeem = ReplicatedStorage
     :WaitForChild("RF")
     :WaitForChild("RedeemCode")
 local codes = {
+    "M2ZF4KYR",
+    "EASTER",
+    "FIX31",
     "RELEASE",
     "R81KM461",
     "GOD",
     "DEVIL",
     "ZEUS"
 }
+
 Tabs.Main:AddButton({
     Title = "Redeem All Codes",
     Callback = function()
