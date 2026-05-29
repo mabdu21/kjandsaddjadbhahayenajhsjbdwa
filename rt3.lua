@@ -6,8 +6,8 @@ end
 
 local KINGHUB01 = 'https://raw.githubusercontent.com/KINGHUB01/Gui/main/'
 
-local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/dyumra/Library-DYHUB/refs/heads/main/library.lua'))()
-local theme_manager = loadstring(game:HttpGet('https://raw.githubusercontent.com/dyumra/Library-DYHUB/refs/heads/main/ThemeManager.lua'))()
+local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/KINGHUB01/Gui/refs/heads/main/Gui%20Lib%20%5BLibrary%5D'))()
+local theme_manager = loadstring(game:HttpGet('https://raw.githubusercontent.com/KINGHUB01/Gui/refs/heads/main/Gui%20Lib%20%5BThemeManager%5D'))()
 local save_manager = loadstring(game:HttpGet(KINGHUB01 .. 'Gui%20Lib%20%5BSaveManager%5D'))()
 
 local window = library:CreateWindow({
