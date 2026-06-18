@@ -31,7 +31,7 @@ VEHICLE_READY_TIMEOUT = 22
 VEHICLE_STABLE_TIME = 0.35
 BOUGHT_NEAREST_RADIUS = 65
 BUY_MAX_TARGET_ATTEMPTS = 12
-SELL_RETRY_AFTER_BLOCK = 25
+SELL_RETRY_AFTER_BLOCK = 15
 MOVEABLE_REAPPLY_RADIUS = 100
 REAPPLY_RETRY_ATTEMPTS = 3
 REAPPLY_RETRY_DELAY = 0.35
@@ -46,7 +46,7 @@ PARALLEL_ASSIGN_TIMEOUT = 1.75
 PART_TP_VERIFY_RADIUS = 5.5
 PART_TP_RETRIES = 7
 PART_TP_SETTLE_FAST = 0.28
-CAR_TWEEN_SPEED = 85
+CAR_TWEEN_SPEED = 125
 CAR_TWEEN_MIN_TIME = 0.35
 CAR_TWEEN_MAX_TIME = 9.00
 
@@ -82,7 +82,11 @@ JUNKYARD_SELECT_OPTIONS = {
     {Text = "< 1%",  Value = 1},
     {Text = "< 2%",  Value = 2},
     {Text = "< 3%",  Value = 3},
+    {Text = "< 4%",  Value = 4},
+    {Text = "< 5%",  Value = 5},
     {Text = "< 10%", Value = 10},
+    {Text = "< 15%", Value = 15},
+    {Text = "< 19%", Value = 19},
     {Text = "< 20%", Value = 20},
     {Text = "< 30%", Value = 30},
     {Text = "< 40%", Value = 40},
