@@ -1,4 +1,29 @@
--- // 52415
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
+
+if getconnections then
+    for _, connection in ipairs(getconnections(LocalPlayer.Idled)) do
+        pcall(function()
+            if connection.Disable then
+                connection:Disable()
+            elseif connection.Disconnect then
+                connection:Disconnect()
+            end
+        end)
+    end
+else
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end
+
+print("[DYHUB] Anti AFK")
+task.wait()
 local Players        = game:GetService("Players")
 local TweenService   = game:GetService("TweenService")
 local UIS            = game:GetService("UserInputService")
