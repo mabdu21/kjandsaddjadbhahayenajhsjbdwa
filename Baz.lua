@@ -189,7 +189,7 @@ myConfig:Register("AutoFoodEnabled", FoodToggle)
 
 Main:Section({ Title = "Collect", Icon = "dollar-sign" })
 
-local timw = MainTab:Slider({
+local timw = Main:Slider({
     Title    = "Collect Delay (sec)",
     Value    = { Min=1, Max=200, Default=wtvalue },
     Step     = 1,
@@ -434,7 +434,7 @@ Main:Button({
             pcall(function()
                 Event:Fire(
                     "Coin",
-                    9000000000,
+                    900000000,
                     "rbxassetid://87534904975459"
                 )
             end)
