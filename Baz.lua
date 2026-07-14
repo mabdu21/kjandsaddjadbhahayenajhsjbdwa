@@ -52,6 +52,7 @@ local AutoSpinEnabled3 = false
 local wtvalue = 10
 local AutoBuyEggEnabled = false
 local autoPlaceEggs = false
+local autopickEggs = false
 local dinoDelay = 5
 
 local SelectedPotions = {}
@@ -891,6 +892,30 @@ local PlaceEggToggle = Egg:Toggle({
 })
 
 myConfig:Register("autoPlaceEggs", PlaceEggToggle)
+
+Egg:Section({ Title = "Action Pet", Icon = "bone" })
+
+local PickEggToggle = Egg:Toggle({
+    Title = "Auto Pickup Pet (Need equip hammer)",
+    Desc = "Automatically pickup pet in available slots.",
+    Value = false,
+    Callback = function(state)
+        autopickEggs = state
+
+        if state then
+            task.spawn(function()
+                while autopickEggs do
+                    TriggerPrompt("Recall")
+                    task.wait(0.8)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
+
+myConfig:Register("autopickEggs", PickEggToggle)
 
 -- ====================== EVENT ======================
 Event:Section({ Title = "Event: Void", Icon = "atom" })
