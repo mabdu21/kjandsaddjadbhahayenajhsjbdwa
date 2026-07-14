@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.7.2"
+local version = "3.7.3"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -217,7 +217,7 @@ local RedeemCodeDropdown = Buff:Dropdown({
     Title = "Select Code",
     Desc = "Choose a promo code to redeem.",
     Values = CodeList,
-    Multi = false,
+    Multi = true,
     Callback = function(value)
         SelectedCode = value
         myConfig:Save()
@@ -859,7 +859,7 @@ local HatchToggle = Egg:Toggle({
             task.spawn(function()
                 while autoHatch do
                     TriggerPrompt("Hatch")
-                    task.wait(0.1)
+                    task.wait(1.2)
                 end
             end)
         end
@@ -881,7 +881,7 @@ local PlaceEggToggle = Egg:Toggle({
             task.spawn(function()
                 while autoPlaceEggs do
                     TriggerPrompt("Place")
-                    task.wait(0.1)
+                    task.wait(1.2)
                 end
             end)
         end
