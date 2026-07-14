@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.7.0"
+local version = "3.7.1"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -136,8 +136,7 @@ local Egg = Window:Tab({Title="Egg", Icon="egg"})
 local Auto = Window:Tab({Title="Shop", Icon="shopping-cart"})
 local Player = Window:Tab({Title="Player", Icon="user"})
 local Event = Window:Tab({Title="Event", Icon="party-popper"})
-local Buff = Window:Tab({Title="Buff", Icon="biceps-flexed"})
-local Codes = Window:Tab({Title="Codes", Icon="gift"})
+local Buff = Window:Tab({Title="Misc", Icon="file-cog"})
 Window:SelectTab(1)
 
 -- ====================== CONFIG MANAGER ======================
@@ -207,14 +206,14 @@ local AntiAFKToggle = Player:Toggle({
 myConfig:Register("AntiAFKEnabled", AntiAFKToggle)
 
 -- ====================== CODES TAB ======================
-Codes:Section({
+Buff:Section({
     Title = "Redeem Code",
     Icon = "gift"
 })
 
 local SelectedCode = CodeList[1]
 
-local RedeemCodeDropdown = Codes:Dropdown({
+local RedeemCodeDropdown = Buff:Dropdown({
     Title = "Select Code",
     Desc = "Choose a promo code to redeem.",
     Values = CodeList,
@@ -226,7 +225,7 @@ local RedeemCodeDropdown = Codes:Dropdown({
 })
 myConfig:Register("SelectedCode", RedeemCodeDropdown)
 
-local RedeemCodeToggle = Auto:Toggle({
+local RedeemCodeToggle = Buff:Toggle({
     Title = "Auto Redeem Code",
     Desc = "Automatically claim available promo codes.",
     Value = false,
