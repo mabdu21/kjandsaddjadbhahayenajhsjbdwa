@@ -83,7 +83,7 @@ local eggTypes = {
     "OceanSunfishEgg","PinkUnicorn","PirateCrabEgg","PurpleButterflyEgg","OakenEgg","NinjaDogEgg",
     "NarwhalEgg","NanoRamEgg","LobsterEgg","MagicRabbitEgg","LittieMonsterEgg","KnightHorse",
     "GreenStormEgg","GlassesRabbitEgg","FlyingsquirrelEgg","GingerCatEgg","FlowerWhaleEgg","FlowerBatEgg",
-    "FennecFoxEgg","EggshellDinosaurEgg","DrakespineEgg","DivineDeerEgg","CyberDragonEgg","BullDemonEgg","ArowanaEgg"
+    "FennecFoxEgg","EggshellDinosaurEgg","DrakespineEgg","DivineDeerEgg","CyberDragonEgg","BullDemonEgg","ArowanaEgg","PetalwingEgg"
 }
 
 local PotionList = {"All", "Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
@@ -859,7 +859,7 @@ local HatchToggle = Egg:Toggle({
             task.spawn(function()
                 while autoHatch do
                     TriggerPrompt("Hatch")
-                    task.wait(1.2)
+                    task.wait(0.8)
                 end
             end)
         end
@@ -881,7 +881,7 @@ local PlaceEggToggle = Egg:Toggle({
             task.spawn(function()
                 while autoPlaceEggs do
                     TriggerPrompt("Place")
-                    task.wait(1.2)
+                    task.wait(0.8)
                 end
             end)
         end
