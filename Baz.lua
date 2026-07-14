@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.7.3"
+local version = "3.7.4"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -89,7 +89,7 @@ local eggTypes = {
 local PotionList = {"All", "Potion_Coin","Potion_Luck","Potion_Hatch","Potion_3in1"}
 local BaitList = {"All", "FishingBait1","FishingBait2","FishingBait3"}
 local ConveyorList = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14"}
-local EquipConveyorList = {"1","2","3","4","5","6","7","8","9","10"}
+local EquipConveyorList = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14"}
 local CodeList = {
     "RABBITHAT30","MERRYTIMES2026","4XW5RG4CHRY","N7A68Q82H83",
     "3XKK8Z2WB6G","DS5523YSQ3C","SANTASWORKS","ZooFish829",
@@ -838,7 +838,7 @@ local function TriggerPrompt(actionText)
 
             local part = obj.Parent
             if part and part:IsA("BasePart") then
-                if (part.Position - hrp.Position).Magnitude <= 30 then
+                if (part.Position - hrp.Position).Magnitude <= 100 then
                     pcall(function()
                         fireproximityprompt(obj)
                     end)
