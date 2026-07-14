@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.5.9"
+local version = "3.6.0"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -39,6 +39,7 @@ local autoHatch = false
 local AutoEquip = false
 local AutoPotion = false
 local AutoCollectEnabled_Coin = false
+local AutoCollectEnabled_CoinWT = false
 local autoCollectDino = false
 local AutoBuyConveyor = false
 local AutoDinoEnabled = false
@@ -187,6 +188,47 @@ myConfig:Register("AutoFoodEnabled", FoodToggle)
 
 Main:Section({ Title = "Collect Coin", Icon = "egg" })
 
+local CollectCoinToggleWT = Main:Toggle({
+    Title = "Auto Collect (Without Tp)",
+    Value = false,
+    Callback = function(state)
+        AutoCollectEnabled_CoinWT = state
+
+        if state then
+            task.spawn(function()
+                local player = game:GetService("Players").LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local hrp = character:WaitForChild("HumanoidRootPart")
+
+                player.CharacterAdded:Connect(function(char)
+                    character = char
+                    hrp = char:WaitForChild("HumanoidRootPart")
+                end)
+
+                while AutoCollectEnabled_CoinWT do
+                    local petsFolder = workspace:WaitForChild("Pets")
+
+                    for _, pet in pairs(petsFolder:GetChildren()) do
+                        local trg = pet:FindFirstChild("TrgIdle")
+
+                        if trg and trg:FindFirstChild("TouchInterest") then
+                            pcall(function()
+                                firetouchinterest(hrp, trg, 0)
+                                firetouchinterest(hrp, trg, 1)
+                            end)
+                        end
+                    end
+
+                    task.wait(0.05)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoCollectEnabled_CoinWT", CollectCoinToggleWT)
+
 local function getClosestPet()
     local petsFolder = workspace:FindFirstChild("Pets")
     if not petsFolder then return nil end
@@ -214,7 +256,7 @@ local function getClosestPet()
 end
 
 local CollectCoinToggle = Main:Toggle({
-    Title = "Auto Collect (Under Fixing)",
+    Title = "Auto Collect (Teleport)",
     Value = false,
     Callback = function(state)
         AutoCollectEnabled_Coin = state
