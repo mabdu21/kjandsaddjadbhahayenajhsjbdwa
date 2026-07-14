@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.6.0"
+local version = "3.6.2"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -49,6 +49,7 @@ local AutoFishEnabled = false
 local AutoSpinEnabled = false
 local AutoSpinEnabled2 = false
 local AutoSpinEnabled3 = false
+local wtvalue = 10
 local AutoBuyEggEnabled = false
 
 local SelectedPotions = {}
@@ -186,7 +187,19 @@ myConfig:Register("AutoFoodEnabled", FoodToggle)
 -- 🪙 Auto Teleport to Closest Pet v4.0
 -- =========================
 
-Main:Section({ Title = "Collect Coin", Icon = "egg" })
+Main:Section({ Title = "Collect", Icon = "dollar-sign" })
+
+local timw = MainTab:Slider({
+    Title    = "Collect Delay (sec)",
+    Value    = { Min=1, Max=200, Default=wtvalue },
+    Step     = 1,
+    Callback = function(v)
+        wtvalue = v
+        myConfig:Save()
+
+    end
+})
+myConfig:Register("wtvalue", timw)
 
 local CollectCoinToggleWT = Main:Toggle({
     Title = "Auto Collect (Without Tp)",
@@ -219,7 +232,7 @@ local CollectCoinToggleWT = Main:Toggle({
                         end
                     end
 
-                    task.wait(0.05)
+                    task.wait(wtvalue)
                 end
             end)
         end
@@ -578,63 +591,82 @@ myConfig:Register("AutoBuyEggEnabled", BuyEggToggle)
 -- 🐣 Auto Hatch Eggs
 -- =========================
 
-Egg:Section({ Title = "Hatch Eggs", Icon = "clock" })
+Egg:Section({ Title = "Action Eggs", Icon = "cpu" })
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local function TriggerPrompt(actionText)
+    if not hrp then return end
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt")
+        and obj.Enabled
+        and obj.ActionText == actionText then
+
+            local part = obj.Parent
+            if part and part:IsA("BasePart") then
+                if (part.Position - hrp.Position).Magnitude <= 30 then
+                    pcall(function()
+                        fireproximityprompt(obj)
+                    end)
+                end
+            end
+        end
+    end
+end
 
 local HatchToggle = Egg:Toggle({
     Title = "Auto Hatch Eggs",
     Value = false,
     Callback = function(state)
         autoHatch = state
+
         if state then
             task.spawn(function()
                 while autoHatch do
-                    task.wait(0.4)
-                    local art = workspace:FindFirstChild("Art")
-                    if not art then
-                        task.wait(1)
-                        continue
-                    end
-
-                    for _, island in ipairs(art:GetChildren()) do
-                        if not island.Name:match("^Island_%d+$") then
-                            continue
-                        end
-
-                        local env = island:FindFirstChild("ENV")
-                        local conveyor = env and env:FindFirstChild("Conveyor")
-                        if not conveyor then
-                            continue
-                        end
-
-                        for _, conveyorX in ipairs(conveyor:GetChildren()) do
-                            if not conveyorX.Name:match("^Conveyor%d+$") then
-                                continue
-                            end
-
-                            local belt = conveyorX:FindFirstChild("Belt")
-                            if not belt then
-                                continue
-                            end
-
-                            for _, eggModel in ipairs(belt:GetChildren()) do
-                                local root = eggModel:FindFirstChild("RootPart")
-                                local rf = root and root:FindFirstChild("RF")
-                                if rf and rf:IsA("RemoteFunction") then
-                                    pcall(function()
-                                        rf:InvokeServer("Hatch")
-                                    end)
-                                    task.wait(0.1)
-                                end
-                            end
-                        end
-                    end
+                    TriggerPrompt("Hatch")
+                    task.wait(0.1)
                 end
             end)
         end
+
         myConfig:Save()
     end
 })
+
 myConfig:Register("autoHatch", HatchToggle)
+
+local autoPlaceEggs = false
+
+local PlaceEggToggle = Egg:Toggle({
+    Title = "Auto Place Eggs",
+    Value = false,
+    Callback = function(state)
+        autoPlaceEggs = state
+
+        if state then
+            task.spawn(function()
+                while autoPlaceEggs do
+                    TriggerPrompt("Place")
+                    task.wait(0.1)
+                end
+            end)
+        end
+
+        myConfig:Save()
+    end
+})
+
+myConfig:Register("autoPlaceEggs", PlaceEggToggle)
 
 -- ====================== EVENT ======================
 -- =========================
