@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.7.4"
+local version = "3.7.5"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -491,80 +491,6 @@ local CollectCoinToggleWT = Main:Toggle({
 })
 myConfig:Register("AutoCollectEnabled_CoinWT", CollectCoinToggleWT)
 
-local function getClosestPet()
-    local petsFolder = workspace:FindFirstChild("Pets")
-    if not petsFolder then return nil end
-
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local root = character:WaitForChild("HumanoidRootPart", 3)
-    if not root then return nil end
-
-    local closestPet = nil
-    local shortestDistance = math.huge
-
-    for _, pet in ipairs(petsFolder:GetChildren()) do
-        local petRoot = pet:FindFirstChild("RootPart")
-        if petRoot then
-            local distance = (root.Position - petRoot.Position).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                closestPet = pet
-            end
-        end
-    end
-
-    return closestPet
-end
-
-local CollectCoinToggle = Main:Toggle({
-    Title = "Auto Collect (Teleport)",
-    Desc = "Collect coins by teleporting to each pet automatically.",
-    Value = false,
-    Callback = function(state)
-        AutoCollectEnabled_Coin = state
-
-        if state then
-            task.spawn(function()
-                local player = game.Players.LocalPlayer
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-                while AutoCollectEnabled_Coin do
-                    task.wait(0.25)
-
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    local root = character:FindFirstChild("HumanoidRootPart")
-                    if not root then continue end
-
-                    local closestPet = getClosestPet()
-                    if not closestPet then
-                        warn("[Auto Collect] No pets found")
-                        task.wait(1)
-                        continue
-                    end
-
-                    local petRoot = closestPet:FindFirstChild("RootPart")
-                    if petRoot then
-                        root.CFrame = petRoot.CFrame + Vector3.new(0, 3, 0)
-                        print("[Auto Collect] Teleported to pet:", closestPet.Name)
-
-                        local re = petRoot:FindFirstChild("RE")
-                        if re then
-                            pcall(function()
-                                re:FireServer("Claim")
-                            end)
-                        end
-                    end
-                end
-            end)
-        end
-
-        myConfig:Save()
-    end
-})
-
-myConfig:Register("AutoCollectEnabled_Coin", CollectCoinToggle)
-
 -- ====================== AUTO FISH ======================
 Main:Section({Title="Fishing", Icon="fish"})
 local FishToggle = Main:Toggle({
@@ -860,7 +786,7 @@ local HatchToggle = Egg:Toggle({
             task.spawn(function()
                 while autoHatch do
                     TriggerPrompt("Hatch")
-                    task.wait(0.8)
+                    task.wait(0.5)
                 end
             end)
         end
@@ -882,7 +808,7 @@ local PlaceEggToggle = Egg:Toggle({
             task.spawn(function()
                 while autoPlaceEggs do
                     TriggerPrompt("Place")
-                    task.wait(0.8)
+                    task.wait(0.5)
                 end
             end)
         end
@@ -906,7 +832,7 @@ local PickEggToggle = Egg:Toggle({
             task.spawn(function()
                 while autopickEggs do
                     TriggerPrompt("Recall")
-                    task.wait(0.8)
+                    task.wait(0.5)
                 end
             end)
         end
