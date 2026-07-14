@@ -38,7 +38,6 @@ local SelectedCode, SelectedBait, SelectedFood, SelectedQuest
 local autoHatch = false
 local AutoEquip = false
 local AutoPotion = false
-local AutoCollectEnabled_Coin = false
 local AutoCollectEnabled_CoinWT = false
 local autoCollectDino = false
 local AutoBuyConveyor = false
@@ -450,8 +449,8 @@ local timw = Main:Slider({
 myConfig:Register("wtvalue", timw)
 
 local CollectCoinToggleWT = Main:Toggle({
-    Title = "Auto Collect (Without Tp)",
-    Desc = "Collect coins from pets without teleporting.",
+    Title = "Auto Collect Coin",
+    Desc = "Collect coins from pets",
     Value = false,
     Callback = function(state)
         AutoCollectEnabled_CoinWT = state
