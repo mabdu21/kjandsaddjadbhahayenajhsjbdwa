@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.7.1"
+local version = "3.7.2"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -116,7 +116,7 @@ local Window = WindUI:CreateWindow({
     ScrollBarEnabled = true,
     User = { Enabled = true, Anonymous = false },
 })
-
+Window:SetToggleKey(Enum.KeyCode.K)
 pcall(function() Window:Tag({Title=version, Color=Color3.fromHex("#30ff6a")}) end)
 
 Window:EditOpenButton({
