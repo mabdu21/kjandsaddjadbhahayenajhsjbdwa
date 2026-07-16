@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.8.0"
+local version = "3.8.5"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -1016,7 +1016,7 @@ myConfig:Register("AutoPickup", PickEggToggle)
 Event:Section({Title="Event: Void", Icon="atom"})
 
 local QuestDropdown = Event:Dropdown({
-    Title = "Select Void Quest",
+    Title = "Select Honeybloom Quest",
     Desc = "Choose which quest to claim rewards from. Select 'All' to claim all quests.",
     Values = QuestList,
     Multi = false,
@@ -1071,7 +1071,7 @@ local function CollectDinoLoop()
 end
 
 local CollectDinoToggle = Event:Toggle({
-    Title = "Auto Collect Void Rewards",
+    Title = "Auto Collect Honeybloom Rewards",
     Desc = "Automatically collect event rewards on an interval.",
     Value = false,
     Callback = function(state)
