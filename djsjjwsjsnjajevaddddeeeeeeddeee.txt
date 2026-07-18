@@ -1,5 +1,5 @@
 -- =====================
-local version = "5.8.0"
+local version = "5.7.9"
 -- ======================
 
 repeat task.wait() until game:IsLoaded()
@@ -1561,7 +1561,7 @@ else
 end
 
 RunService.RenderStepped:Connect(updateFly)
-local function setupGui()
+local function setupGui() end
 local function getServers()
     local request = request({
         Url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Desc&limit=100",
