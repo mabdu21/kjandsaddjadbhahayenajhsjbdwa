@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.8.6"
+local version = "3.8.7"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -899,9 +899,10 @@ local BuyEggToggle = Egg:Toggle({
 myConfig:Register("AutoBuyEgg", BuyEggToggle)
 
 -- ====================== ACTION EGGS (HATCH/PLACE/PICKUP) - OPTIMIZED ======================
+-- ====================== ACTION EGGS (HATCH/PLACE/PICKUP) - FIXED VERSION ======================
 Egg:Section({Title="Action Eggs", Icon="cpu"})
 
--- ✅ OPTIMIZED: Pre-cache prompts grouped by ActionText for instant lookup
+-- ✅ FIXED: Dynamic cache rebuild + enable check
 local HatchPromptCache = {}
 local PlacePromptCache = {}
 local PickupPromptCache = {}
@@ -911,9 +912,18 @@ local function RebuildActionCache()
     PlacePromptCache = {}
     PickupPromptCache = {}
 
-    for prompt, part in pairs(GetValidPrompts()) do
+    -- Get fresh prompts every time (don't rely on stale cache)
+    local prompts = GetValidPrompts()
+    
+    for prompt, part in pairs(prompts) do
+        -- ✅ CRITICAL FIX: Check if prompt is ACTUALLY enabled NOW
+        if not prompt.Parent or not prompt.Enabled then
+            continue
+        end
+        
         local action = prompt.ActionText or ""
         local pos = part.Position
+        
         if action == "Hatch" then
             table.insert(HatchPromptCache, {prompt = prompt, part = part, pos = pos})
         elseif action == "Place" then
@@ -925,22 +935,25 @@ local function RebuildActionCache()
 
     -- Sort by distance (closest first)
     local function sortByDist(a, b)
+        if not HumanoidRootPart then return false end
         return (HumanoidRootPart.Position - a.pos).Magnitude < (HumanoidRootPart.Position - b.pos).Magnitude
     end
+    
     table.sort(HatchPromptCache, sortByDist)
     table.sort(PlacePromptCache, sortByDist)
     table.sort(PickupPromptCache, sortByDist)
 end
 
--- ✅ OPTIMIZED: Use cached prompts instead of scanning all descendants every frame
+-- ✅ OPTIMIZED: Use cached prompts + final validation before trigger
 local function TriggerCachedPrompt(cache, range)
     range = range or 100
     local rootPos = HumanoidRootPart and HumanoidRootPart.Position
     if not rootPos then return end
 
     for _, entry in ipairs(cache) do
+        -- ✅ CRITICAL FIX: Double-check prompt still exists and is ENABLED
         if entry.prompt and entry.prompt.Parent and entry.part and entry.part.Parent then
-            if (entry.prompt.Enabled) then
+            if entry.prompt.Enabled then  -- Check enable status AGAIN here
                 local dist = (rootPos - entry.pos).Magnitude
                 if dist <= range then
                     pcall(function()
@@ -954,12 +967,22 @@ local function TriggerCachedPrompt(cache, range)
     return false
 end
 
--- ✅ OPTIMIZED: Smart loop with throttle
+-- ✅ FIXED: Rebuild cache more frequently to catch enable/disable changes
 local function ActionLoop(cache, settingName, baseDelay)
     while Settings[settingName] do
-        RebuildActionCache()
-        if #cache > 0 then
-            TriggerCachedPrompt(cache, 100)
+        RebuildActionCache()  -- Rebuild every loop to catch dynamic changes
+        if cache == HatchPromptCache then
+            if #HatchPromptCache > 0 then
+                TriggerCachedPrompt(HatchPromptCache, 100)
+            end
+        elseif cache == PlacePromptCache then
+            if #PlacePromptCache > 0 then
+                TriggerCachedPrompt(PlacePromptCache, 100)
+            end
+        elseif cache == PickupPromptCache then
+            if #PickupPromptCache > 0 then
+                TriggerCachedPrompt(PickupPromptCache, 100)
+            end
         end
         task.wait(baseDelay)
     end
@@ -972,8 +995,7 @@ local HatchToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoHatch = state
         if state then
-            -- ✅ OPTIMIZED: Use shorter delay but smart throttling
-            task.spawn(function() ActionLoop(HatchPromptCache, "AutoHatch", 0.15) end)
+            task.spawn(function() ActionLoop(HatchPromptCache, "AutoHatch", 0.1) end)
         end
         myConfig:Set("AutoHatch", state)
         myConfig:Save()
@@ -988,7 +1010,7 @@ local PlaceEggToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoPlace = state
         if state then
-            task.spawn(function() ActionLoop(PlacePromptCache, "AutoPlace", 0.2) end)
+            task.spawn(function() ActionLoop(PlacePromptCache, "AutoPlace", 0.15) end)
         end
         myConfig:Set("AutoPlace", state)
         myConfig:Save()
@@ -1005,7 +1027,7 @@ local PickEggToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoPickup = state
         if state then
-            task.spawn(function() ActionLoop(PickupPromptCache, "AutoPickup", 0.3) end)
+            task.spawn(function() ActionLoop(PickupPromptCache, "AutoPickup", 0.2) end)
         end
         myConfig:Set("AutoPickup", state)
         myConfig:Save()
@@ -1014,7 +1036,7 @@ local PickEggToggle = Egg:Toggle({
 myConfig:Register("AutoPickup", PickEggToggle)
 
 -- ====================== EVENT: VOID ======================
-Event:Section({Title="Event: Void", Icon="atom"})
+Event:Section({Title="Event: Honeybloom", Icon="flower"})
 
 local QuestDropdown = Event:Dropdown({
     Title = "Select Honeybloom Quest",
