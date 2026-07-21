@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.8.5"
+local version = "3.8.6"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -48,11 +48,12 @@ end
 
 local function SafeFire(remote, ...)
     if not remote then return false end
+    local args = {...}  -- ✅ จับ ... ลงใน variable ก่อน
     return SafeCall(function()
         if typeof(remote) == "Instance" and remote:IsA("RemoteEvent") then
-            remote:FireServer(...)
+            remote:FireServer(unpack(args))  -- ✅ unpack args ให้ RemoteEvent
         elseif typeof(remote) == "Instance" and remote:IsA("RemoteFunction") then
-            return remote:InvokeServer(...)
+            return remote:InvokeServer(unpack(args))  -- ✅ unpack args ให้ RemoteFunction
         end
     end)
 end
