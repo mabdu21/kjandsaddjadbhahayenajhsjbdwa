@@ -1,4 +1,4 @@
--- Clear memory first
+-- Clear memory first / v123
 if _G.a then
     for _, v in pairs(_G.a) do
         pcall(v.Disconnect, v)
@@ -46,7 +46,7 @@ local Window = WindUI:CreateWindow({
     BackgroundImageTransparency = 0.8,
     Acrylic = false,
     HideSearchBar = false,
-    SideBarWidth = 200
+    SideBarWidth = 200,
     ScrollBarEnabled = true,
     User = { Enabled = true, Anonymous = false },
 })
