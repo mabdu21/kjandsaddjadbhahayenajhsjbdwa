@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.9.0"
+local version = "3.9.1"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -34,7 +34,6 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 local VirtualUser = game:GetService("VirtualUser")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
@@ -46,6 +45,7 @@ local function SafeCall(fn, ...)
     return ok, result
 end
 
+-- ✅ FIXED: ส่ง args ตรงๆ ไม่ห่อเพิ่ม (ตามรูปแบบ [1] = { [1] = {...} })
 local function SafeFire(remote, ...)
     if not remote then return false end
     local args = {...}
@@ -219,13 +219,12 @@ local function ScanMutateNames()
     end)
 end
 
--- Wait up to 5 seconds for GUI to load and detect mutates
 task.spawn(function()
     local startTime = tick()
-    while (tick() - startTime) < 5 do
+    while (tick() - startTime) < 8 do
         ScanMutateNames()
         if #DetectedMutates > 2 then
-            task.wait(0.5)
+            task.wait(1)
             ScanMutateNames()
             break
         end
@@ -372,6 +371,7 @@ local DailyLoginDropdown = Buff:Dropdown({
 })
 myConfig:Register("SelectedDays", DailyLoginDropdown)
 
+-- ✅ ยิงแบบ {event = "claimreward", day = X} (1 ชั้น)
 local function DailyLoginLoop()
     while Settings.AutoDailyLogin do
         local days = Dropdowns.SelectedDays or {"1"}
@@ -428,6 +428,7 @@ local SeasonPassDropdown = Buff:Dropdown({
 })
 myConfig:Register("SelectedLevels", SeasonPassDropdown)
 
+-- ✅ ยิงแบบ {LV = X, T = "Claim"} (1 ชั้น)
 local function SeasonPassLoop()
     while Settings.AutoSeasonPass do
         local levels = Dropdowns.SelectedLevels or {"1"}
@@ -484,6 +485,7 @@ local RedeemCodeDropdown = Buff:Dropdown({
 })
 myConfig:Register("SelectedCode", RedeemCodeDropdown)
 
+-- ✅ ยิงแบบ {event = "usecode", code = "..."} (1 ชั้น)
 local function RedeemCodesLoop()
     while Settings.AutoRedeemCode do
         local codes = Dropdowns.SelectedCode
@@ -546,6 +548,7 @@ local PotionDropdown = Buff:Dropdown({
 })
 myConfig:Register("SelectedPotions", PotionDropdown)
 
+-- ✅ ยิงแบบ "UsePotion", potionName (2 args, ไม่ใช่ตารางซ้อน)
 local function PotionLoop()
     while Settings.AutoPotion do
         if #Dropdowns.SelectedPotions > 0 then
@@ -592,6 +595,7 @@ local BuyConveyorDropdown = Auto:Dropdown({
 })
 myConfig:Register("BuyIndex", BuyConveyorDropdown)
 
+-- ✅ ยิงแบบ "Upgrade", index (2 args)
 local function BuyConveyorLoop()
     while Settings.AutoBuyConveyor do
         local remote = FindRemote("ConveyorRE")
@@ -631,6 +635,7 @@ local EquipConveyorDropdown = Auto:Dropdown({
 })
 myConfig:Register("EquipIndex", EquipConveyorDropdown)
 
+-- ✅ ยิงแบบ "Switch", index (2 args)
 local function EquipConveyorLoop()
     while Settings.AutoEquip do
         local remote = FindRemote("ConveyorRE")
@@ -675,6 +680,7 @@ local BaitDropdown = Auto:Dropdown({
 })
 myConfig:Register("SelectedBait", BaitDropdown)
 
+-- ✅ ยิงแบบ "buy", baitName (2 args)
 local function BaitLoop()
     while Settings.AutoBait do
         local remote = FindRemote("FishingRE")
@@ -722,6 +728,7 @@ local FoodDropdown = Auto:Dropdown({
 })
 myConfig:Register("SelectedFood", FoodDropdown)
 
+-- ✅ ยิงแบบ foodName (1 arg)
 local function FoodLoop()
     while Settings.AutoFood do
         local remote = FindRemote("FoodStoreRE")
@@ -797,11 +804,12 @@ myConfig:Register("AutoCollectCoin", CollectCoinToggle)
 -- ====================== MAIN TAB: FISHING ======================
 Main:Section({Title="Fishing", Icon="fish"})
 
+-- ✅ ยิงแบบ { "POUT", {SUC=1} } (2 args)
 local function FishLoop()
     while Settings.AutoFish do
         local remote = FindRemote("FishingRE")
         if remote then
-            SafeFire(remote, {"POUT",{SUC=1}})
+            SafeFire(remote, "POUT", {SUC=1})
         end
         task.wait(ActionDelays.Fish)
     end
@@ -956,7 +964,6 @@ local BuyEggDropdown = Egg:Dropdown({
 })
 myConfig:Register("SelectedEggs", BuyEggDropdown)
 
--- Mutate Dropdown (created after detection)
 local MutateDropdown = Egg:Dropdown({
     Title = "Select Mutate",
     Desc = "Filter eggs by mutate type. Normal ignores mutate and purchases all matching eggs.",
@@ -971,7 +978,6 @@ local MutateDropdown = Egg:Dropdown({
 })
 myConfig:Register("SelectedMutates", MutateDropdown)
 
--- Continuously update mutate list in background (for late-detected mutates)
 task.spawn(function()
     while true do
         task.wait(3)
@@ -979,6 +985,7 @@ task.spawn(function()
     end
 end)
 
+-- ✅ ยิงแบบ "BuyEgg", uidVal (2 args)
 local function BuyEggLoop()
     local characterRE = nil
     while Settings.AutoBuyEgg do
@@ -1064,7 +1071,6 @@ myConfig:Register("AutoBuyEgg", BuyEggToggle)
 -- ====================== EGG TAB: ACTION EGGS (FIXED) ======================
 Egg:Section({Title="Action Eggs", Icon="cpu"})
 
--- ✅ FIXED: Direct workspace scan every iteration for fresh prompt detection
 local function ActionLoopDirect(actionText, settingName, baseDelay, range)
     range = range or 100
     while Settings[settingName] do
@@ -1143,18 +1149,8 @@ local PickEggToggle = Egg:Toggle({
 })
 myConfig:Register("AutoPickup", PickEggToggle)
 
--- ====================== EVENT TAB: FARM EVENT (NEW) ======================
+-- ====================== EVENT TAB: FARM EVENT ======================
 Event:Section({Title="Farm Event", Icon="coins"})
-
-local function pressKeyHold(key, duration)
-    pcall(function()
-        VirtualInputManager:SendKeyEvent(true, key, false, game)
-    end)
-    task.wait(duration)
-    pcall(function()
-        VirtualInputManager:SendKeyEvent(false, key, false, game)
-    end)
-end
 
 local function moveForward(duration)
     pcall(function()
@@ -1184,21 +1180,17 @@ local function FarmCoinLoop()
         pcall(function()
             if not HumanoidRootPart or not HumanoidRootPart.Parent then return end
             
-            -- Teleport to position 1
             HumanoidRootPart.CFrame = CFrame.new(-171, 14, 166)
             task.wait(0.5)
             
-            -- Walk forward 2 times
             moveForward(0.6)
             task.wait(0.2)
             moveForward(0.6)
             task.wait(0.5)
             
-            -- Teleport to position 2
             HumanoidRootPart.CFrame = CFrame.new(-171, 11000, 166)
             task.wait(0.5)
             
-            -- Jump
             performJump()
         end)
         task.wait(2)
@@ -1218,7 +1210,7 @@ local FarmCoinToggle = Event:Toggle({
 })
 myConfig:Register("AutoFarmCoin", FarmCoinToggle)
 
--- ====================== EVENT TAB: HONEYBLOOM ======================
+-- ====================== EVENT TAB: HONEYBLOOM (FIXED) ======================
 Event:Section({Title="Event: Honeybloom", Icon="flower"})
 
 local QuestDropdown = Event:Dropdown({
@@ -1235,6 +1227,7 @@ local QuestDropdown = Event:Dropdown({
 })
 myConfig:Register("SelectedQuest", QuestDropdown)
 
+-- ✅ FIXED: ยิงแบบ {event = "claimreward", id = "Task_X"} (1 ชั้น ไม่ซ้อน)
 local function QuestLoop()
     while Settings.AutoQuest do
         local remote = FindRemote("DinoEventRE", 3)
@@ -1242,11 +1235,11 @@ local function QuestLoop()
             if Dropdowns.SelectedQuest == "All" then
                 for i = 1, 20 do
                     if not Settings.AutoQuest then break end
-                    SafeFire(remote, {{event = "claimreward", id = "Task_" .. i}})
+                    SafeFire(remote, {event = "claimreward", id = "Task_" .. i})
                     task.wait(0.3)
                 end
             else
-                SafeFire(remote, {{event = "claimreward", id = Dropdowns.SelectedQuest}})
+                SafeFire(remote, {event = "claimreward", id = Dropdowns.SelectedQuest})
             end
         end
         task.wait(ActionDelays.Quest)
@@ -1266,11 +1259,12 @@ local QuestToggle = Event:Toggle({
 })
 myConfig:Register("AutoQuest", QuestToggle)
 
+-- ✅ FIXED: ยิงแบบ {event = "onlinepack"} (1 ชั้น ไม่ซ้อน)
 local function CollectDinoLoop()
     while Settings.AutoCollectDino do
         local remote = FindRemote("DinoEventRE", 3)
         if remote then
-            SafeFire(remote, {{event = "onlinepack"}})
+            SafeFire(remote, {event = "onlinepack"})
         end
         task.wait(ActionDelays.DinoCollect)
     end
@@ -1434,7 +1428,6 @@ Info:Paragraph({
 -- ====================== LOAD CONFIG ON STARTUP ======================
 pcall(function() myConfig:Load() end)
 
--- Restore eggs selection
 local loadedEggs = myConfig:Get("SelectedEggs")
 if loadedEggs and type(loadedEggs) == "table" then
     for _, egg in ipairs(EggTypes) do eggBuyMap[egg] = false end
@@ -1443,7 +1436,6 @@ if loadedEggs and type(loadedEggs) == "table" then
     end
 end
 
--- Restore settings
 for key, value in pairs({
     AntiAFK = "AntiAFK",
     AutoBuyConveyor = "AutoBuyConveyor",
@@ -1473,7 +1465,6 @@ for key, value in pairs({
     end
 end
 
--- Apply AntiAFK on load
 if Settings.AntiAFK then StartAntiAFK() end
 
 Window:OnClose(function() myConfig:Save() end)
