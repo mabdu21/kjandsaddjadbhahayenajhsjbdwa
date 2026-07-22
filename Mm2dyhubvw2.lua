@@ -31,22 +31,20 @@ do
     end
 end
 
-WindUI.TransparencyValue = 0.2
 WindUI:SetTheme("Dark")
 
 local Window = WindUI:CreateWindow({
-    NewElements = true,
-    Title = "DYHUB",
-    Icon = "rbxassetid://104487529937663",
-    Author = "Murder Mystery 2 | Premium Version",
-    Folder = "DYHUB/Games/MM2",
-    Size = UDim2.fromOffset(580, 490),
-    Theme = "Dark",
-    HidePanelBackground = false,
+    Title      = "DYHUB",
+    IconThemed = true,
+    Icon       = "rbxassetid://104487529937663",
+    Author     = "Murder Mystery 2 | Premium Version",
+    Folder     = "DYHUB_MM2",
+    Size       = UDim2.fromOffset(580, 440),
+    Transparent = true,
+    Theme      = "Dark",
     BackgroundImageTransparency = 0.8,
-    Acrylic = false,
-    HideSearchBar = false,
-    SideBarWidth = 200,
+    HasOutline = false,
+    HideSearchBar    = true,
     ScrollBarEnabled = true,
     User = { Enabled = true, Anonymous = false },
 })
@@ -79,11 +77,6 @@ updateWindowOpenState = function()
 end
 
 pcall(updateWindowOpenState)
-Window:SetIconSize(48)
-Window:Tag({
-    Title = "V1",
-    Color = Color3.fromHex("#30ff6a")
-})
 function safeResolve(value)
     if not Localization or not Localization.Enabled then
         return value
@@ -303,6 +296,66 @@ Tabs = {
     Misc = FeatureSection:Tab({ Title = "Misc", Icon = "star" }),
     Utility = FeatureSection:Tab({ Title = "Utility", Icon = "wrench" }),
 }
+
+local Info = Tabs.Main
+if not ui then ui = {} end
+if not ui.Creator then ui.Creator = {} end
+do
+ui.Creator.Request = function(requestData)
+    local success, result = pcall(function()
+        if HttpService.RequestAsync then
+            local response = HttpService:RequestAsync({ Url = requestData.Url, Method = requestData.Method or "GET", Headers = requestData.Headers or {} })
+            return { Body = response.Body, StatusCode = response.StatusCode, Success = response.Success }
+        else
+            local body = HttpService:GetAsync(requestData.Url)
+            return { Body = body, StatusCode = 200, Success = true }
+        end
+    end)
+    if success then return result else error("HTTP Request failed: " .. tostring(result)) end
+end
+
+local InviteCode = "jWNDPNMmyB"
+local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+local function LoadDiscordInfo()
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(ui.Creator.Request({ Url = DiscordAPI, Method = "GET", Headers = { ["User-Agent"] = "RobloxBot/1.0", ["Accept"] = "application/json" } }).Body)
+    end)
+    if success and result and result.guild then
+        local DiscordInfo = Info:Paragraph({
+            Title = result.guild.name,
+            Desc  = ' <font color="#52525b">●</font> Member Count : ' .. tostring(result.approximate_member_count) ..
+                    '\n <font color="#16a34a">●</font> Online Count : '  .. tostring(result.approximate_presence_count),
+            Image = "https://cdn.discordapp.com/icons/" .. result.guild.id .. "/" .. result.guild.icon .. ".png?size=1024",
+            ImageSize = 42,
+        })
+        Info:Button({ Title = "Update Info", Callback = function()
+            local ok, r = pcall(function() return HttpService:JSONDecode(ui.Creator.Request({ Url = DiscordAPI, Method = "GET" }).Body) end)
+            if ok and r and r.guild then
+                DiscordInfo:SetDesc(' <font color="#52525b">●</font> Member Count : ' .. tostring(r.approximate_member_count) .. '\n <font color="#16a34a">●</font> Online Count : ' .. tostring(r.approximate_presence_count))
+                Utils:Notify("Discord Info Updated", "Refreshed!", "refresh-cw", 2)
+            else
+                Utils:Notify("Update Failed", "Could not refresh.", "alert-triangle", 3)
+            end
+        end })
+        Info:Button({ Title = "Copy Discord Invite", Callback = function()
+            setclipboard("https://discord.gg/" .. InviteCode)
+            Utils:Notify("Copied!", "Discord invite copied!", "clipboard-check", 2)
+        end })
+    else
+        Info:Paragraph({ Title = "Error fetching Discord Info", Desc = "Unable to load.", Image = "triangle-alert", ImageSize = 26, Color = "Red" })
+    end
+end
+LoadDiscordInfo()
+
+Info:Divider()
+Info:Section({ Title = "DYHUB Information", TextXAlignment = "Center", TextSize = 17 })
+Info:Divider()
+Info:Paragraph({ Title = "Main Owner", Desc = "@dyumraisgoodguy#8888", Image = "rbxassetid://119789418015420", ImageSize = 30 })
+Info:Paragraph({ Title = "Social", Desc = "Copy link social media for follow!", Image = "rbxassetid://104487529937663", ImageSize = 30,
+    Buttons = {{ Icon = "copy", Title = "Copy Link", Callback = function() setclipboard("https://guns.lol/DYHUB") end }} })
+Info:Paragraph({ Title = "Discord", Desc = "Join our discord for more scripts!", Image = "rbxassetid://104487529937663", ImageSize = 30,
+    Buttons = {{ Icon = "copy", Title = "Copy Link", Callback = function() setclipboard("https://discord.gg/jWNDPNMmyB") end }} })
+end
 
 Tabs.Main:Section({ Title = "Server Info", TextSize = 20 })
 Tabs.Main:Divider()
