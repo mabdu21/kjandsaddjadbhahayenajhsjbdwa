@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.8.7"
+local version = "3.9.0"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -21,7 +21,6 @@ else
         Duration = 2,
         Button1 = "Okay"
     })
-    warn("Your exploit does not support setfpscap.")
 end
 
 -- ====================== LOAD UI ======================
@@ -35,6 +34,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
@@ -48,12 +48,12 @@ end
 
 local function SafeFire(remote, ...)
     if not remote then return false end
-    local args = {...}  -- ✅ จับ ... ลงใน variable ก่อน
+    local args = {...}
     return SafeCall(function()
         if typeof(remote) == "Instance" and remote:IsA("RemoteEvent") then
-            remote:FireServer(unpack(args))  -- ✅ unpack args ให้ RemoteEvent
+            remote:FireServer(unpack(args))
         elseif typeof(remote) == "Instance" and remote:IsA("RemoteFunction") then
-            return remote:InvokeServer(unpack(args))  -- ✅ unpack args ให้ RemoteFunction
+            return remote:InvokeServer(unpack(args))
         end
     end)
 end
@@ -86,6 +86,10 @@ local Settings = {
     AutoSpin3 = false,
     AutoQuest = false,
     AntiAFK = false,
+    AutoRedeemCode = false,
+    AutoDailyLogin = false,
+    AutoSeasonPass = false,
+    AutoFarmCoin = false,
 }
 
 local ActionDelays = {
@@ -115,6 +119,9 @@ local Dropdowns = {
     EquipIndex = 1,
     SelectedPotions = {},
     SelectedEggs = {},
+    SelectedMutates = {"Normal"},
+    SelectedDays = {"1"},
+    SelectedLevels = {"1"},
 }
 
 -- ====================== LISTS ======================
@@ -161,6 +168,10 @@ for _, egg in ipairs(EggTypes) do eggBuyMap[egg] = false end
 local QuestList = {"All"}
 for i = 1, 20 do table.insert(QuestList, "Task_"..i) end
 
+local DayList = {"All", "1", "2", "3", "4", "5", "6", "7"}
+local LevelList = {"All"}
+for i = 1, 60 do table.insert(LevelList, tostring(i)) end
+
 -- ====================== CHARACTER CACHE ======================
 local Character = player.Character or player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
@@ -175,9 +186,51 @@ end
 player.CharacterAdded:Connect(function(char)
     refreshCharacter(char)
     task.wait(0.5)
-    -- Re-apply speed/jump
     if _G.DYHUB_WalkSpeed then pcall(function() Humanoid.WalkSpeed = _G.DYHUB_WalkSpeed end) end
     if _G.DYHUB_JumpPower then pcall(function() Humanoid.JumpPower = _G.DYHUB_JumpPower end) end
+end)
+
+-- ====================== MUTATE DETECTION ======================
+local DetectedMutates = {"Normal", "All"}
+
+local function ScanMutateNames()
+    pcall(function()
+        local screenPet = PlayerGui:FindFirstChild("ScreenPetIndex")
+        if not screenPet then return end
+        local dialog = screenPet:FindFirstChild("Dialog")
+        if not dialog then return end
+        local info = dialog:FindFirstChild("Info")
+        if not info then return end
+        
+        for _, containerName in ipairs({"MutRate", "MutRate2"}) do
+            local container = info:FindFirstChild(containerName)
+            if container then
+                for _, child in ipairs(container:GetChildren()) do
+                    if child:IsA("GuiButton") then
+                        if child.Name ~= "Normal" and child.Name ~= "All" then
+                            if not table.find(DetectedMutates, child.Name) then
+                                table.insert(DetectedMutates, child.Name)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Wait up to 5 seconds for GUI to load and detect mutates
+task.spawn(function()
+    local startTime = tick()
+    while (tick() - startTime) < 5 do
+        ScanMutateNames()
+        if #DetectedMutates > 2 then
+            task.wait(0.5)
+            ScanMutateNames()
+            break
+        end
+        task.wait(0.5)
+    end
 end)
 
 -- ====================== WINDOW ======================
@@ -224,7 +277,7 @@ local ConfigManager = Window.ConfigManager
 ConfigManager:Init(Window)
 local myConfig = ConfigManager:CreateConfig("dyhub_settings")
 
--- ====================== ANTI AFK THREAD ======================
+-- ====================== ANTI AFK ======================
 local antiAFKConnection = nil
 
 local function StartAntiAFK()
@@ -249,60 +302,6 @@ local function StopAntiAFK()
     end
 end
 
--- ====================== OPTIMIZED PROXIMITY PROMPT SYSTEM ======================
--- ✅ FIXED: Cache prompts to avoid scanning every frame
-local PromptCache = {}
-local PromptCacheDirty = true
-local PromptCacheTTL = 2
-local LastPromptCacheRebuild = 0
-
-local function RebuildPromptCache()
-    PromptCache = {}
-    pcall(function()
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") and obj.Enabled then
-                local part = obj.Parent
-                if part and part:IsA("BasePart") then
-                    PromptCache[obj] = part
-                end
-            end
-        end
-    end)
-    PromptCacheDirty = false
-    LastPromptCacheRebuild = tick()
-end
-
-local function GetValidPrompts()
-    if PromptCacheDirty or (tick() - LastPromptCacheRebuild) > PromptCacheTTL then
-        RebuildPromptCache()
-    end
-    return PromptCache
-end
-
-Workspace.DescendantAdded:Connect(function(obj)
-    if obj:IsA("ProximityPrompt") then
-        PromptCacheDirty = true
-    end
-end)
-Workspace.DescendantRemoving:Connect(function(obj)
-    if obj:IsA("ProximityPrompt") and PromptCache[obj] then
-        PromptCache[obj] = nil
-    end
-end)
-
--- ✅ OPTIMIZED: Pre-build prompt groups by ActionText for faster lookup
-local ActionPromptCache = {}
-local function RebuildActionPromptCache()
-    ActionPromptCache = {}
-    for prompt, part in pairs(GetValidPrompts()) do
-        local key = prompt.ActionText or ""
-        if not ActionPromptCache[key] then
-            ActionPromptCache[key] = {}
-        end
-        table.insert(ActionPromptCache[key], {prompt = prompt, part = part})
-    end
-end
-
 -- ====================== PLAYER TAB ======================
 Player:Section({Title="Character", Icon="user"})
 
@@ -311,7 +310,7 @@ _G.DYHUB_JumpPower = 50
 
 local SpeedSlider = Player:Slider({
     Title = "Walk Speed",
-    Desc = "Increase or decrease your character's walking speed.",
+    Desc = "Adjust your character's movement speed.",
     Value = { Min=16, Max=500, Default=16 },
     Step = 1,
     Callback = function(v)
@@ -322,7 +321,7 @@ local SpeedSlider = Player:Slider({
 
 local JumpSlider = Player:Slider({
     Title = "Jump Power",
-    Desc = "Increase or decrease your character's jumping ability.",
+    Desc = "Adjust your character's jump height.",
     Value = { Min=7, Max=500, Default=7 },
     Step = 1,
     Callback = function(v)
@@ -333,19 +332,19 @@ local JumpSlider = Player:Slider({
 
 Player:Button({
     Title = "Reset Speed & Jump",
-    Desc = "Restore walking speed and jump power to default values.",
+    Desc = "Restore default speed and jump values.",
     Callback = function()
         _G.DYHUB_WalkSpeed = 16
         _G.DYHUB_JumpPower = 7
         pcall(function() Humanoid.WalkSpeed = 16; Humanoid.JumpPower = 7 end)
-        WindUI:Notify({Title="Reset", Content="Speed & Jump reset to default", Duration=2, Icon="rotate-ccw"})
+        WindUI:Notify({Title="Reset", Content="Speed and Jump restored to default", Duration=2, Icon="rotate-ccw"})
     end
 })
 
 Player:Section({Title="Anti AFK", Icon="shield"})
 local AntiAFKToggle = Player:Toggle({
     Title="Anti AFK",
-    Desc = "Prevent automatic logout when inactive.",
+    Desc = "Prevents automatic disconnection when idle.",
     Value=false,
     Callback=function(state)
         Settings.AntiAFK = state
@@ -356,7 +355,119 @@ local AntiAFKToggle = Player:Toggle({
 })
 myConfig:Register("AntiAFK", AntiAFKToggle)
 
--- ====================== REDEEM CODES ======================
+-- ====================== MISC TAB: DAILY LOGIN ======================
+Buff:Section({Title="Daily Login", Icon="calendar-check"})
+
+local DailyLoginDropdown = Buff:Dropdown({
+    Title = "Select Day(s)",
+    Desc = "Choose which daily login days to claim. Select All to claim days 1 through 7.",
+    Values = DayList,
+    Multi = true,
+    Value = {"1"},
+    Callback = function(values)
+        Dropdowns.SelectedDays = values
+        myConfig:Set("SelectedDays", values)
+        myConfig:Save()
+    end
+})
+myConfig:Register("SelectedDays", DailyLoginDropdown)
+
+local function DailyLoginLoop()
+    while Settings.AutoDailyLogin do
+        local days = Dropdowns.SelectedDays or {"1"}
+        local remote = FindRemote("SevenDaysLoginRE2", 3)
+        if remote then
+            if table.find(days, "All") then
+                for i = 1, 7 do
+                    if not Settings.AutoDailyLogin then break end
+                    SafeFire(remote, {event = "claimreward", day = i})
+                    task.wait(0.5)
+                end
+            else
+                for _, dayStr in ipairs(days) do
+                    if not Settings.AutoDailyLogin then break end
+                    local day = tonumber(dayStr)
+                    if day then
+                        SafeFire(remote, {event = "claimreward", day = day})
+                        task.wait(0.5)
+                    end
+                end
+            end
+        end
+        task.wait(60)
+    end
+end
+
+local DailyLoginToggle = Buff:Toggle({
+    Title = "Auto Claim Daily Login",
+    Desc = "Automatically claim daily login rewards on a regular interval.",
+    Value = false,
+    Callback = function(state)
+        Settings.AutoDailyLogin = state
+        if state then task.spawn(DailyLoginLoop) end
+        myConfig:Set("AutoDailyLogin", state)
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoDailyLogin", DailyLoginToggle)
+
+-- ====================== MISC TAB: SEASON PASS ======================
+Buff:Section({Title="Season Pass", Icon="trophy"})
+
+local SeasonPassDropdown = Buff:Dropdown({
+    Title = "Select Level(s)",
+    Desc = "Choose which season pass levels to claim. Select All to claim levels 1 through 60.",
+    Values = LevelList,
+    Multi = true,
+    Value = {"1"},
+    Callback = function(values)
+        Dropdowns.SelectedLevels = values
+        myConfig:Set("SelectedLevels", values)
+        myConfig:Save()
+    end
+})
+myConfig:Register("SelectedLevels", SeasonPassDropdown)
+
+local function SeasonPassLoop()
+    while Settings.AutoSeasonPass do
+        local levels = Dropdowns.SelectedLevels or {"1"}
+        local remote = FindRemote("SeasonPassRE", 3)
+        if remote then
+            if table.find(levels, "All") then
+                for i = 1, 60 do
+                    if not Settings.AutoSeasonPass then break end
+                    SafeFire(remote, {LV = i, T = "Claim"})
+                    task.wait(0.2)
+                end
+            else
+                for _, lvStr in ipairs(levels) do
+                    if not Settings.AutoSeasonPass then break end
+                    local lv = tonumber(lvStr)
+                    if lv then
+                        SafeFire(remote, {LV = lv, T = "Claim"})
+                        task.wait(0.2)
+                    end
+                end
+            end
+        end
+        task.wait(300)
+    end
+end
+
+local SeasonPassToggle = Buff:Toggle({
+    Title = "Auto Claim Season Pass",
+    Desc = "Automatically claim season pass rewards on a regular interval.",
+    Value = false,
+    Callback = function(state)
+        Settings.AutoSeasonPass = state
+        if state then task.spawn(SeasonPassLoop) end
+        myConfig:Set("AutoSeasonPass", state)
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoSeasonPass", SeasonPassToggle)
+
+-- ====================== MISC TAB: REDEEM CODES ======================
 Buff:Section({Title="Redeem Code", Icon="gift"})
 
 local RedeemCodeDropdown = Buff:Dropdown({
@@ -398,7 +509,7 @@ end
 
 local RedeemCodeToggle = Buff:Toggle({
     Title = "Auto Redeem Code",
-    Desc = "Automatically claim selected promo codes.",
+    Desc = "Automatically redeem selected promo codes.",
     Value = false,
     Callback = function(state)
         Settings.AutoRedeemCode = state
@@ -411,7 +522,60 @@ local RedeemCodeToggle = Buff:Toggle({
 })
 myConfig:Register("AutoRedeemCode", RedeemCodeToggle)
 
--- ====================== AUTO BUY & EQUIP CONVEYOR ======================
+-- ====================== MISC TAB: POTIONS ======================
+Buff:Section({Title="Potion", Icon="flask-conical"})
+
+local PotionDropdown = Buff:Dropdown({
+    Title="Select Potion(s)",
+    Desc = "Choose potions to use. Select All to use every available potion.",
+    Values=PotionDisplayList,
+    Multi=true,
+    Value={},
+    Callback=function(values)
+        if table.find(values, "All") then
+            Dropdowns.SelectedPotions = {}
+            for i = 2, #PotionDisplayList do
+                table.insert(Dropdowns.SelectedPotions, PotionDisplayList[i])
+            end
+        else
+            Dropdowns.SelectedPotions = values
+        end
+        myConfig:Set("SelectedPotions", Dropdowns.SelectedPotions)
+        myConfig:Save()
+    end
+})
+myConfig:Register("SelectedPotions", PotionDropdown)
+
+local function PotionLoop()
+    while Settings.AutoPotion do
+        if #Dropdowns.SelectedPotions > 0 then
+            local remote = FindRemote("ShopRE")
+            if remote then
+                for _, potion in ipairs(Dropdowns.SelectedPotions) do
+                    if not Settings.AutoPotion then break end
+                    SafeFire(remote, "UsePotion", potion)
+                    task.wait(ActionDelays.Potion)
+                end
+            end
+        end
+        task.wait(5)
+    end
+end
+
+local PotionToggle = Buff:Toggle({
+    Title="Auto Use Selected Potions",
+    Desc = "Automatically use selected potions on a regular interval.",
+    Value=false,
+    Callback=function(state)
+        Settings.AutoPotion = state
+        if state then task.spawn(PotionLoop) end
+        myConfig:Set("AutoPotion", state)
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoPotion", PotionToggle)
+
+-- ====================== SHOP TAB: BUY CONVEYOR ======================
 Auto:Section({Title="Buy Conveyor", Icon="package"})
 
 local BuyConveyorDropdown = Auto:Dropdown({
@@ -440,7 +604,7 @@ end
 
 local BuyConveyorToggle = Auto:Toggle({
     Title="Buy Conveyor",
-    Desc = "Automatically purchase the selected conveyor upgrade.",
+    Desc = "Automatically purchase the selected conveyor tier.",
     Value=false,
     Callback=function(state)
         Settings.AutoBuyConveyor = state
@@ -479,7 +643,7 @@ end
 
 local EquipConveyorToggle = Auto:Toggle({
     Title="Equip Conveyor",
-    Desc = "Automatically switch to the selected conveyor.",
+    Desc = "Automatically switch to the selected conveyor tier.",
     Value=false,
     Callback=function(state)
         Settings.AutoEquip = state
@@ -490,65 +654,12 @@ local EquipConveyorToggle = Auto:Toggle({
 })
 myConfig:Register("AutoEquip", EquipConveyorToggle)
 
--- ====================== POTIONS ======================
-Buff:Section({Title="Potion", Icon="flask-conical"})
-
-local PotionDropdown = Buff:Dropdown({
-    Title="Select Potion(s)",
-    Desc = "Choose one or multiple potions to use. Select 'All' to use all available potions.",
-    Values=PotionDisplayList,
-    Multi=true,
-    Value={},
-    Callback=function(values)
-        if table.find(values, "All") then
-            Dropdowns.SelectedPotions = {}
-            for i = 2, #PotionDisplayList do
-                table.insert(Dropdowns.SelectedPotions, PotionDisplayList[i])
-            end
-        else
-            Dropdowns.SelectedPotions = values
-        end
-        myConfig:Set("SelectedPotions", Dropdowns.SelectedPotions)
-        myConfig:Save()
-    end
-})
-myConfig:Register("SelectedPotions", PotionDropdown)
-
-local function PotionLoop()
-    while Settings.AutoPotion do
-        if #Dropdowns.SelectedPotions > 0 then
-            local remote = FindRemote("ShopRE")
-            if remote then
-                for _, potion in ipairs(Dropdowns.SelectedPotions) do
-                    if not Settings.AutoPotion then break end
-                    SafeFire(remote, "UsePotion", potion)
-                    task.wait(ActionDelays.Potion)
-                end
-            end
-        end
-        task.wait(5)
-    end
-end
-
-local PotionToggle = Buff:Toggle({
-    Title="Auto Use Selected Potions",
-    Desc = "Automatically use potions on a regular interval.",
-    Value=false,
-    Callback=function(state)
-        Settings.AutoPotion = state
-        if state then task.spawn(PotionLoop) end
-        myConfig:Set("AutoPotion", state)
-        myConfig:Save()
-    end
-})
-myConfig:Register("AutoPotion", PotionToggle)
-
--- ====================== BAIT & FOOD ======================
+-- ====================== SHOP TAB: BUY BAIT ======================
 Auto:Section({Title="Buy Bait", Icon="fish"})
 
 local BaitDropdown = Auto:Dropdown({
     Title="Select Bait",
-    Desc = "Choose which bait to purchase. Select 'All' to buy all available baits.",
+    Desc = "Choose which bait to purchase. Select All to cycle through all baits.",
     Values=BaitDisplayList,
     Multi=false,
     Value="FishingBait1",
@@ -576,7 +687,7 @@ end
 
 local BaitToggle = Auto:Toggle({
     Title="Buy Bait",
-    Desc = "Automatically purchase the selected fishing bait.",
+    Desc = "Automatically purchase the selected bait.",
     Value=false,
     Callback=function(state)
         Settings.AutoBait = state
@@ -587,6 +698,7 @@ local BaitToggle = Auto:Toggle({
 })
 myConfig:Register("AutoBait", BaitToggle)
 
+-- ====================== SHOP TAB: BUY FOOD ======================
 Auto:Section({Title="Buy Food", Icon="shopping-bag"})
 
 local FoodDisplayList = {"All"}
@@ -594,7 +706,7 @@ for _, food in ipairs(FoodList) do table.insert(FoodDisplayList, food) end
 
 local FoodDropdown = Auto:Dropdown({
     Title="Select Food",
-    Desc = "Choose which food to purchase. Select 'All' to buy all available foods.",
+    Desc = "Choose which food to purchase. Select All to cycle through all foods.",
     Values=FoodDisplayList,
     Multi=false,
     Value="Strawberry",
@@ -633,12 +745,12 @@ local FoodToggle = Auto:Toggle({
 })
 myConfig:Register("AutoFood", FoodToggle)
 
--- ====================== AUTO COLLECT COIN ======================
+-- ====================== MAIN TAB: COLLECT COIN ======================
 Main:Section({Title="Collect", Icon="dollar-sign"})
 
-local timw = Main:Slider({
+local CoinDelaySlider = Main:Slider({
     Title = "Collect Delay (sec)",
-    Desc = "Set the time interval between each collection attempt.",
+    Desc = "Set the interval between each coin collection attempt.",
     Value = { Min=1, Max=200, Default=10 },
     Step = 1,
     Callback = function(v)
@@ -647,7 +759,7 @@ local timw = Main:Slider({
         myConfig:Save()
     end
 })
-myConfig:Register("CoinDelay", timw)
+myConfig:Register("CoinDelay", CoinDelaySlider)
 
 local function CollectCoinLoop()
     while Settings.AutoCollectCoin do
@@ -669,9 +781,9 @@ local function CollectCoinLoop()
     end
 end
 
-local CollectCoinToggleWT = Main:Toggle({
+local CollectCoinToggle = Main:Toggle({
     Title = "Auto Collect Coin",
-    Desc = "Collect coins from pets automatically.",
+    Desc = "Automatically collect coins dropped by pets.",
     Value = false,
     Callback = function(state)
         Settings.AutoCollectCoin = state
@@ -680,9 +792,9 @@ local CollectCoinToggleWT = Main:Toggle({
         myConfig:Save()
     end
 })
-myConfig:Register("AutoCollectCoin", CollectCoinToggleWT)
+myConfig:Register("AutoCollectCoin", CollectCoinToggle)
 
--- ====================== AUTO FISH ======================
+-- ====================== MAIN TAB: FISHING ======================
 Main:Section({Title="Fishing", Icon="fish"})
 
 local function FishLoop()
@@ -708,7 +820,7 @@ local FishToggle = Main:Toggle({
 })
 myConfig:Register("AutoFish", FishToggle)
 
--- ====================== AUTO SPIN ======================
+-- ====================== MAIN TAB: SPIN ======================
 Main:Section({Title="Spin: Ticket", Icon="ticket"})
 
 local function SpinLoop(count)
@@ -761,7 +873,7 @@ local SpinToggle3 = Main:Toggle({
 })
 myConfig:Register("AutoSpin3", SpinToggle3)
 
--- ====================== BUY EGGS ======================
+-- ====================== EGG TAB: BUY EGGS ======================
 Egg:Section({Title="Buy Eggs", Icon="egg"})
 
 local function getEggType(eggModel)
@@ -784,12 +896,43 @@ local function getEggType(eggModel)
     return eggType
 end
 
+local function getEggMutate(eggModel)
+    local result = ""
+    pcall(function()
+        local root = eggModel:FindFirstChild("RootPart")
+        if not root then return end
+        local eggGui = root:FindFirstChild("GUI/EggGUI")
+        if not eggGui then return end
+        local mutLabel = eggGui:FindFirstChild("Mutate")
+        if mutLabel and (mutLabel:IsA("TextLabel") or mutLabel:IsA("TextButton")) then
+            result = mutLabel.Text or ""
+        end
+    end)
+    return result
+end
+
+local function shouldBuyEggByMutate(eggModel)
+    local selected = Dropdowns.SelectedMutates or {"Normal"}
+    if table.find(selected, "Normal") then return true end
+    
+    local mutateText = getEggMutate(eggModel)
+    
+    if table.find(selected, "All") then
+        return mutateText ~= "" and mutateText ~= "Normal"
+    end
+    
+    for _, m in ipairs(selected) do
+        if m == mutateText then return true end
+    end
+    return false
+end
+
 local eggTypesDisplay = {"All"}
 for _, egg in ipairs(EggTypes) do table.insert(eggTypesDisplay, egg) end
 
 local BuyEggDropdown = Egg:Dropdown({
     Title = "Select Eggs",
-    Desc = "Choose which eggs to purchase. Select 'All' to buy all available egg types.",
+    Desc = "Choose which egg types to purchase. Select All to target every egg type.",
     Values = eggTypesDisplay,
     Multi = true,
     Value = {},
@@ -813,10 +956,32 @@ local BuyEggDropdown = Egg:Dropdown({
 })
 myConfig:Register("SelectedEggs", BuyEggDropdown)
 
+-- Mutate Dropdown (created after detection)
+local MutateDropdown = Egg:Dropdown({
+    Title = "Select Mutate",
+    Desc = "Filter eggs by mutate type. Normal ignores mutate and purchases all matching eggs.",
+    Values = DetectedMutates,
+    Multi = true,
+    Value = {"Normal"},
+    Callback = function(values)
+        Dropdowns.SelectedMutates = values
+        myConfig:Set("SelectedMutates", values)
+        myConfig:Save()
+    end
+})
+myConfig:Register("SelectedMutates", MutateDropdown)
+
+-- Continuously update mutate list in background (for late-detected mutates)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        ScanMutateNames()
+    end
+end)
+
 local function BuyEggLoop()
     local characterRE = nil
     while Settings.AutoBuyEgg do
-        -- Lazy load remote
         if not characterRE then
             characterRE = FindRemote("CharacterRE", 3)
         end
@@ -826,7 +991,6 @@ local function BuyEggLoop()
             continue
         end
 
-        -- Check if any egg is selected
         local anyActive = false
         for _, v in pairs(eggBuyMap) do
             if v then
@@ -845,7 +1009,6 @@ local function BuyEggLoop()
             continue
         end
 
-        -- ✅ OPTIMIZED: Only iterate active islands/conveyors
         for _, island in ipairs(art:GetChildren()) do
             if not Settings.AutoBuyEgg then break end
             if not island.Name:match("^Island_%d+$") then continue end
@@ -867,7 +1030,7 @@ local function BuyEggLoop()
                     if eggCount >= 50 then break end
 
                     local eggType = getEggType(eggModel)
-                    if eggType and eggBuyMap[eggType] then
+                    if eggType and eggBuyMap[eggType] and shouldBuyEggByMutate(eggModel) then
                         local root = eggModel:FindFirstChild("RootPart")
                         local uidVal = (root and root:GetAttribute("UID")) or
                                        eggModel:GetAttribute("UID") or
@@ -887,7 +1050,7 @@ end
 
 local BuyEggToggle = Egg:Toggle({
     Title = "Auto Buy Eggs",
-    Desc = "Automatically purchase the selected egg types.",
+    Desc = "Automatically purchase eggs matching the selected type and mutate filter.",
     Value = false,
     Callback = function(state)
         Settings.AutoBuyEgg = state
@@ -898,104 +1061,49 @@ local BuyEggToggle = Egg:Toggle({
 })
 myConfig:Register("AutoBuyEgg", BuyEggToggle)
 
--- ====================== ACTION EGGS (HATCH/PLACE/PICKUP) - OPTIMIZED ======================
--- ====================== ACTION EGGS (HATCH/PLACE/PICKUP) - FIXED VERSION ======================
+-- ====================== EGG TAB: ACTION EGGS (FIXED) ======================
 Egg:Section({Title="Action Eggs", Icon="cpu"})
 
--- ✅ FIXED: Dynamic cache rebuild + enable check
-local HatchPromptCache = {}
-local PlacePromptCache = {}
-local PickupPromptCache = {}
-
-local function RebuildActionCache()
-    HatchPromptCache = {}
-    PlacePromptCache = {}
-    PickupPromptCache = {}
-
-    -- Get fresh prompts every time (don't rely on stale cache)
-    local prompts = GetValidPrompts()
-    
-    for prompt, part in pairs(prompts) do
-        -- ✅ CRITICAL FIX: Check if prompt is ACTUALLY enabled NOW
-        if not prompt.Parent or not prompt.Enabled then
-            continue
-        end
-        
-        local action = prompt.ActionText or ""
-        local pos = part.Position
-        
-        if action == "Hatch" then
-            table.insert(HatchPromptCache, {prompt = prompt, part = part, pos = pos})
-        elseif action == "Place" then
-            table.insert(PlacePromptCache, {prompt = prompt, part = part, pos = pos})
-        elseif action == "Recall" then
-            table.insert(PickupPromptCache, {prompt = prompt, part = part, pos = pos})
-        end
-    end
-
-    -- Sort by distance (closest first)
-    local function sortByDist(a, b)
-        if not HumanoidRootPart then return false end
-        return (HumanoidRootPart.Position - a.pos).Magnitude < (HumanoidRootPart.Position - b.pos).Magnitude
-    end
-    
-    table.sort(HatchPromptCache, sortByDist)
-    table.sort(PlacePromptCache, sortByDist)
-    table.sort(PickupPromptCache, sortByDist)
-end
-
--- ✅ OPTIMIZED: Use cached prompts + final validation before trigger
-local function TriggerCachedPrompt(cache, range)
+-- ✅ FIXED: Direct workspace scan every iteration for fresh prompt detection
+local function ActionLoopDirect(actionText, settingName, baseDelay, range)
     range = range or 100
-    local rootPos = HumanoidRootPart and HumanoidRootPart.Position
-    if not rootPos then return end
-
-    for _, entry in ipairs(cache) do
-        -- ✅ CRITICAL FIX: Double-check prompt still exists and is ENABLED
-        if entry.prompt and entry.prompt.Parent and entry.part and entry.part.Parent then
-            if entry.prompt.Enabled then  -- Check enable status AGAIN here
-                local dist = (rootPos - entry.pos).Magnitude
-                if dist <= range then
-                    pcall(function()
-                        fireproximityprompt(entry.prompt)
-                    end)
-                    return true
+    while Settings[settingName] do
+        pcall(function()
+            if not HumanoidRootPart or not HumanoidRootPart.Parent then return end
+            local rootPos = HumanoidRootPart.Position
+            
+            local closest = nil
+            local closestDist = range
+            
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Enabled and obj.ActionText == actionText then
+                    local part = obj.Parent
+                    if part and part:IsA("BasePart") and part.Parent then
+                        local dist = (rootPos - part.Position).Magnitude
+                        if dist < closestDist then
+                            closestDist = dist
+                            closest = obj
+                        end
+                    end
                 end
             end
-        end
-    end
-    return false
-end
-
--- ✅ FIXED: Rebuild cache more frequently to catch enable/disable changes
-local function ActionLoop(cache, settingName, baseDelay)
-    while Settings[settingName] do
-        RebuildActionCache()  -- Rebuild every loop to catch dynamic changes
-        if cache == HatchPromptCache then
-            if #HatchPromptCache > 0 then
-                TriggerCachedPrompt(HatchPromptCache, 100)
+            
+            if closest then
+                fireproximityprompt(closest)
             end
-        elseif cache == PlacePromptCache then
-            if #PlacePromptCache > 0 then
-                TriggerCachedPrompt(PlacePromptCache, 100)
-            end
-        elseif cache == PickupPromptCache then
-            if #PickupPromptCache > 0 then
-                TriggerCachedPrompt(PickupPromptCache, 100)
-            end
-        end
+        end)
         task.wait(baseDelay)
     end
 end
 
 local HatchToggle = Egg:Toggle({
     Title = "Auto Hatch Eggs",
-    Desc = "Automatically hatch eggs when available.",
+    Desc = "Automatically triggers the Hatch prompt when it appears.",
     Value = false,
     Callback = function(state)
         Settings.AutoHatch = state
         if state then
-            task.spawn(function() ActionLoop(HatchPromptCache, "AutoHatch", 0.1) end)
+            task.spawn(function() ActionLoopDirect("Hatch", "AutoHatch", 0.1, 100) end)
         end
         myConfig:Set("AutoHatch", state)
         myConfig:Save()
@@ -1005,12 +1113,12 @@ myConfig:Register("AutoHatch", HatchToggle)
 
 local PlaceEggToggle = Egg:Toggle({
     Title = "Auto Place Eggs",
-    Desc = "Automatically place eggs in available slots.",
+    Desc = "Automatically triggers the Place prompt when an empty slot is available.",
     Value = false,
     Callback = function(state)
         Settings.AutoPlace = state
         if state then
-            task.spawn(function() ActionLoop(PlacePromptCache, "AutoPlace", 0.15) end)
+            task.spawn(function() ActionLoopDirect("Place", "AutoPlace", 0.2, 100) end)
         end
         myConfig:Set("AutoPlace", state)
         myConfig:Save()
@@ -1021,13 +1129,13 @@ myConfig:Register("AutoPlace", PlaceEggToggle)
 Egg:Section({Title="Action Pet", Icon="bone"})
 
 local PickEggToggle = Egg:Toggle({
-    Title = "Auto Pickup Pet (Need equip hammer)",
-    Desc = "Automatically pickup pets when available.",
+    Title = "Auto Pickup Pet (Equip hammer required)",
+    Desc = "Automatically triggers the Recall prompt to pick up pets.",
     Value = false,
     Callback = function(state)
         Settings.AutoPickup = state
         if state then
-            task.spawn(function() ActionLoop(PickupPromptCache, "AutoPickup", 0.2) end)
+            task.spawn(function() ActionLoopDirect("Recall", "AutoPickup", 0.3, 100) end)
         end
         myConfig:Set("AutoPickup", state)
         myConfig:Save()
@@ -1035,12 +1143,87 @@ local PickEggToggle = Egg:Toggle({
 })
 myConfig:Register("AutoPickup", PickEggToggle)
 
--- ====================== EVENT: VOID ======================
+-- ====================== EVENT TAB: FARM EVENT (NEW) ======================
+Event:Section({Title="Farm Event", Icon="coins"})
+
+local function pressKeyHold(key, duration)
+    pcall(function()
+        VirtualInputManager:SendKeyEvent(true, key, false, game)
+    end)
+    task.wait(duration)
+    pcall(function()
+        VirtualInputManager:SendKeyEvent(false, key, false, game)
+    end)
+end
+
+local function moveForward(duration)
+    pcall(function()
+        if not Humanoid or not HumanoidRootPart then return end
+        local lookDir = HumanoidRootPart.CFrame.LookVector
+        Humanoid:Move(lookDir, false)
+    end)
+    task.wait(duration)
+    pcall(function()
+        if Humanoid then
+            Humanoid:Move(Vector3.zero, false)
+        end
+    end)
+end
+
+local function performJump()
+    pcall(function()
+        if Humanoid then
+            Humanoid.Jump = true
+            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+end
+
+local function FarmCoinLoop()
+    while Settings.AutoFarmCoin do
+        pcall(function()
+            if not HumanoidRootPart or not HumanoidRootPart.Parent then return end
+            
+            -- Teleport to position 1
+            HumanoidRootPart.CFrame = CFrame.new(-171, 14, 166)
+            task.wait(0.5)
+            
+            -- Walk forward 2 times
+            moveForward(0.6)
+            task.wait(0.2)
+            moveForward(0.6)
+            task.wait(0.5)
+            
+            -- Teleport to position 2
+            HumanoidRootPart.CFrame = CFrame.new(-171, 11000, 166)
+            task.wait(0.5)
+            
+            -- Jump
+            performJump()
+        end)
+        task.wait(2)
+    end
+end
+
+local FarmCoinToggle = Event:Toggle({
+    Title = "Auto Farm Coin",
+    Desc = "Teleports to event location and performs actions to farm coins automatically.",
+    Value = false,
+    Callback = function(state)
+        Settings.AutoFarmCoin = state
+        if state then task.spawn(FarmCoinLoop) end
+        myConfig:Set("AutoFarmCoin", state)
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoFarmCoin", FarmCoinToggle)
+
+-- ====================== EVENT TAB: HONEYBLOOM ======================
 Event:Section({Title="Event: Honeybloom", Icon="flower"})
 
 local QuestDropdown = Event:Dropdown({
     Title = "Select Honeybloom Quest",
-    Desc = "Choose which quest to claim rewards from. Select 'All' to claim all quests.",
+    Desc = "Choose which quest to claim rewards from. Select All to claim every quest.",
     Values = QuestList,
     Multi = false,
     Value = "Task_1",
@@ -1072,7 +1255,7 @@ end
 
 local QuestToggle = Event:Toggle({
     Title = "Auto Claim Quest",
-    Desc = "Automatically claim quest rewards on an interval.",
+    Desc = "Automatically claim quest rewards on a regular interval.",
     Value = false,
     Callback = function(state)
         Settings.AutoQuest = state
@@ -1095,7 +1278,7 @@ end
 
 local CollectDinoToggle = Event:Toggle({
     Title = "Auto Collect Honeybloom Rewards",
-    Desc = "Automatically collect event rewards on an interval.",
+    Desc = "Automatically collect online event rewards on a regular interval.",
     Value = false,
     Callback = function(state)
         Settings.AutoCollectDino = state
@@ -1235,14 +1418,14 @@ Info:Divider()
 Info:Paragraph({Title="Main Owner", Desc="@dyumraisgoodguy#8888", Image="rbxassetid://119789418015420", ImageSize=30})
 Info:Paragraph({
     Title="Social",
-    Desc="Copy link social media for follow!",
+    Desc="Copy the social media link to follow.",
     Image="rbxassetid://104487529937663",
     ImageSize=30,
     Buttons={{Icon="copy", Title="Copy Link", Callback=function() setclipboard("https://guns.lol/DYHUB") end}}
 })
 Info:Paragraph({
     Title="Discord",
-    Desc="Join our discord for more scripts!",
+    Desc="Join our Discord community for more scripts.",
     Image="rbxassetid://104487529937663",
     ImageSize=30,
     Buttons={{Icon="copy", Title="Copy Link", Callback=function() setclipboard("https://discord.gg/jWNDPNMmyB") end}}
@@ -1280,6 +1463,9 @@ for key, value in pairs({
     AutoQuest = "AutoQuest",
     AutoCollectDino = "AutoCollectDino",
     AutoRedeemCode = "AutoRedeemCode",
+    AutoDailyLogin = "AutoDailyLogin",
+    AutoSeasonPass = "AutoSeasonPass",
+    AutoFarmCoin = "AutoFarmCoin",
 }) do
     local saved = myConfig:Get(key)
     if saved ~= nil then
@@ -1289,17 +1475,6 @@ end
 
 -- Apply AntiAFK on load
 if Settings.AntiAFK then StartAntiAFK() end
-
--- ✅ OPTIMIZED: Re-build prompt cache periodically in background
-task.spawn(function()
-    while true do
-        task.wait(5)
-        if Settings.AutoHatch or Settings.AutoPlace or Settings.AutoPickup then
-            RebuildPromptCache()
-            RebuildActionCache()
-        end
-    end
-end)
 
 Window:OnClose(function() myConfig:Save() end)
 
