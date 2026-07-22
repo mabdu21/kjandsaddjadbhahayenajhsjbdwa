@@ -1,5 +1,5 @@
 -- =========================
-local version = "3.9.1"
+local version = "3.9.2"
 -- =========================
 
 repeat task.wait() until game:IsLoaded()
@@ -72,6 +72,7 @@ local Settings = {
     AutoHatch = false,
     AutoPlace = false,
     AutoPickup = false,
+    AutoFeedPet = false,
     AutoEquip = false,
     AutoPotion = false,
     AutoCollectCoin = false,
@@ -1109,7 +1110,7 @@ local HatchToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoHatch = state
         if state then
-            task.spawn(function() ActionLoopDirect("Hatch", "AutoHatch", 0.1, 100) end)
+            task.spawn(function() ActionLoopDirect("Hatch", "AutoHatch", 0.5, 100) end)
         end
         myConfig:Set("AutoHatch", state)
         myConfig:Save()
@@ -1124,7 +1125,7 @@ local PlaceEggToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoPlace = state
         if state then
-            task.spawn(function() ActionLoopDirect("Place", "AutoPlace", 0.2, 100) end)
+            task.spawn(function() ActionLoopDirect("Place", "AutoPlace", 0.5, 100) end)
         end
         myConfig:Set("AutoPlace", state)
         myConfig:Save()
@@ -1141,13 +1142,28 @@ local PickEggToggle = Egg:Toggle({
     Callback = function(state)
         Settings.AutoPickup = state
         if state then
-            task.spawn(function() ActionLoopDirect("Recall", "AutoPickup", 0.3, 100) end)
+            task.spawn(function() ActionLoopDirect("Recall", "AutoPickup", 0.5, 100) end)
         end
         myConfig:Set("AutoPickup", state)
         myConfig:Save()
     end
 })
 myConfig:Register("AutoPickup", PickEggToggle)
+
+local FeedPetToggle = Egg:Toggle({
+    Title = "Auto Feed Pet (Equip fruit required)",
+    Desc = "Automatically triggers the Feed prompt to feed pet.",
+    Value = false,
+    Callback = function(state)
+        Settings.AutoFeedPet = state
+        if state then
+            task.spawn(function() ActionLoopDirect("Feed", "AutoFeedPet", 0.5, 100) end)
+        end
+        myConfig:Set("AutoFeedPet", state)
+        myConfig:Save()
+    end
+})
+myConfig:Register("AutoFeedPet", FeedPetToggle)
 
 -- ====================== EVENT TAB: FARM EVENT ======================
 Event:Section({Title="Farm Event", Icon="coins"})
@@ -1452,6 +1468,7 @@ for key, value in pairs({
     AutoHatch = "AutoHatch",
     AutoPlace = "AutoPlace",
     AutoPickup = "AutoPickup",
+    AutoFeedPet = "AutoFeedPet",
     AutoQuest = "AutoQuest",
     AutoCollectDino = "AutoCollectDino",
     AutoRedeemCode = "AutoRedeemCode",
